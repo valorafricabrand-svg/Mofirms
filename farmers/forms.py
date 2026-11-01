@@ -14,9 +14,15 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from .models import (
     ACTIVITY_CHOICES,
     COUNTIES,
+    PARTNER_DELIVERY_CHOICES,
+    PARTNER_OFFER_CHOICES,
+    PARTNER_ROLE_CHOICES,
+    PRODUCE_CATEGORY_CHOICES,
     SUPPORT_CHOICES,
     FarmerDocument,
     FarmerProfile,
+    PartnerDocument,
+    PartnerProfile,
 )
 
 
@@ -253,12 +259,15 @@ class FarmerDocumentForm(forms.Form):
         help_text="Do not include ID numbers or other sensitive details in this description.",
     )
     file = forms.FileField(
+        required=False,
         label="Choose a PDF, JPG, or PNG (maximum 5 MB)",
         widget=forms.ClearableFileInput(attrs={"accept": ".pdf,.jpg,.jpeg,.png"}),
     )
 
     def clean_file(self):
-        uploaded = self.cleaned_data["file"]
+        uploaded = self.cleaned_data.get("file")
+        if not uploaded:
+            return None
         suffix = Path(uploaded.name).suffix.lower()
         if suffix not in {".pdf", ".jpg", ".jpeg", ".png"}:
             raise ValidationError("Upload a PDF, JPG, or PNG file.")
@@ -312,9 +321,292 @@ class FarmerDocumentForm(forms.Form):
                 )
         return uploaded
 
+    def clean(self):
+        cleaned_data = super().clean()
+        if not cleaned_data.get("file") and cleaned_data.get("description", "").strip():
+            self.add_error("file", "Choose a file or clear the description.")
+        return cleaned_data
+
 
 FarmerDocumentFormSet = formset_factory(
     FarmerDocumentForm,
+    extra=0,
+    max_num=MAX_DOCUMENTS_PER_REGISTRATION,
+    validate_max=True,
+    absolute_max=MAX_DOCUMENTS_PER_REGISTRATION,
+)
+
+
+class PartnerRegistrationForm(forms.ModelForm):
+    roles = forms.MultipleChoiceField(
+        choices=PARTNER_ROLE_CHOICES,
+        required=True,
+        widget=forms.CheckboxSelectMultiple,
+        label="How would you like to work with MoFirms?",
+    )
+    operating_counties = forms.MultipleChoiceField(
+        choices=[(county, county) for county in COUNTIES],
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Counties where you operate or deliver",
+    )
+    delivery_methods = forms.MultipleChoiceField(
+        choices=PARTNER_DELIVERY_CHOICES,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="How do you deliver or collect?",
+    )
+    offer_categories = forms.MultipleChoiceField(
+        choices=PARTNER_OFFER_CHOICES,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="What goods or services do you supply?",
+    )
+    produce_categories = forms.MultipleChoiceField(
+        choices=PRODUCE_CATEGORY_CHOICES,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="What produce are you looking to buy?",
+    )
+    sourcing_counties = forms.MultipleChoiceField(
+        choices=[(county, county) for county in COUNTIES],
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Where are you looking to source produce?",
+    )
+    engagement_interests = forms.MultipleChoiceField(
+        choices=[
+            ("supplier_referrals", "Be listed for farmer enquiries and referrals"),
+            ("buyer_linkages", "Find farmer groups and produce suppliers"),
+            ("project_work", "Explore projects or service contracts"),
+            ("market_events", "Hear about matching and market events"),
+        ],
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="What would you like from a MoFirms partnership?",
+    )
+    challenges = forms.MultipleChoiceField(
+        choices=[
+            ("customer_access", "Finding farmers, groups, or customers"),
+            ("market_access", "Finding reliable buyers or suppliers"),
+            ("logistics", "Transport, delivery, or storage"),
+            ("quality", "Quality standards or consistency"),
+            ("working_capital", "Working capital or payment timing"),
+            ("business_visibility", "Business visibility and referrals"),
+            ("contracting", "Contracts, procurement, or administration"),
+            ("skills", "Skills or specialist capacity"),
+            ("other", "Other"),
+        ],
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="What challenges would a partnership help address?",
+    )
+    privacy_consent = forms.BooleanField(
+        required=True,
+        label=(
+            "I agree that MoFirms may review this registration and contact me about "
+            "my business, offerings, buying needs, and relevant partnership enquiries."
+        ),
+    )
+    listing_consent = forms.BooleanField(
+        required=False,
+        label=(
+            "Optional: I agree that MoFirms may share relevant details from my business "
+            "profile directly with potential farmer or business partners to facilitate "
+            "a referral. This is not permission to publish my contact details."
+        ),
+    )
+    document_consent = forms.BooleanField(required=False)
+    website_trap = forms.CharField(required=False, widget=forms.HiddenInput)
+
+    class Meta:
+        model = PartnerProfile
+        fields = [
+            "applicant_type",
+            "roles",
+            "contact_name",
+            "business_name",
+            "trading_name",
+            "business_description",
+            "phone",
+            "email",
+            "website",
+            "preferred_contact",
+            "preferred_language",
+            "registration_status",
+            "registration_number",
+            "year_established",
+            "years_experience",
+            "business_size",
+            "staff_band",
+            "county",
+            "sub_county",
+            "ward",
+            "operating_counties",
+            "delivery_methods",
+            "offer_categories",
+            "offer_details",
+            "service_description",
+            "brands_or_products",
+            "service_area",
+            "lead_time",
+            "minimum_order",
+            "prices_and_terms",
+            "produce_categories",
+            "produce_details",
+            "sourcing_counties",
+            "buyer_capacity",
+            "buying_frequency",
+            "quality_requirements",
+            "payment_terms",
+            "clients_and_references",
+            "licences_and_standards",
+            "service_capacity",
+            "staff_qualifications",
+            "engagement_interests",
+            "challenges",
+            "partnership_goals",
+            "additional_notes",
+        ]
+        widgets = {
+            "applicant_type": forms.RadioSelect,
+            "business_description": forms.Textarea(attrs={"rows": 3}),
+            "offer_details": forms.Textarea(attrs={"rows": 3}),
+            "service_description": forms.Textarea(attrs={"rows": 3}),
+            "prices_and_terms": forms.Textarea(attrs={"rows": 3}),
+            "produce_details": forms.Textarea(attrs={"rows": 3}),
+            "quality_requirements": forms.Textarea(attrs={"rows": 3}),
+            "clients_and_references": forms.Textarea(attrs={"rows": 3}),
+            "licences_and_standards": forms.Textarea(attrs={"rows": 3}),
+            "staff_qualifications": forms.Textarea(attrs={"rows": 3}),
+            "partnership_goals": forms.Textarea(attrs={"rows": 3}),
+            "additional_notes": forms.Textarea(attrs={"rows": 3}),
+            "registration_number": forms.TextInput(attrs={"autocomplete": "off"}),
+            "year_established": forms.NumberInput(
+                attrs={"min": "1800", "max": "2100", "inputmode": "numeric"}
+            ),
+        }
+        help_texts = {
+            "registration_number": (
+                "Business registration number only. Do not enter a personal ID number, "
+                "KRA PIN, bank account, or password."
+            ),
+            "website": "Optional public business website. Do not enter a sign-in or private link.",
+            "business_size": "Approximate scale; do not enter revenue or account details.",
+            "staff_band": "Approximate team capacity, not a staff list.",
+            "prices_and_terms": "Indicative only; do not enter confidential contract or bank details.",
+            "clients_and_references": (
+                "Share reference names or organisations only if you have permission to do so."
+            ),
+            "licences_and_standards": (
+                "List relevant licence names and their issuing bodies. Do not include passwords "
+                "or tax PINs."
+            ),
+            "additional_notes": (
+                "Do not enter personal ID numbers, tax PINs, bank details, passwords, "
+                "or confidential customer data."
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["county"].choices = [("", "Select a county")] + [
+            (county, county) for county in COUNTIES
+        ]
+        self.fields["applicant_type"].choices = PartnerProfile.ApplicantType.choices
+        self.fields["applicant_type"].label = "Who does this profile represent?"
+        self.fields["business_name"].label = "Legal or registered business name"
+        self.fields["registration_status"].required = False
+        self.fields["registration_status"].choices = [("", "Choose one (optional)")] + [
+            choice for choice in PartnerProfile.RegistrationStatus.choices
+        ]
+        self.fields["business_size"].required = False
+        self.fields["staff_band"].required = False
+        self.fields["buyer_capacity"].required = False
+        self.fields["service_capacity"].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        applicant_type = cleaned_data.get("applicant_type")
+        roles = cleaned_data.get("roles", [])
+
+        if applicant_type == PartnerProfile.ApplicantType.BUSINESS and not cleaned_data.get(
+            "business_name", ""
+        ).strip():
+            self.add_error("business_name", "Enter the name the organisation trades or registers under.")
+        if not cleaned_data.get("registration_status"):
+            cleaned_data["registration_status"] = PartnerProfile.RegistrationStatus.NOT_REGISTERED
+
+        preferred_contact = cleaned_data.get("preferred_contact")
+        if (
+            preferred_contact == PartnerProfile.ContactPreference.EMAIL
+            and not cleaned_data.get("email")
+        ):
+            self.add_error("email", "Enter an email address for your preferred contact method.")
+        elif (
+            preferred_contact in {
+                PartnerProfile.ContactPreference.PHONE,
+                PartnerProfile.ContactPreference.WHATSAPP,
+            }
+            and not cleaned_data.get("phone")
+        ):
+            self.add_error("phone", "Enter a phone number for your preferred contact method.")
+
+        if "supplier" in roles:
+            if not cleaned_data.get("offer_categories"):
+                self.add_error("offer_categories", "Select at least one product or service you provide.")
+            if not cleaned_data.get("offer_details", "").strip():
+                self.add_error("offer_details", "Briefly describe what you supply and your availability.")
+        if "buyer" in roles:
+            if not cleaned_data.get("produce_categories"):
+                self.add_error("produce_categories", "Select at least one type of produce you buy.")
+            if not cleaned_data.get("produce_details", "").strip():
+                self.add_error("produce_details", "Describe the produce you buy and any key specifications.")
+        if (
+            "service_provider" in roles
+            and not cleaned_data.get("service_description", "").strip()
+        ):
+            self.add_error(
+                "service_description",
+                "Describe your services and the people or areas you serve.",
+            )
+
+        if cleaned_data.get("website_trap"):
+            raise ValidationError("The registration could not be submitted. Please try again.")
+        return cleaned_data
+
+    def save(self, commit=True):
+        profile = super().save(commit=False)
+        for field in (
+            "roles",
+            "operating_counties",
+            "delivery_methods",
+            "offer_categories",
+            "produce_categories",
+            "sourcing_counties",
+            "engagement_interests",
+            "challenges",
+        ):
+            setattr(profile, field, self.cleaned_data[field])
+        if (
+            profile.applicant_type == PartnerProfile.ApplicantType.INDIVIDUAL
+            and not profile.business_name
+        ):
+            profile.registration_status = PartnerProfile.RegistrationStatus.NOT_REGISTERED
+        if commit:
+            profile.save()
+        return profile
+
+
+class PartnerDocumentForm(FarmerDocumentForm):
+    document_type = forms.ChoiceField(
+        choices=PartnerDocument.DocumentType.choices,
+        label="Evidence type",
+    )
+
+
+PartnerDocumentFormSet = formset_factory(
+    PartnerDocumentForm,
     extra=0,
     max_num=MAX_DOCUMENTS_PER_REGISTRATION,
     validate_max=True,

@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 from PIL import Image, PngImagePlugin
 
-from .models import FarmerDocument, FarmerProfile
+from .models import FarmerDocument, FarmerProfile, PartnerDocument, PartnerProfile
 
 
 def png_upload(name="proof.png", metadata=None):
@@ -276,3 +276,166 @@ class FarmerRegistrationTests(TestCase):
         self.assertFalse(FarmerDocument.objects.filter(pk=expired_document.pk).exists())
         self.assertFalse(Path(stored_path).exists())
         self.assertFalse(Path(expired_path).exists())
+
+
+class PartnerRegistrationTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.private_files = TemporaryDirectory()
+        self.addCleanup(self.private_files.cleanup)
+        self.settings_override = override_settings(
+            MEDIA_ROOT=self.private_files.name,
+            PRIVATE_UPLOAD_ROOT=self.private_files.name,
+            ANTIVIRUS_ENABLED=False,
+        )
+        self.settings_override.enable()
+        self.addCleanup(self.settings_override.disable)
+        self.url = reverse("register_partner")
+        self.data = {
+            "applicant_type": "business",
+            "contact_name": "Sample Contact",
+            "business_name": "Sample Agri Services",
+            "preferred_contact": "phone",
+            "phone": "0712345678",
+            "county": "Vihiga",
+            "roles": ["supplier"],
+            "offer_categories": ["seeds_seedlings"],
+            "offer_details": "Certified vegetable seedlings, available year round.",
+            "privacy_consent": "on",
+            "documents-TOTAL_FORMS": "1",
+            "documents-INITIAL_FORMS": "0",
+            "documents-MIN_NUM_FORMS": "0",
+            "documents-MAX_NUM_FORMS": "20",
+            "documents-0-document_type": "business",
+            "documents-0-description": "",
+        }
+
+    def test_supplier_registration_is_saved_and_listing_consent_is_optional(self):
+        response = self.client.post(self.url, self.data)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertRegex(response.url, r"^/portal/partners/registered/[A-F0-9]{8}/$")
+        profile = PartnerProfile.objects.get()
+        self.assertEqual(profile.roles, ["supplier"])
+        self.assertEqual(profile.offer_categories, ["seeds_seedlings"])
+        self.assertEqual(
+            profile.registration_status,
+            PartnerProfile.RegistrationStatus.NOT_REGISTERED,
+        )
+        self.assertIsNotNone(profile.contact_consent_at)
+        self.assertIsNone(profile.listing_referral_consent_at)
+        self.assertEqual(
+            profile.verification_status,
+            PartnerProfile.ReviewStatus.PENDING,
+        )
+
+    def test_multi_role_registration_requires_and_saves_each_role_profile(self):
+        data = {
+            **self.data,
+            "roles": ["supplier", "buyer", "service_provider"],
+            "produce_categories": ["cereals"],
+            "produce_details": "Buying dry maize in clean 90 kg bags.",
+            "service_description": "Agronomy training for farmer groups.",
+        }
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 302)
+        profile = PartnerProfile.objects.get()
+        self.assertCountEqual(
+            profile.roles,
+            ["supplier", "buyer", "service_provider"],
+        )
+        self.assertEqual(profile.produce_categories, ["cereals"])
+        self.assertEqual(profile.service_description, "Agronomy training for farmer groups.")
+
+    def test_buyer_and_service_provider_roles_validate_their_own_details(self):
+        data = {
+            **self.data,
+            "roles": ["buyer", "service_provider"],
+            "produce_categories": ["cereals"],
+            "produce_details": "Buying dry maize in clean 90 kg bags.",
+        }
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(PartnerProfile.objects.count(), 0)
+        self.assertContains(response, "Describe your services and the people or areas you serve.")
+
+        data["service_description"] = "Agronomy training for farmer groups."
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 302)
+        profile = PartnerProfile.objects.get()
+        self.assertEqual(profile.roles, ["buyer", "service_provider"])
+
+    def test_partner_evidence_requires_consent_and_staff_only_download(self):
+        data = {
+            **self.data,
+            "documents-TOTAL_FORMS": "1",
+            "documents-INITIAL_FORMS": "0",
+            "documents-MIN_NUM_FORMS": "0",
+            "documents-MAX_NUM_FORMS": "20",
+            "documents-0-document_type": "business",
+            "documents-0-description": "Synthetic registration evidence",
+            "documents-0-file": png_upload(),
+        }
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(PartnerProfile.objects.count(), 0)
+        self.assertContains(response, "Please agree to the one-year document retention notice")
+
+        data["documents-0-file"] = png_upload()
+        data["document_consent"] = "on"
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 302)
+        profile = PartnerProfile.objects.get()
+        document = PartnerDocument.objects.get(profile=profile)
+        self.assertIsNotNone(profile.document_consent_at)
+        url = reverse("download_partner_document", args=[document.pk])
+        self.assertEqual(self.client.get(url).status_code, 302)
+
+        staff_user = get_user_model().objects.create_user(
+            username="partner-reviewer",
+            password="test-password",
+            is_staff=True,
+        )
+        self.client.force_login(staff_user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["X-Content-Type-Options"], "nosniff")
+        self.assertIn("attachment", response["Content-Disposition"])
+        self.assertTrue(b"".join(response.streaming_content))
+
+    def test_partner_retention_command_deletes_old_profile_and_private_evidence(self):
+        old_date = timezone.now() - timedelta(days=800)
+        profile = PartnerProfile.objects.create(
+            applicant_type=PartnerProfile.ApplicantType.BUSINESS,
+            contact_name="Old Sample Contact",
+            business_name="Old Sample Business",
+            preferred_contact=PartnerProfile.ContactPreference.PHONE,
+            county="Vihiga",
+            roles=["supplier"],
+            contact_consent_at=old_date,
+            created_at=old_date,
+            last_contact_at=old_date,
+        )
+        document = PartnerDocument.objects.create(
+            profile=profile,
+            document_type=PartnerDocument.DocumentType.BUSINESS,
+            uploaded_at=old_date,
+        )
+        document.file.save("old-partner-evidence.png", png_upload(), save=True)
+        stored_path = document.file.path
+
+        output = StringIO()
+        call_command("purge_retained_data", stdout=output)
+        self.assertIn("1 document(s) and 1 profile(s)", output.getvalue())
+
+        with self.captureOnCommitCallbacks(execute=True):
+            call_command("purge_retained_data", "--execute")
+
+        self.assertFalse(PartnerProfile.objects.filter(pk=profile.pk).exists())
+        self.assertFalse(PartnerDocument.objects.filter(pk=document.pk).exists())
+        self.assertFalse(Path(stored_path).exists())

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supplier and buyer registration | MoFirms</title>
+<meta name="description" content="Register your agricultural supply, buying, or professional services business with MoFirms.">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav"><div class="wrap bar">
+  <a class="logo" href="/"><span>Mo</span>Firms</a>
+  <a class="btn sm" href="/">Back to MoFirms</a>
+</div></header>
+
+<main id="main">
+<section class="wrap registration">
+  <p class="eyebrow">Portal B · Supplier and buyer onboarding</p>
+  <h1>Register your business or services</h1>
+  <p class="lead">Tell MoFirms what you supply, buy, or do; where you operate; and how you could work with farmers and agricultural businesses. You can select more than one partner role.</p>
+
+  <aside class="notice notice-warning">
+    <h2>Before you begin</h2>
+    <ul>
+      <li>Give accurate information and provide evidence only when relevant to the specific claim being reviewed.</li>
+      <li>Business registration and identity evidence is optional. Do not upload tax PIN records, bank statements, passwords, unrelated people's IDs, or confidential customer records.</li>
+      <li>Uploads are limited to {{ max_documents }} documents, {{ max_file_size_mb }} MB each and {{ max_total_size_mb }} MB total. Accepted types: PDF, JPG and PNG.</li>
+      <li>Uploaded evidence is scheduled for deletion after one year. Partner profiles are scheduled for deletion after two years without recorded contact.</li>
+      <li>Submitting a profile does not make your company, identity, licence, products, or services “verified.” MoFirms staff review claims and record the evidence and scope of each decision.</li>
+    </ul>
+    <p>This service is running in local development. Do not enter real personal or company information, or upload real documents, until MoFirms has approved the privacy notice and deployed the portal to secure production hosting.</p>
+  </aside>
+
+  <form method="post" enctype="multipart/form-data" class="card registration-form" novalidate>
+    {% csrf_token %}
+    {{ form.website_trap }}
+    {% if form.non_field_errors %}<div class="err-box" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% if form.errors and not form.non_field_errors %}<p class="form-hint">Please correct the highlighted fields.</p>{% endif %}
+
+    <fieldset class="form-section choice-set">
+      <legend>About your registration</legend>
+      <p class="form-hint">Choose whether the profile represents an individual or an organisation, then select every role that applies.</p>
+      {% include "farmers/field.html" with field=form.applicant_type %}
+      {% include "farmers/checkboxes.html" with field=form.roles %}
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Business and primary contact</legend>
+      <div class="form-grid">
+        <div>{% include "farmers/field.html" with field=form.contact_name %}</div>
+        <div>{% include "farmers/field.html" with field=form.phone %}</div>
+        <div>{% include "farmers/field.html" with field=form.email %}</div>
+        <div>{% include "farmers/field.html" with field=form.preferred_contact %}</div>
+        <div>{% include "farmers/field.html" with field=form.preferred_language %}</div>
+        <div>{% include "farmers/field.html" with field=form.business_name %}</div>
+        <div>{% include "farmers/field.html" with field=form.trading_name %}</div>
+        <div>{% include "farmers/field.html" with field=form.website %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.business_description %}</div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Organisation and experience</legend>
+      <p class="form-hint">Provide approximate business information. Formal registration is not required to submit a profile.</p>
+      <div class="form-grid">
+        <div>{% include "farmers/field.html" with field=form.registration_status %}</div>
+        <div>{% include "farmers/field.html" with field=form.registration_number %}</div>
+        <div>{% include "farmers/field.html" with field=form.year_established %}</div>
+        <div>{% include "farmers/field.html" with field=form.years_experience %}</div>
+        <div>{% include "farmers/field.html" with field=form.business_size %}</div>
+        <div>{% include "farmers/field.html" with field=form.staff_band %}</div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Location and coverage</legend>
+      <p class="form-hint">Provide your operating base and the counties you serve or source from. Do not enter a private home address or exact coordinates.</p>
+      <div class="form-grid">
+        <div>{% include "farmers/field.html" with field=form.county %}</div>
+        <div>{% include "farmers/field.html" with field=form.sub_county %}</div>
+        <div>{% include "farmers/field.html" with field=form.ward %}</div>
+        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.operating_counties %}</div>
+        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.delivery_methods %}</div>
+      </div>
+    </fieldset>
+
+    <fieldset id="supplierFields" class="form-section">
+      <legend>Supplier profile</legend>
+      <p class="form-hint">Complete this section if you supply farm inputs, equipment, produce-related services, or other goods and services.</p>
+      <div class="form-grid">
+        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.offer_categories %}</div>
+        <div>{% include "farmers/field.html" with field=form.brands_or_products %}</div>
+        <div>{% include "farmers/field.html" with field=form.service_area %}</div>
+        <div>{% include "farmers/field.html" with field=form.lead_time %}</div>
+        <div>{% include "farmers/field.html" with field=form.minimum_order %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.prices_and_terms %}</div>
+      </div>
+    </fieldset>
+
+    <fieldset id="buyerFields" class="form-section">
+      <legend>Produce buyer profile</legend>
+      <p class="form-hint">Complete this section if you buy agricultural produce directly or on behalf of an organisation. Estimates and indicative requirements are fine.</p>
+      <div class="form-grid">
+        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.produce_categories %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.produce_details %}</div>
+        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.sourcing_counties %}</div>
+        <div>{% include "farmers/field.html" with field=form.buyer_capacity %}</div>
+        <div>{% include "farmers/field.html" with field=form.buying_frequency %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.quality_requirements %}</div>
+        <div>{% include "farmers/field.html" with field=form.payment_terms %}</div>
+      </div>
+    </fieldset>
+
+    <fieldset id="serviceFields" class="form-section">
+      <legend>Professional and service provider profile</legend>
+      <p class="form-hint">Complete this section if you provide professional, technical, training, or other services to farmers and agricultural organisations.</p>
+      <div class="form-grid">
+        <div class="wide-field">{% include "farmers/field.html" with field=form.service_description %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.clients_and_references %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.licences_and_standards %}</div>
+        <div>{% include "farmers/field.html" with field=form.service_capacity %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.staff_qualifications %}</div>
+      </div>
+    </fieldset>
+
+    <fieldset id="sharedOfferFields" class="form-section">
+      <legend>Goods and service availability</legend>
+      <p class="form-hint">Describe your offering, typical availability, and any important limits.</p>
+      {% include "farmers/field.html" with field=form.offer_details %}
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Partnership goals and challenges</legend>
+      <div class="form-grid">
+        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.engagement_interests %}</div>
+        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.challenges %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.partnership_goals %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.additional_notes %}</div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Optional supporting evidence</legend>
+      <p class="form-hint">Examples: business registration certificate, professional licence, product catalogue, quality certificate, or evidence of buying or supply capacity. Upload only files that support a selected role or claim; an upload does not itself verify a business or product.</p>
+      {{ document_formset.management_form }}
+      {{ document_formset.non_form_errors }}
+      {% for error in upload_errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+      <div id="documentRows" data-prefix="{{ document_formset.prefix }}" data-max="{{ max_documents }}">
+        {% for document_form in document_formset %}
+          {% include "farmers/document_row.html" with document_form=document_form %}
+        {% endfor %}
+      </div>
+      <template id="emptyDocumentRow">{% include "farmers/document_row.html" with document_form=document_formset.empty_form %}</template>
+      <button id="addDocument" class="opt" type="button">Add another document</button>
+      <p class="form-hint">Files are private and available only to authorised MoFirms staff. Each file is scheduled for deletion no later than one year after upload.</p>
+      <label class="choice consent"><input type="checkbox" name="document_consent">
+        I consent to MoFirms staff reviewing any evidence I upload and deleting it no later than one year after upload. I will not upload tax, bank, password, or unrelated personal documents.
+      </label>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Privacy and permissions</legend>
+      <p>MoFirms uses the information on this form to review your partner profile, assess fit with farmer and organisation needs, and contact you about relevant opportunities. Access is restricted to authorised MoFirms staff. Profiles are scheduled for deletion after two years without recorded contact.</p>
+      <p>Sharing your details directly with a prospective partner is optional and requires separate consent below. Your details will not be published in a public directory. You may request access, correction, or deletion at <a href="mailto:{{ mofirms_contact_email }}">{{ mofirms_contact_email }}</a>. This notice and retention schedule must be reviewed and approved by MoFirms before real registrations open.</p>
+      {% include "farmers/field.html" with field=form.privacy_consent %}
+      {% include "farmers/field.html" with field=form.listing_consent %}
+    </fieldset>
+
+    <button class="btn" type="submit">Submit partner registration for review</button>
+  </form>
+</section>
+</main>
+<footer><div class="wrap">
+  <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
+</div></footer>
+<script src="/js/register.js"></script>
+</body>
+</html>

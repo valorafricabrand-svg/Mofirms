@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.urls import reverse
 
-from .models import FarmerDocument, FarmerProfile
+from .models import FarmerDocument, FarmerProfile, PartnerDocument, PartnerProfile
 
 
 @admin.register(FarmerProfile)
@@ -187,6 +187,230 @@ class FarmerDocumentAdmin(admin.ModelAdmin):
         if not obj.pk or not obj.file:
             return "No file"
         url = reverse("download_document", args=[obj.pk])
+        return format_html('<a href="{}">Download evidence</a>', url)
+
+    def save_model(self, request, obj, form, change):
+        if change and "review_status" in form.changed_data:
+            obj.reviewed_by = request.user
+            obj.reviewed_at = timezone.now()
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(PartnerProfile)
+class PartnerProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "public_reference",
+        "business_name",
+        "contact_name",
+        "county",
+        "roles_summary",
+        "verification_status",
+        "business_review_status",
+        "offering_review_status",
+        "created_at",
+    )
+    list_filter = (
+        "applicant_type",
+        "verification_status",
+        "identity_review_status",
+        "business_review_status",
+        "offering_review_status",
+        "registration_status",
+        "county",
+        "created_at",
+    )
+    search_fields = (
+        "business_name",
+        "trading_name",
+        "contact_name",
+        "email",
+        "phone",
+        "registration_number",
+        "county",
+        "reference",
+    )
+    readonly_fields = (
+        "reference",
+        "created_at",
+        "updated_at",
+        "contact_consent_at",
+        "listing_referral_consent_at",
+        "document_consent_at",
+        "privacy_policy_version",
+        "reviewed_by",
+        "reviewed_at",
+    )
+    actions = ("mark_contacted_today",)
+    date_hierarchy = "created_at"
+    fieldsets = (
+        ("Registration and manual review", {
+            "fields": (
+                "reference",
+                "applicant_type",
+                "roles",
+                "verification_status",
+                "identity_review_status",
+                "business_review_status",
+                "offering_review_status",
+                "verification_notes",
+                "reviewed_by",
+                "reviewed_at",
+            )
+        }),
+        ("Business and primary contact", {
+            "fields": (
+                "business_name",
+                "trading_name",
+                "contact_name",
+                "phone",
+                "email",
+                "website",
+                "preferred_contact",
+                "preferred_language",
+                "business_description",
+            )
+        }),
+        ("Organisation details", {
+            "fields": (
+                "registration_status",
+                "registration_number",
+                "year_established",
+                "years_experience",
+                "business_size",
+                "staff_band",
+            )
+        }),
+        ("Location and coverage", {
+            "fields": (
+                "county",
+                "sub_county",
+                "ward",
+                "operating_counties",
+                "delivery_methods",
+            )
+        }),
+        ("Supplier profile", {
+            "fields": (
+                "offer_categories",
+                "offer_details",
+                "service_description",
+                "brands_or_products",
+                "service_area",
+                "lead_time",
+                "minimum_order",
+                "prices_and_terms",
+            )
+        }),
+        ("Buyer profile", {
+            "fields": (
+                "produce_categories",
+                "produce_details",
+                "sourcing_counties",
+                "buyer_capacity",
+                "buying_frequency",
+                "quality_requirements",
+                "payment_terms",
+            )
+        }),
+        ("Service provider profile", {
+            "fields": (
+                "clients_and_references",
+                "licences_and_standards",
+                "service_capacity",
+                "staff_qualifications",
+                "engagement_interests",
+            )
+        }),
+        ("Business needs", {
+            "fields": ("challenges", "partnership_goals", "additional_notes")
+        }),
+        ("Consent and retention", {
+            "fields": (
+                "contact_consent_at",
+                "listing_referral_consent_at",
+                "document_consent_at",
+                "privacy_policy_version",
+                "last_contact_at",
+                "created_at",
+                "updated_at",
+            )
+        }),
+    )
+
+    @admin.display(description="Reference")
+    def public_reference(self, obj):
+        return obj.public_reference
+
+    @admin.display(description="Partner roles")
+    def roles_summary(self, obj):
+        role_labels = {
+            "supplier": "Supplier",
+            "buyer": "Produce buyer",
+            "service_provider": "Service provider",
+        }
+        return ", ".join(role_labels.get(role, role) for role in obj.roles)
+
+    @admin.action(description="Record that contact occurred today (retention clock)")
+    def mark_contacted_today(self, request, queryset):
+        updated = queryset.update(last_contact_at=timezone.now())
+        self.message_user(request, f"Updated the last-contact date for {updated} partner(s).")
+
+    def save_model(self, request, obj, form, change):
+        review_fields = {
+            "verification_status",
+            "identity_review_status",
+            "business_review_status",
+            "offering_review_status",
+        }
+        if change and review_fields.intersection(form.changed_data):
+            obj.reviewed_by = request.user
+            obj.reviewed_at = timezone.now()
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(PartnerDocument)
+class PartnerDocumentAdmin(admin.ModelAdmin):
+    list_display = (
+        "reference",
+        "profile",
+        "document_type",
+        "review_status",
+        "uploaded_at",
+        "secure_download",
+    )
+    list_filter = ("document_type", "review_status", "uploaded_at")
+    search_fields = (
+        "profile__business_name",
+        "profile__trading_name",
+        "profile__contact_name",
+        "profile__reference",
+        "reference",
+    )
+    readonly_fields = (
+        "reference",
+        "uploaded_at",
+        "secure_download",
+        "reviewed_by",
+        "reviewed_at",
+    )
+    fields = (
+        "reference",
+        "profile",
+        "document_type",
+        "description",
+        "secure_download",
+        "review_status",
+        "review_notes",
+        "reviewed_by",
+        "reviewed_at",
+        "uploaded_at",
+    )
+
+    @admin.display(description="Private evidence file")
+    def secure_download(self, obj):
+        if not obj.pk or not obj.file:
+            return "No file"
+        url = reverse("download_partner_document", args=[obj.pk])
         return format_html('<a href="{}">Download evidence</a>', url)
 
     def save_model(self, request, obj, form, change):

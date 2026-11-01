@@ -42,6 +42,58 @@ SUPPORT_CHOICES = (
     ("other", "Other or not sure yet"),
 )
 
+PARTNER_ROLE_CHOICES = (
+    ("supplier", "Input or service supplier"),
+    ("buyer", "Produce buyer"),
+    ("service_provider", "Professional or technical service provider"),
+)
+
+PARTNER_OFFER_CHOICES = (
+    ("seeds_seedlings", "Seeds and seedlings"),
+    ("fertilizer_soil", "Fertilizers, soil health, and crop inputs"),
+    ("crop_protection", "Crop protection products"),
+    ("farm_tools", "Farm tools and equipment"),
+    ("irrigation", "Irrigation and water systems"),
+    ("livestock_inputs", "Livestock feed and animal health"),
+    ("poultry_inputs", "Poultry inputs and equipment"),
+    ("beekeeping", "Beekeeping inputs and equipment"),
+    ("machinery", "Farm machinery and mechanisation"),
+    ("storage_processing", "Storage and processing"),
+    ("packaging", "Packaging and post-harvest handling"),
+    ("transport", "Transport and logistics"),
+    ("digital", "Digital and farm technology"),
+    ("training", "Training and capacity building"),
+    ("consulting", "Agribusiness advisory and consulting"),
+    ("financial", "Finance and business support"),
+    ("veterinary", "Veterinary and animal-health services"),
+    ("environmental", "Environmental and climate services"),
+    ("other", "Other goods or services"),
+)
+
+PRODUCE_CATEGORY_CHOICES = (
+    ("cereals", "Cereals and grains"),
+    ("legumes", "Beans, peas, and pulses"),
+    ("roots", "Roots and tubers"),
+    ("vegetables", "Vegetables"),
+    ("fruits", "Fruits"),
+    ("dairy", "Milk and dairy"),
+    ("livestock", "Live animals and meat"),
+    ("poultry", "Eggs and poultry"),
+    ("fish", "Fish and aquaculture"),
+    ("honey", "Honey and bee products"),
+    ("oilseeds", "Oilseeds and oil crops"),
+    ("other", "Other produce"),
+)
+
+PARTNER_DELIVERY_CHOICES = (
+    ("collection_point", "Buyer or supplier collection point"),
+    ("farm_gate", "Farm-gate collection or delivery"),
+    ("county_delivery", "Delivery within a county"),
+    ("multi_county", "Multi-county delivery or collection"),
+    ("national", "National delivery or collection"),
+    ("online", "Online or remote service"),
+)
+
 
 class FarmerProfile(models.Model):
     class RegistrationType(models.TextChoices):
@@ -286,6 +338,253 @@ class FarmerDocument(models.Model):
             self.review_status == self.ReviewStatus.ACCEPTED
             and not self.review_notes.strip()
         ):
+            raise ValidationError(
+                {"review_notes": "Record what evidence was reviewed before accepting this document."}
+            )
+
+
+class PartnerProfile(models.Model):
+    class ApplicantType(models.TextChoices):
+        INDIVIDUAL = "individual", "Individual or sole proprietor"
+        BUSINESS = "business", "Registered or unregistered organisation"
+
+    class RegistrationStatus(models.TextChoices):
+        REGISTERED = "registered", "Registered"
+        IN_PROGRESS = "in_progress", "Registration in progress"
+        NOT_REGISTERED = "not_registered", "Not registered"
+        PREFER_NOT = "prefer_not", "Prefer not to say"
+
+    class ContactPreference(models.TextChoices):
+        PHONE = "phone", "Phone or SMS"
+        WHATSAPP = "whatsapp", "WhatsApp"
+        EMAIL = "email", "Email"
+
+    class ReviewStatus(models.TextChoices):
+        PENDING = "pending", "Pending review"
+        IN_REVIEW = "in_review", "In review"
+        VERIFIED = "verified", "Verified by MoFirms reviewer"
+        FOLLOW_UP = "follow_up", "Needs follow-up"
+        NOT_VERIFIED = "not_verified", "Not verified"
+        NOT_APPLICABLE = "not_applicable", "Not applicable"
+
+    class CapacityBand(models.TextChoices):
+        STARTING = "starting", "New or pilot capacity"
+        SMALL = "small", "Small or local capacity"
+        MEDIUM = "medium", "Growing or multi-county capacity"
+        LARGE = "large", "Large or national capacity"
+        VARIABLE = "variable", "Varies by season or contract"
+        PREFER_NOT = "prefer_not", "Prefer not to say"
+
+    class BusinessSize(models.TextChoices):
+        MICRO = "micro", "Micro or sole operator"
+        SMALL = "small", "Small business"
+        MEDIUM = "medium", "Medium business"
+        LARGE = "large", "Large business"
+        COOPERATIVE = "cooperative", "Cooperative or member organisation"
+        PREFER_NOT = "prefer_not", "Prefer not to say"
+
+    class StaffBand(models.TextChoices):
+        SOLO = "solo", "Sole operator"
+        TWO_TO_5 = "2_5", "2–5 people"
+        SIX_TO_20 = "6_20", "6–20 people"
+        TWENTY_ONE_TO_50 = "21_50", "21–50 people"
+        OVER_50 = "over_50", "More than 50 people"
+        PREFER_NOT = "prefer_not", "Prefer not to say"
+
+    class Experience(models.TextChoices):
+        UNDER_1 = "under_1", "Less than 1 year"
+        ONE_TO_3 = "1_3", "1–3 years"
+        FOUR_TO_10 = "4_10", "4–10 years"
+        OVER_10 = "over_10", "More than 10 years"
+        PREFER_NOT = "prefer_not", "Prefer not to say"
+
+    reference = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    applicant_type = models.CharField(max_length=16, choices=ApplicantType.choices)
+    contact_name = models.CharField(max_length=160)
+    business_name = models.CharField(max_length=180, blank=True)
+    trading_name = models.CharField(max_length=180, blank=True)
+    business_description = models.TextField(blank=True)
+    phone = models.CharField(max_length=32, blank=True)
+    email = models.EmailField(blank=True)
+    website = models.URLField(blank=True)
+    preferred_contact = models.CharField(max_length=12, choices=ContactPreference.choices)
+    preferred_language = models.CharField(max_length=32, blank=True)
+
+    registration_status = models.CharField(
+        max_length=16,
+        choices=RegistrationStatus.choices,
+        default=RegistrationStatus.NOT_REGISTERED,
+    )
+    registration_number = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Business or organisation registration number only; do not enter a personal ID or tax PIN.",
+    )
+    year_established = models.PositiveSmallIntegerField(
+        null=True, blank=True, validators=[MinValueValidator(1800), MaxValueValidator(2100)]
+    )
+    years_experience = models.CharField(max_length=12, choices=Experience.choices, blank=True)
+    business_size = models.CharField(max_length=12, choices=BusinessSize.choices, blank=True)
+    staff_band = models.CharField(max_length=12, choices=StaffBand.choices, blank=True)
+    roles = models.JSONField(default=list)
+
+    county = models.CharField(max_length=32, choices=[(county, county) for county in COUNTIES])
+    sub_county = models.CharField(max_length=100, blank=True)
+    ward = models.CharField(max_length=100, blank=True)
+    operating_counties = models.JSONField(default=list, blank=True)
+    delivery_methods = models.JSONField(default=list, blank=True)
+
+    offer_categories = models.JSONField(default=list, blank=True)
+    offer_details = models.TextField(blank=True)
+    service_description = models.TextField(blank=True)
+    brands_or_products = models.CharField(max_length=300, blank=True)
+    service_area = models.CharField(max_length=200, blank=True)
+    lead_time = models.CharField(max_length=100, blank=True)
+    minimum_order = models.CharField(max_length=100, blank=True)
+    prices_and_terms = models.TextField(blank=True)
+
+    produce_categories = models.JSONField(default=list, blank=True)
+    produce_details = models.TextField(blank=True)
+    sourcing_counties = models.JSONField(default=list, blank=True)
+    buyer_capacity = models.CharField(max_length=12, choices=CapacityBand.choices, blank=True)
+    buying_frequency = models.CharField(max_length=100, blank=True)
+    quality_requirements = models.TextField(blank=True)
+    payment_terms = models.CharField(max_length=200, blank=True)
+
+    clients_and_references = models.TextField(blank=True)
+    licences_and_standards = models.TextField(blank=True)
+    service_capacity = models.CharField(max_length=12, choices=CapacityBand.choices, blank=True)
+    staff_qualifications = models.TextField(blank=True)
+    engagement_interests = models.JSONField(default=list, blank=True)
+
+    challenges = models.JSONField(default=list, blank=True)
+    partnership_goals = models.TextField(blank=True)
+    additional_notes = models.TextField(blank=True)
+    contact_consent_at = models.DateTimeField()
+    listing_referral_consent_at = models.DateTimeField(null=True, blank=True)
+    document_consent_at = models.DateTimeField(null=True, blank=True)
+    privacy_policy_version = models.CharField(max_length=24, default="2026-11-01")
+    verification_status = models.CharField(
+        max_length=16, choices=ReviewStatus.choices, default=ReviewStatus.PENDING
+    )
+    identity_review_status = models.CharField(
+        max_length=16, choices=ReviewStatus.choices, default=ReviewStatus.PENDING
+    )
+    business_review_status = models.CharField(
+        max_length=16, choices=ReviewStatus.choices, default=ReviewStatus.PENDING
+    )
+    offering_review_status = models.CharField(
+        max_length=16, choices=ReviewStatus.choices, default=ReviewStatus.PENDING
+    )
+    verification_notes = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_partner_profiles",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_contact_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "supplier and buyer registration"
+        verbose_name_plural = "supplier and buyer registrations"
+
+    def __str__(self):
+        return self.business_name or self.trading_name or self.contact_name
+
+    @property
+    def public_reference(self):
+        return str(self.reference).split("-")[0].upper()
+
+    def clean(self):
+        super().clean()
+        if not self.roles:
+            raise ValidationError({"roles": "Select at least one partner role."})
+        valid_roles = {choice[0] for choice in PARTNER_ROLE_CHOICES}
+        if not set(self.roles).issubset(valid_roles):
+            raise ValidationError({"roles": "One or more selected partner roles are invalid."})
+        if (
+            self.applicant_type == self.ApplicantType.BUSINESS
+            and not self.business_name.strip()
+        ):
+            raise ValidationError({"business_name": "Enter the organisation or business name."})
+        if (
+            self.preferred_contact == self.ContactPreference.EMAIL
+            and not self.email.strip()
+        ):
+            raise ValidationError({"email": "An email is required for the selected contact method."})
+        if (
+            self.preferred_contact in {self.ContactPreference.PHONE, self.ContactPreference.WHATSAPP}
+            and not self.phone.strip()
+        ):
+            raise ValidationError({"phone": "A phone number is required for the selected contact method."})
+        if (
+            self.verification_status == self.ReviewStatus.VERIFIED
+            and not self.verification_notes.strip()
+        ):
+            raise ValidationError(
+                {"verification_notes": "Document the evidence and scope of verification before approval."}
+            )
+
+
+def private_partner_document_path(instance, filename):
+    suffix = filename.rsplit(".", 1)[-1].lower()
+    return f"partners/{instance.profile.reference}/{instance.reference}.{suffix}"
+
+
+class PartnerDocument(models.Model):
+    class DocumentType(models.TextChoices):
+        IDENTITY = "identity", "Identity evidence for individual contact"
+        BUSINESS = "business", "Business or organisation registration"
+        AUTHORITY = "authority", "Representative authorisation"
+        PROFESSIONAL = "professional", "Professional qualification or licence"
+        PRODUCT = "product", "Product catalogue or specification"
+        QUALITY = "quality", "Quality, safety, or standards evidence"
+        REFERENCES = "references", "Service or trade references"
+        CAPACITY = "capacity", "Supply or buying capacity evidence"
+        OTHER = "other", "Other relevant evidence"
+
+    class ReviewStatus(models.TextChoices):
+        PENDING = "pending", "Pending review"
+        ACCEPTED = "accepted", "Evidence reviewed"
+        FOLLOW_UP = "follow_up", "Follow-up required"
+        NOT_ACCEPTED = "not_accepted", "Not accepted"
+
+    reference = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    profile = models.ForeignKey(
+        PartnerProfile, on_delete=models.CASCADE, related_name="documents"
+    )
+    document_type = models.CharField(max_length=16, choices=DocumentType.choices)
+    description = models.CharField(max_length=200, blank=True)
+    file = models.FileField(upload_to=private_partner_document_path)
+    review_status = models.CharField(
+        max_length=16, choices=ReviewStatus.choices, default=ReviewStatus.PENDING
+    )
+    review_notes = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_partner_documents",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    uploaded_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ["uploaded_at"]
+
+    def __str__(self):
+        return f"{self.get_document_type_display()} — {self.profile}"
+
+    def clean(self):
+        super().clean()
+        if self.review_status == self.ReviewStatus.ACCEPTED and not self.review_notes.strip():
             raise ValidationError(
                 {"review_notes": "Record what evidence was reviewed before accepting this document."}
             )

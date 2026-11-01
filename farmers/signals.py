@@ -2,10 +2,11 @@ from django.db import transaction
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
-from .models import FarmerDocument
+from .models import FarmerDocument, PartnerDocument
 
 
 @receiver(post_delete, sender=FarmerDocument)
+@receiver(post_delete, sender=PartnerDocument)
 def remove_private_document_file(sender, instance, **kwargs):
     if instance.file:
         storage = instance.file.storage
