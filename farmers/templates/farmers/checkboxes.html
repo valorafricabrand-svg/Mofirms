@@ -1,0 +1,8 @@
+<span class="field-label">{{ field.label }}{% if field.field.required %} *{% endif %}</span>
+<div class="checkbox-grid">
+{% for checkbox in field %}
+  <label class="choice">{{ checkbox.tag }} {{ checkbox.choice_label }}</label>
+{% endfor %}
+</div>
+{% if field.help_text %}<p class="form-hint">{{ field.help_text }}</p>{% endif %}
+{% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}

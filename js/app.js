@@ -14,8 +14,8 @@ const PROJECTS=[
 {t:"Integrated Vihiga concept",s:"concept",o:"To be confirmed",r:"Digital agriculture, clean mobility, solar access and monitoring. A future programme concept until a funded scope is confirmed."},
 {t:"Digital platform & carbon",s:"concept",o:"VOFA concept",r:"Farmer onboarding and monitoring ideas. Not live; no carbon credits have been issued."}];
 const FEATS=["Credit and debt tracking: who owes what","Daily, weekly and monthly summaries","Offline recording that syncs when the network returns","Multiple enterprises, separate books, one account","Change calculator with simple receipts"];
-const PORTALS=[["Portal A: Farmer registration","Individuals, groups and associations register and onboard."],["Portal B: Supplier & buyer registration","Service providers, input suppliers and produce buyers."],["Portal C: Financial analysis","Fee-based, specialist-reviewed statements and business plans."],["Portal D: Risk & opportunity","Fee-based, specialist-prepared assessment."]];
-const PATHS={Farmer:["Farmers & farmer groups","Production planning, training and market support. Start with a consultation and, later, register through Portal A.","#contact"],Entrepreneur:["Entrepreneurs","Business planning, cash-flow modelling and finance readiness for your venture.","#services"],Institution:["Institutions & partners","Project design, analysis and partnership enquiries, with clear roles and ownership.","#projects"]};
+const PORTALS=[["Portal A: Farmer registration","Securely capture farmer and group registrations for MoFirms staff review. Identity and farm evidence are reviewed manually; uploads are private and time-limited.","/portal/register/"],["Portal B: Supplier & buyer registration","Service providers, input suppliers and produce buyers."],["Portal C: Financial analysis","Fee-based, specialist-reviewed statements and business plans."],["Portal D: Risk & opportunity","Fee-based, specialist-prepared assessment."]];
+const PATHS={Farmer:["Farmers & farmer groups","Register an individual farmer or group, share farming and business needs, and request a MoFirms review.","/portal/register/"],Entrepreneur:["Entrepreneurs","Business planning, cash-flow modelling and finance readiness for your venture.","#services"],Institution:["Institutions & partners","Project design, analysis and partnership enquiries, with clear roles and ownership.","#projects"]};
 const CATS=["Agribusiness advice","Business intelligence","Training","Products","Project collaboration","SmartHasibu waitlist","Other"];
 const $=s=>document.querySelector(s),el=(h)=>{const d=document.createElement("div");d.innerHTML=h.trim();return d.firstChild};
 $("#yr").textContent=new Date().getFullYear();
@@ -31,7 +31,7 @@ let flt="all";const F=$("#filters");
 function draw(){$("#svcGrid").innerHTML=SERVICES.filter(s=>flt=="all"||s.s==flt).map(s=>`<article class="card reveal in"><span class="tag ${s.s}">${STATUS[s.s]}</span><h3>${s.t}</h3><p>${s.d}</p><a href="#contact">Enquire →</a></article>`).join("")}draw();
 $("#projGrid").innerHTML=PROJECTS.map(p=>`<article class="card"><span class="tag concept">Concept</span><h3>${p.t}</h3><p><b>Owner:</b> ${p.o}</p><p><b>MoFirms’ role:</b> ${p.r}</p></article>`).join("");
 $("#feat").innerHTML=FEATS.map(f=>`<li>${f}</li>`).join("");
-$("#portals").innerHTML=PORTALS.map(p=>`<li><h3>${p[0]}</h3><p>${p[1]}</p><span class="tag planned">Under development</span></li>`).join("");
+$("#portals").innerHTML=PORTALS.map((p,i)=>`<li><h3>${p[0]}</h3><p>${p[1]}</p>${i===0?`<a class="btn sm" href="${p[2]}">Register as a farmer</a>`:`<span class="tag planned">Under development</span>`}</li>`).join("");
 $("#cat").innerHTML=CATS.map(c=>`<option>${c}</option>`).join("");
 document.querySelectorAll("[data-cat]").forEach(a=>a.addEventListener("click",()=>$("#cat").value=a.dataset.cat));
 /* change calculator */

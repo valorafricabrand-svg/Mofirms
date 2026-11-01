@@ -1,0 +1,7 @@
+<div class="document-row">
+  <div>{% include "farmers/field.html" with field=document_form.document_type %}</div>
+  <div>{% include "farmers/field.html" with field=document_form.description %}</div>
+  <div>{% include "farmers/field.html" with field=document_form.file %}</div>
+  <button class="remove-document opt" type="button">Remove</button>
+  {% for hidden in document_form.hidden_fields %}{{ hidden }}{% endfor %}
+</div>

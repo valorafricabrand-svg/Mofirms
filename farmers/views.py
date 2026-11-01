@@ -1,0 +1,167 @@
+import hashlib
+import logging
+
+from django.conf import settings
+from django.core.cache import cache
+from django.db import transaction
+from django.http import FileResponse, HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_http_methods
+from django.contrib.admin.views.decorators import staff_member_required
+
+from .forms import (
+    FarmerDocumentFormSet,
+    FarmerRegistrationForm,
+    MAX_DOCUMENT_SIZE,
+    MAX_DOCUMENTS_PER_REGISTRATION,
+    sanitize_uploaded_image,
+)
+from .models import FarmerDocument, FarmerProfile
+
+
+logger = logging.getLogger(__name__)
+MAX_REGISTRATION_UPLOAD_SIZE = MAX_DOCUMENT_SIZE * MAX_DOCUMENTS_PER_REGISTRATION
+
+
+def _client_rate_key(request):
+    address = request.META.get("REMOTE_ADDR", "unknown")
+    digest = hashlib.sha256(address.encode("utf-8")).hexdigest()
+    return f"farmer-registration:{digest}"
+
+
+def _rate_limit_reached(request):
+    key = _client_rate_key(request)
+    if cache.add(key, 1, settings.PORTAL_RATE_PERIOD):
+        return False
+    try:
+        attempts = cache.incr(key)
+    except ValueError:
+        return not cache.add(key, 1, settings.PORTAL_RATE_PERIOD)
+    return attempts > settings.PORTAL_RATE_LIMIT
+
+
+@require_http_methods(["GET", "POST"])
+def register_farmer(request):
+    if request.method == "POST" and _rate_limit_reached(request):
+        return render(
+            request,
+            "farmers/rate_limited.html",
+            {"retry_after": settings.PORTAL_RATE_PERIOD // 60},
+            status=429,
+        )
+
+    form = FarmerRegistrationForm(
+        request.POST if request.method == "POST" else None,
+        initial=(
+            {"registration_type": FarmerProfile.RegistrationType.INDIVIDUAL}
+            if request.method == "GET"
+            else None
+        ),
+    )
+    document_formset = FarmerDocumentFormSet(
+        request.POST if request.method == "POST" else None,
+        request.FILES if request.method == "POST" else None,
+        prefix="documents",
+    )
+    upload_errors = []
+
+    if request.method == "POST":
+        is_valid = form.is_valid()
+        documents_valid = document_formset.is_valid()
+        uploads = []
+        if documents_valid:
+            for document_form in document_formset.forms:
+                uploaded = document_form.cleaned_data.get("file")
+                if uploaded:
+                    uploads.append(uploaded)
+
+        if sum(upload.size for upload in uploads) > MAX_REGISTRATION_UPLOAD_SIZE:
+            upload_errors.append("The combined upload size must not exceed 100 MB.")
+            documents_valid = False
+
+        has_documents = bool(uploads)
+        document_consent = request.POST.get("document_consent") == "on"
+        if has_documents and not document_consent:
+            upload_errors.append(
+                "Please agree to the one-year document retention notice before uploading evidence.",
+            )
+            documents_valid = False
+
+        if is_valid and documents_valid:
+            try:
+                with transaction.atomic():
+                    profile = form.save(commit=False)
+                    now = timezone.now()
+                    profile.privacy_consent_at = now
+                    profile.last_contact_at = now
+                    if has_documents:
+                        profile.document_consent_at = now
+                    profile.save()
+
+                    for document_form in document_formset.forms:
+                        cleaned = document_form.cleaned_data
+                        uploaded = cleaned.get("file")
+                        if not uploaded:
+                            continue
+                        document = FarmerDocument(
+                            profile=profile,
+                            document_type=cleaned["document_type"],
+                            description=cleaned["description"],
+                        )
+                        safe_file = sanitize_uploaded_image(uploaded)
+                        document.file.save(safe_file.name, safe_file, save=False)
+                        document.save()
+            except OSError:
+                logger.exception("Could not store a farmer registration upload.")
+                form.add_error(
+                    None,
+                    "The registration could not be saved because a file could not be stored. Please try again.",
+                )
+            else:
+                return redirect(
+                    "registration_success",
+                    reference=profile.public_reference,
+                )
+
+    return render(
+        request,
+        "farmers/register.html",
+        {
+            "form": form,
+            "document_formset": document_formset,
+            "max_documents": MAX_DOCUMENTS_PER_REGISTRATION,
+            "max_file_size_mb": MAX_DOCUMENT_SIZE // (1024 * 1024),
+            "max_total_size_mb": MAX_REGISTRATION_UPLOAD_SIZE // (1024 * 1024),
+            "upload_errors": upload_errors,
+        },
+    )
+
+
+def registration_success(request, reference):
+    return render(
+        request,
+        "farmers/registration_success.html",
+        {"reference": reference},
+    )
+
+
+@staff_member_required
+def download_document(request, document_id):
+    document = get_object_or_404(FarmerDocument, pk=document_id)
+    try:
+        file_handle = document.file.open("rb")
+    except FileNotFoundError:
+        logger.exception("A stored farmer document is missing (document id %s).", document_id)
+        return HttpResponse("The requested evidence file is unavailable.", status=404)
+
+    response = FileResponse(
+        file_handle,
+        as_attachment=True,
+        filename=f"{document.reference}.{document.file.name.rsplit('.', 1)[-1]}",
+        content_type="application/octet-stream",
+    )
+    response["Cache-Control"] = "private, no-store"
+    response["X-Content-Type-Options"] = "nosniff"
+    response["Referrer-Policy"] = "no-referrer"
+    return response
