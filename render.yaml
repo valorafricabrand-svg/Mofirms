@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: mofirms-demo
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate --noinput
+    startCommand: gunicorn mofirms_backend.wsgi:application
+    healthCheckPath: /
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DEMO_MODE
+        value: "True"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_TRUST_PROXY_SSL_HEADER
+        value: "True"

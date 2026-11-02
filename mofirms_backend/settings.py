@@ -7,6 +7,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in {"1", "true", "yes"}
+DEMO_MODE = os.environ.get("DEMO_MODE", "False").lower() in {"1", "true", "yes"}
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 if not SECRET_KEY:
     if not DEBUG:
@@ -23,6 +24,10 @@ CSRF_TRUSTED_ORIGINS = [
     for origin in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
     if origin.strip()
 ]
+render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
+if render_hostname:
+    ALLOWED_HOSTS.append(render_hostname)
+    CSRF_TRUSTED_ORIGINS.append(f"https://{render_hostname}")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -38,6 +43,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "mofirms_backend.middleware.DemoReadOnlyMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -67,7 +74,7 @@ WSGI_APPLICATION = "mofirms_backend.wsgi.application"
 ASGI_APPLICATION = "mofirms_backend.asgi.application"
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
-if not DEBUG and not DATABASE_URL:
+if not DEBUG and not DEMO_MODE and not DATABASE_URL:
     raise ImproperlyConfigured("DATABASE_URL must point to the production PostgreSQL database.")
 if DATABASE_URL:
     parsed_database = urlparse(DATABASE_URL)
@@ -120,6 +127,12 @@ STATICFILES_DIRS = [
     ("images", BASE_DIR / "images"),
 ]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    },
+}
 PRIVATE_UPLOAD_ROOT = BASE_DIR / "private_uploads"
 private_upload_setting = os.environ.get("PRIVATE_UPLOAD_ROOT", "").strip()
 if private_upload_setting:
@@ -165,14 +178,14 @@ PORTAL_RATE_LIMIT = 5
 PORTAL_RATE_PERIOD = 60 * 60
 
 ANTIVIRUS_ENABLED = os.environ.get(
-    "ANTIVIRUS_ENABLED", str(not DEBUG)
+    "ANTIVIRUS_ENABLED", str(not DEBUG and not DEMO_MODE)
 ).lower() in {"1", "true", "yes"}
 ANTIVIRUS_COMMAND = os.environ.get("CLAMSCAN_COMMAND", "clamscan")
-if not DEBUG and not ANTIVIRUS_ENABLED:
+if not DEBUG and not DEMO_MODE and not ANTIVIRUS_ENABLED:
     raise ImproperlyConfigured("ANTIVIRUS_ENABLED must be true before accepting production uploads.")
 
 REDIS_URL = os.environ.get("REDIS_URL", "").strip()
-if not DEBUG and not REDIS_URL:
+if not DEBUG and not DEMO_MODE and not REDIS_URL:
     raise ImproperlyConfigured("REDIS_URL is required for production rate limiting.")
 if REDIS_URL:
     CACHES = {
@@ -189,7 +202,7 @@ else:
         }
     }
 
-if not DEBUG and (
+if not DEBUG and not DEMO_MODE and (
     PRIVATE_UPLOAD_ROOT == BASE_DIR
     or BASE_DIR in PRIVATE_UPLOAD_ROOT.parents
 ):

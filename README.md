@@ -50,6 +50,12 @@ Do not expose this service publicly until MoFirms has approved the data policy a
 
 The public website remains available as static files, but Portals A, B, C, D, and E submissions, research questionnaires, and staff review require the Django application. See `.env.example` for environment variable names.
 
+### Free public demo on Render
+
+The included `render.yaml` deploys a read-only Django demo. Set `DEMO_MODE=True` and `DJANGO_DEBUG=False`; all state-changing requests are rejected, including form submissions, logins, and uploads. The demo uses ephemeral SQLite and local cache only. Do not enter real personal information or upload real documents. Free Render services can sleep when idle, and their local files are not durable. This demo is for exploration with synthetic information only; it is not a production service.
+
+Connect the GitHub repository to Render and deploy the Blueprint from `render.yaml`. Render will generate the secret key and provide the service hostname. The settings automatically allow that Render hostname and add its HTTPS origin for CSRF checks. For local read-only testing, set `DEMO_MODE=True` while leaving `DJANGO_DEBUG=True`.
+
 ## Website notes
 
 - Edit service statuses and website copy in `js/app.js` and `index.html`.
