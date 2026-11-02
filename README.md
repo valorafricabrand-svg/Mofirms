@@ -6,6 +6,8 @@ Marks Organic Farms Concepts Limited, trading as MoFirms, helps farmers, entrepr
 
 The website includes Django Portal A (farmer and farmer-group registration), Portal B (supplier, produce buyer, and service-provider registration), Portal C (financial analysis requests), Portal D (risk and opportunity assessment requests), and Portal E (independent research registration and questionnaires). Portal C lets a customer request specialist-reviewed financial statements, business plans, cash-flow analysis, budgeting, or funding readiness. Portal D accepts a scoped request for human-led enterprise risk, resilience, and opportunity assessment. For both portals, staff review the request, manage its status, and record a fee quote before work begins; there is no automated financial or risk scoring, audit, loan or investment decision, payment collection, or public status lookup.
 
+SmartHasibu is a separate, account-protected Django bookkeeping pilot. A farmer can create private enterprise books, record income and expenses, mark credit, record partial repayments, and view monthly totals and unpaid balances. A pilot account can access only its own records. SmartHasibu does not process payments, synchronize offline entries, share group books, or provide audited accounts. Use synthetic information only until production infrastructure and farmer data protections are approved.
+
 Portal E is independent of farmer/partner onboarding. Researchers and students apply with an account that remains disabled until manual MoFirms vetting. Each study is separately reviewed for purpose, methods, ethics, target group, fee, questionnaire, and respondent consent; staff must approve and publish a study before creating invitations. Staff can invite only customer contacts who gave separate permission to receive research invitations. Respondents then make a separate, voluntary choice for each study. Researcher dashboards show aggregate counts only once at least five responses exist; any question with a non-zero answer category smaller than five is withheld. Questionnaires use fixed-choice questions and do not collect free-text answers, names, email, phone, or respondent profile fields. Completed invitations are disconnected from their farmer/partner profile; researchers cannot see invitation lists, contact details, or individual answers.
 
 ### Run locally on Windows
@@ -21,7 +23,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8002
 ```
 
-Open the site at `http://127.0.0.1:8002/`, submit farmer registrations at `/portal/register/`, partner registrations at `/portal/partners/register/`, financial analysis requests at `/portal/financial-analysis/`, risk and opportunity assessment requests at `/portal/risk-assessment/`, researcher applications at `/portal/research/register/`, researcher sign-in at `/portal/research/login/`, and staff review at `/staff/`.
+Open the site at `http://127.0.0.1:8002/`, submit farmer registrations at `/portal/register/`, partner registrations at `/portal/partners/register/`, financial analysis requests at `/portal/financial-analysis/`, risk and opportunity assessment requests at `/portal/risk-assessment/`, SmartHasibu at `/smart-hasibu/`, researcher applications at `/portal/research/register/`, researcher sign-in at `/portal/research/login/`, and staff review at `/staff/`.
 
 ### Data and file safeguards
 

@@ -15,6 +15,7 @@ from farmers.views import (
 urlpatterns = [
     path("", TemplateView.as_view(template_name="index.html"), name="home"),
     path("portal/", include("farmers.urls")),
+    path("smart-hasibu/", include("smart_hasibu.urls")),
     path(
         "staff/documents/<int:document_id>/download/",
         download_document,

@@ -1,0 +1,33 @@
+.sh-dashboard,.sh-auth{padding-top:2rem;padding-bottom:3rem}
+.sh-dashboard h1,.sh-auth h1{margin-top:.25rem}
+.sh-user{font-weight:600}
+.sh-heading{display:flex;align-items:end;justify-content:space-between;gap:1.5rem;margin-bottom:1.5rem}
+.sh-lead{font-size:1.1rem}
+.sh-period,.sh-filter{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.sh-period label,.sh-filter label{font-weight:700}
+.sh-period input,.sh-filter select{min-height:2.7rem;padding:.45rem .65rem;border:1px solid #aeb9b0;border-radius:.5rem;background:#fff}
+.sh-filter{margin:1rem 0 1.5rem}
+.sh-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin:1.5rem 0}
+.sh-summary .card{padding:1.1rem;display:flex;flex-direction:column;gap:.45rem}
+.sh-summary strong{font-size:1.3rem;overflow-wrap:anywhere}
+.sh-summary small,.sh-table small{display:block;color:#53645a;margin-top:.25rem}
+.sh-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.25rem;margin:1.5rem 0}
+.sh-panel{padding:1.25rem}
+.sh-panel form{display:grid;gap:.35rem}
+.sh-panel .field{margin-bottom:.55rem}
+.sh-panel input,.sh-panel select,.sh-auth input{width:100%;min-height:2.7rem;padding:.55rem .65rem;border:1px solid #aeb9b0;border-radius:.5rem}
+.sh-panel input[type=checkbox]{width:auto;min-height:auto}
+.sh-section-gap{margin-top:2rem}
+.sh-ledger{padding:1.25rem}
+.sh-table-wrap{overflow-x:auto}
+.sh-table{border-collapse:collapse;width:100%;min-width:650px}
+.sh-table th,.sh-table td{text-align:left;padding:.7rem;border-bottom:1px solid #e4e9e5}
+.sh-table th{background:#f4f7f4}
+.sh-empty{padding:1rem;margin:1rem 0}
+.sh-messages{padding-top:.75rem}
+.sh-message{padding:.7rem 1rem;border-radius:.5rem;background:#e8f4eb}
+.sh-message.error{background:#fff0ed}
+.sh-auth .registration-form{max-width:620px;margin-inline:auto;padding:clamp(1.25rem,4vw,2.5rem)}
+.sh-auth form{display:grid;gap:.5rem}
+.sh-auth .choice{margin:.75rem 0}
+@media(max-width:760px){.sh-heading{align-items:stretch;flex-direction:column}.sh-columns{grid-template-columns:1fr}}

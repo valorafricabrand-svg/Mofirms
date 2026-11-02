@@ -1,0 +1,26 @@
+{% extends "smart_hasibu/base.html" %}
+{% block title %}Create a SmartHasibu account | MoFirms{% endblock %}
+{% block content %}
+<section class="wrap registration sh-auth">
+  <p class="eyebrow">SmartHasibu · Farmer bookkeeping pilot</p>
+  <div class="card registration-form">
+    <h1>Create your private cashbook</h1>
+    <p>Start recording farm sales, expenses, and credit. Your entries belong to your account and are not shared with buyers or lenders.</p>
+    <aside class="notice notice-warning">
+      <p>This is a local pilot. Use synthetic information only; do not enter real financial or personal information until MoFirms has approved the production hosting and privacy arrangements.</p>
+    </aside>
+    {% if rate_limited %}<div class="err-box" role="alert">Too many attempts. Please wait before trying again.</div>{% endif %}
+    {% if form.non_field_errors %}<div class="err-box" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "farmers/field.html" with field=form.name %}
+      {% include "farmers/field.html" with field=form.email %}
+      {% include "farmers/field.html" with field=form.password1 %}
+      {% include "farmers/field.html" with field=form.password2 %}
+      {% include "farmers/field.html" with field=form.consent %}
+      <button class="btn" type="submit">Create pilot account</button>
+    </form>
+    <p>Already have an account? <a href="{% url 'smart_hasibu:login' %}">Sign in</a></p>
+  </div>
+</section>
+{% endblock %}

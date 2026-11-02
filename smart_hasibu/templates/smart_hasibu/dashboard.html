@@ -1,0 +1,118 @@
+{% extends "smart_hasibu/base.html" %}
+{% load humanize %}
+{% block title %}My cashbook | SmartHasibu{% endblock %}
+{% block content %}
+<section class="wrap sh-dashboard">
+  <p class="eyebrow">SmartHasibu · Private farmer cashbook</p>
+  <div class="sh-heading">
+    <div>
+      <h1>Hello, {{ request.user.first_name|default:"farmer" }}</h1>
+      <p class="sh-lead">Record simply. Understand where your farm money goes.</p>
+    </div>
+    <form method="get" class="sh-period">
+      <label for="id_month">Summary month</label>
+      <input id="id_month" type="month" name="month" value="{{ month }}">
+      {% if selected_enterprise %}<input type="hidden" name="enterprise" value="{{ selected_enterprise.pk }}">{% endif %}
+      <button class="opt" type="submit">View</button>
+    </form>
+  </div>
+
+  <aside class="notice notice-warning">
+    <p>Pilot account: use synthetic information only. These totals are based on the entries you record; they are not audited accounts, profit forecasts, or financial advice.</p>
+  </aside>
+
+  <form method="get" class="sh-filter">
+    <input type="hidden" name="month" value="{{ month }}">
+    <label for="id_enterprise_filter">Enterprise</label>
+    <select id="id_enterprise_filter" name="enterprise">
+      <option value="">All my enterprises</option>
+      {% for enterprise in enterprises %}
+        <option value="{{ enterprise.pk }}"{% if selected_enterprise.pk == enterprise.pk %} selected{% endif %}>{{ enterprise.name }}</option>
+      {% endfor %}
+    </select>
+    <button class="opt" type="submit">Filter</button>
+    {% if selected_enterprise %}<a class="opt" href="?month={{ month }}">Clear</a>{% endif %}
+  </form>
+
+  {% if not enterprises %}
+  <div class="card sh-empty">
+    <h2>Start with one farm activity</h2>
+    <p>Add an enterprise such as “Dairy goats” or “Tomato greenhouse”, then record the first sale or cost.</p>
+  </div>
+  {% endif %}
+
+  <div class="sh-summary" aria-label="Monthly cashbook summary">
+    <article class="card"><span>Sales and income recorded</span><strong>KSh {{ income_total|floatformat:2|intcomma }}</strong></article>
+    <article class="card"><span>Costs recorded</span><strong>KSh {{ expense_total|floatformat:2|intcomma }}</strong></article>
+    <article class="card"><span>Difference recorded</span><strong>KSh {{ net_total|floatformat:2|intcomma }}</strong><small>Income less costs · {{ entry_count }} entries</small></article>
+    <article class="card"><span>Customers owe you</span><strong>KSh {{ receivable_total|floatformat:2|intcomma }}</strong></article>
+    <article class="card"><span>You owe suppliers</span><strong>KSh {{ payable_total|floatformat:2|intcomma }}</strong></article>
+  </div>
+
+  <div class="sh-columns">
+    <section class="card sh-panel">
+      <h2>Record a sale or cost</h2>
+      {% if entry_form.non_field_errors %}<div class="err-box" role="alert">{{ entry_form.non_field_errors }}</div>{% endif %}
+      {% if not enterprises %}<p>Add an enterprise before making a transaction entry.</p>{% else %}
+      <form method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="entry">
+        {% include "farmers/field.html" with field=entry_form.enterprise %}
+        {% include "farmers/field.html" with field=entry_form.entry_type %}
+        {% include "farmers/field.html" with field=entry_form.category %}
+        {% include "farmers/field.html" with field=entry_form.amount %}
+        {% include "farmers/field.html" with field=entry_form.occurred_on %}
+        {% include "farmers/field.html" with field=entry_form.description %}
+        {% include "farmers/field.html" with field=entry_form.counterparty %}
+        {% include "farmers/field.html" with field=entry_form.is_credit %}
+        <button class="btn" type="submit">Save entry</button>
+      </form>
+      {% endif %}
+    </section>
+
+    <section class="card sh-panel">
+      <h2>Add an enterprise</h2>
+      {% if enterprise_form.non_field_errors %}<div class="err-box" role="alert">{{ enterprise_form.non_field_errors }}</div>{% endif %}
+      <form method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="enterprise">
+        {% include "farmers/field.html" with field=enterprise_form.name %}
+        {% include "farmers/field.html" with field=enterprise_form.category %}
+        <button class="opt" type="submit">Add enterprise</button>
+      </form>
+      <h2 class="sh-section-gap">Record a credit payment</h2>
+      {% if settlement_form.non_field_errors %}<div class="err-box" role="alert">{{ settlement_form.non_field_errors }}</div>{% endif %}
+      <form method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="settlement">
+        {% include "farmers/field.html" with field=settlement_form.entry %}
+        {% include "farmers/field.html" with field=settlement_form.amount %}
+        {% include "farmers/field.html" with field=settlement_form.settled_on %}
+        {% include "farmers/field.html" with field=settlement_form.note %}
+        <button class="opt" type="submit">Save payment</button>
+      </form>
+    </section>
+  </div>
+
+  <section class="card sh-ledger">
+    <h2>Entries · {{ month }}</h2>
+    {% if entries %}
+      <div class="sh-table-wrap"><table class="sh-table">
+        <thead><tr><th>Date</th><th>Enterprise</th><th>Type</th><th>Details</th><th>Amount</th><th>Credit balance</th></tr></thead>
+        <tbody>
+        {% for entry in entries %}
+          <tr>
+            <td>{{ entry.occurred_on }}</td>
+            <td>{{ entry.enterprise.name }}</td>
+            <td>{{ entry.get_entry_type_display }}</td>
+            <td>{{ entry.description }}{% if entry.counterparty %}<small>{{ entry.counterparty }}</small>{% endif %}</td>
+            <td>KSh {{ entry.amount|floatformat:2|intcomma }}</td>
+            <td>{% if entry.is_credit %}KSh {{ entry.amount_outstanding|floatformat:2|intcomma }}{% else %}—{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      {% if entry_count > 100 %}<p class="form-hint">Showing the latest 100 entries of {{ entry_count }} for this month.</p>{% endif %}
+    {% else %}
+      <p>No entries for this month yet. Add the first sale or cost above.</p>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}
