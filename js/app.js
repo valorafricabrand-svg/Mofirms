@@ -22,6 +22,39 @@ $("#yr").textContent=new Date().getFullYear();
 $("#burger").onclick=e=>{const o=$("#menu").classList.toggle("open");e.target.setAttribute("aria-expanded",o)};
 $("#menu").onclick=()=>$("#menu").classList.remove("open");
 $("#pv").onclick=e=>{e.preventDefault();$("#privacy").hidden=!$("#privacy").hidden};
+/* agriculture story carousel */
+const carousel=$("#agriCarousel");
+if(carousel){
+  const slides=[...carousel.querySelectorAll(".carousel-slide")];
+  const dots=[...carousel.querySelectorAll(".carousel-dot")];
+  const announcement=$("#carouselAnnouncement");
+  let currentSlide=0;
+  function showSlide(index,announce=false){
+    currentSlide=(index+slides.length)%slides.length;
+    slides.forEach((slide,i)=>{
+      const active=i===currentSlide;
+      slide.hidden=!active;
+      slide.classList.toggle("is-active",active);
+    });
+    dots.forEach((dot,i)=>{
+      const active=i===currentSlide;
+      dot.classList.toggle("is-active",active);
+      if(active)dot.setAttribute("aria-current","true");
+      else dot.removeAttribute("aria-current");
+    });
+    if(announce)announcement.textContent=`Slide ${currentSlide+1} of ${slides.length}: ${slides[currentSlide].querySelector("h1,h2").textContent}`;
+  }
+  $("#carouselPrevious").onclick=()=>showSlide(currentSlide-1,true);
+  $("#carouselNext").onclick=()=>showSlide(currentSlide+1,true);
+  dots.forEach((dot,i)=>dot.onclick=()=>showSlide(i,true));
+  carousel.addEventListener("keydown",event=>{
+    if(event.key==="ArrowLeft"||event.key==="ArrowRight"){
+      event.preventDefault();
+      showSlide(currentSlide+(event.key==="ArrowRight"?1:-1),true);
+    }
+  });
+  showSlide(0);
+}
 /* pathways */
 const tabs=$("#tabs");Object.keys(PATHS).forEach((k,i)=>{const b=el(`<button role="tab" aria-selected="${i==0}">${PATHS[k][0]}</button>`);b.onclick=()=>{tabs.querySelectorAll("button").forEach(x=>x.setAttribute("aria-selected","false"));b.setAttribute("aria-selected","true");show(k)};tabs.append(b)});
 function show(k){const p=PATHS[k];$("#pathOut").innerHTML=`<h3>${p[0]}</h3><p>${p[1]}</p><a class="btn sm" href="${p[2]}">Continue</a>`}show("Farmer");
@@ -52,4 +85,4 @@ $("#err").textContent="";const body=`Name: ${n}\nContact (${$("#how").value}): $
 location.href=`mailto:mconceptslimited@gmail.com?subject=${encodeURIComponent("Website enquiry: "+$("#cat").value)}&body=${encodeURIComponent(body)}`;$("#ok").hidden=false};
 /* scroll reveal */
 const io=new IntersectionObserver(es=>es.forEach(x=>x.isIntersecting&&x.target.classList.add("in")),{threshold:.1});
-document.querySelectorAll("section .card,.steps li,h2").forEach(n=>{n.classList.add("reveal");io.observe(n)});
+document.querySelectorAll("section:not(.hero):not(.hero-carousel) .card,.steps li,section:not(.hero):not(.hero-carousel) h2").forEach(n=>{n.classList.add("reveal");io.observe(n)});

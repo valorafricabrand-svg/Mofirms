@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -8,7 +9,7 @@
 <meta property="og:title" content="MoFirms | Agribusiness &amp; Enterprise Advisory">
 <meta property="og:description" content="Practical advice for sustainable farms and growing enterprises.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
-<link rel="stylesheet" href="css/style.css?v=compact-layout">
+<link rel="stylesheet" href="{% static 'css/style.css' %}?v=unified-green-hero">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -22,13 +23,46 @@
 </div></header>
 
 <main id="main">
-<section id="top" class="hero"><div class="wrap">
-  <p class="eyebrow">Agribusiness &amp; enterprise advisory · Kenya</p>
-  <h1>Practical advice for sustainable farms and growing enterprises</h1>
-  <p class="lead">Marks Organic Farms Concepts Limited, trading as MoFirms, was established in 2019. We help farmers, entrepreneurs and organisations plan agricultural enterprises, assess opportunities and grow responsibly, with financial analysis, market development and digital tools.</p>
-  <div class="cta"><a class="btn" href="#contact">Request a consultation</a><a class="btn ghost" href="#services">Explore services</a></div>
-  <ul class="stats"><li><b>2019</b>Incorporated in Kenya</li><li><b>5</b>Customer and research portals</li><li><b>1</b>Local bookkeeping pilot</li></ul>
-</div></section>
+<section id="top" class="hero">
+  <div class="wrap hero-layout">
+    <div class="hero-carousel" id="agriCarousel" role="region" aria-label="MoFirms and farmer services" aria-roledescription="carousel" tabindex="0">
+      <div class="carousel-stage">
+        <article class="carousel-slide is-active" data-slide="0" role="group" aria-roledescription="slide" aria-label="1 of 2: About MoFirms">
+          <div class="carousel-photo">
+            <img src="{% static 'images/climate-smart-farming.jpg' %}" alt="Farmer tending irrigated vegetable crops on a green, climate-smart farm" width="736" height="736" fetchpriority="high">
+            <span class="photo-caption">AGRIBUSINESS &amp; ENTERPRISE ADVISORY · KENYA</span>
+          </div>
+          <div class="carousel-copy">
+            <p class="carousel-kicker">MOFIRMS · ESTABLISHED 2019</p>
+            <h1>Practical advice for sustainable farms.</h1>
+            <p>Marks Organic Farms Concepts Limited, trading as MoFirms, helps farmers, entrepreneurs and organisations plan agricultural businesses and assess opportunities—with financial analysis, market development and digital tools.</p>
+            <div class="cta"><a class="btn" href="#contact">Request a consultation</a><a class="btn ghost" href="#services">Explore services</a></div>
+          </div>
+        </article>
+        <article class="carousel-slide" data-slide="1" role="group" aria-roledescription="slide" aria-label="2 of 2: Farmer services" hidden>
+          <div class="carousel-photo">
+            <img src="{% static 'images/productive-farmland.jpg' %}" alt="Farmers tending productive crop rows across a broad agricultural landscape" width="735" height="490" loading="eager">
+            <span class="photo-caption">PRACTICAL SUPPORT FOR FARMERS</span>
+          </div>
+          <div class="carousel-copy">
+            <p class="carousel-kicker">YOUR FARM. YOUR NEXT STEP.</p>
+            <h2>Build a stronger farm business.</h2>
+            <p>Find practical support for farm planning, financial analysis and market opportunities. Explore farmer registration and the tools we are building with local enterprises.</p>
+            <div class="cta"><a class="btn" href="/portal/register/">Farmer registration</a><a class="btn ghost" href="#services">Explore services</a></div>
+          </div>
+        </article>
+      </div>
+      <div class="carousel-controls" role="group" aria-label="Choose a hero slide">
+        <button type="button" class="carousel-arrow" id="carouselPrevious" aria-label="Previous hero slide">←</button>
+        <button type="button" class="carousel-dot is-active" data-go-to="0" aria-label="Show slide 1: About MoFirms" aria-current="true"></button>
+        <button type="button" class="carousel-dot" data-go-to="1" aria-label="Show slide 2: Farmer services"></button>
+        <button type="button" class="carousel-arrow" id="carouselNext" aria-label="Next hero slide">→</button>
+      </div>
+      <p class="visually-hidden" id="carouselAnnouncement" aria-live="polite" aria-atomic="true"></p>
+    </div>
+    <ul class="stats" aria-label="MoFirms at a glance"><li><b>Established 2019</b>Incorporated in Kenya</li><li><b>5 portals</b>Farmer, partner and research services</li><li><b>Local pilot</b>SmartHasibu bookkeeping</li></ul>
+  </div>
+</section>
 
 <section id="path" class="wrap"><h2>Where do you fit?</h2><p class="sub">Choose who you are and we’ll point you to the most relevant support.</p>
   <div class="tabs" role="tablist" id="tabs"></div><div id="pathOut" class="card out" aria-live="polite"></div>
@@ -109,5 +143,5 @@
   <p><a href="#privacy" id="pv">Privacy notice</a> · <a href="#contact">Contact</a></p>
   <div id="privacy" hidden class="note">We collect only the details you submit in the enquiry form, to respond to you. Marketing messages are sent only if you tick the optional box. You may ask us to access, correct or delete your data at any time via the email above. <i>Draft: to be confirmed against company records before launch.</i></div>
 </div></footer>
-<script src="js/app.js?v=portal-e"></script>
+<script src="{% static 'js/app.js' %}?v=unified-green-hero"></script>
 </body></html>

@@ -117,6 +117,7 @@ STATIC_URL = "/static/"
 STATICFILES_DIRS = [
     ("css", BASE_DIR / "css"),
     ("js", BASE_DIR / "js"),
+    ("images", BASE_DIR / "images"),
 ]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 PRIVATE_UPLOAD_ROOT = BASE_DIR / "private_uploads"
