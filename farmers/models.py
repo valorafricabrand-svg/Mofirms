@@ -798,6 +798,221 @@ class FinancialAnalysisDocument(models.Model):
             )
 
 
+def private_risk_assessment_document_path(instance, filename):
+    suffix = filename.rsplit(".", 1)[-1].lower() if "." in filename else "bin"
+    return f"risk-assessments/{instance.request.reference}/{uuid.uuid4()}.{suffix}"
+
+
+class RiskAssessmentRequest(models.Model):
+    class ApplicantType(models.TextChoices):
+        INDIVIDUAL = "individual", "Individual or sole proprietor"
+        BUSINESS = "business", "Business, group, or organisation"
+
+    class ContactPreference(models.TextChoices):
+        PHONE = "phone", "Phone or SMS"
+        WHATSAPP = "whatsapp", "WhatsApp"
+        EMAIL = "email", "Email"
+
+    class EnterpriseStage(models.TextChoices):
+        PRODUCTION = "production", "Production or farming"
+        AGGREGATION = "aggregation", "Aggregation or cooperatives"
+        PROCESSING = "processing", "Processing or value addition"
+        DISTRIBUTION = "distribution", "Wholesale or distribution"
+        RETAIL = "retail", "Retail or direct sales"
+        SERVICES = "services", "Agricultural services or inputs"
+        MULTIPLE = "multiple", "Multiple stages"
+        OTHER = "other", "Other or not sure"
+
+    class TimeHorizon(models.TextChoices):
+        IMMEDIATE = "immediate", "Immediate decision (within 3 months)"
+        THIS_YEAR = "this_year", "Within 12 months"
+        LONGER_TERM = "longer_term", "More than 12 months"
+        EXPLORATORY = "exploratory", "Exploratory; no fixed deadline"
+
+    class ServiceStatus(models.TextChoices):
+        PENDING = "pending", "New request"
+        IN_REVIEW = "in_review", "Under initial review"
+        NEEDS_INFORMATION = "needs_information", "More information requested"
+        QUOTED = "quoted", "Quote sent"
+        ACCEPTED = "accepted", "Quote accepted"
+        IN_PROGRESS = "in_progress", "Assessment in progress"
+        COMPLETED = "completed", "Completed"
+        DECLINED = "declined", "Not proceeding"
+        CANCELLED = "cancelled", "Cancelled"
+
+    reference = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    applicant_type = models.CharField(max_length=16, choices=ApplicantType.choices)
+    contact_name = models.CharField(max_length=160)
+    business_name = models.CharField(max_length=180, blank=True)
+    phone = models.CharField(max_length=32, blank=True)
+    email = models.EmailField(blank=True)
+    preferred_contact = models.CharField(max_length=12, choices=ContactPreference.choices)
+    county = models.CharField(max_length=32, choices=[(county, county) for county in COUNTIES])
+    sector = models.CharField(max_length=120, blank=True)
+    enterprise_stage = models.CharField(
+        max_length=16, choices=EnterpriseStage.choices, blank=True
+    )
+    assessment_areas = models.JSONField(default=list)
+    risk_priorities = models.JSONField(default=list)
+    opportunity_priorities = models.JSONField(default=list)
+    time_horizon = models.CharField(max_length=16, choices=TimeHorizon.choices)
+    request_summary = models.TextField()
+    contact_consent_at = models.DateTimeField()
+    document_consent_at = models.DateTimeField(null=True, blank=True)
+    privacy_policy_version = models.CharField(max_length=24, default="2026-11-01")
+    status = models.CharField(
+        max_length=20, choices=ServiceStatus.choices, default=ServiceStatus.PENDING
+    )
+    internal_notes = models.TextField(blank=True)
+    quote_amount = models.DecimalField(
+        "Quoted fee (KES)",
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0.01)],
+        help_text="A quote is not a payment or proof of payment.",
+    )
+    quote_notes = models.TextField(blank=True)
+    quote_sent_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_risk_assessment_requests",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_contact_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "risk and opportunity assessment request"
+        verbose_name_plural = "risk and opportunity assessment requests"
+
+    def __str__(self):
+        return f"{self.public_reference} — {self.business_name or self.contact_name}"
+
+    @property
+    def public_reference(self):
+        return str(self.reference).split("-")[0].upper()
+
+    def clean(self):
+        super().clean()
+        allowed_assessment_areas = {
+            "enterprise",
+            "market",
+            "operations",
+            "financial_resilience",
+            "climate_environment",
+            "supply_chain",
+            "governance_compliance",
+            "technology",
+            "other",
+        }
+        allowed_risk_priorities = {
+            "production",
+            "climate",
+            "market",
+            "financial",
+            "operations",
+            "supply_chain",
+            "governance",
+            "regulatory",
+            "technology",
+            "not_sure",
+        }
+        allowed_opportunity_priorities = {
+            "market_growth",
+            "value_addition",
+            "productivity",
+            "climate_resilience",
+            "digital",
+            "partnerships",
+            "finance_readiness",
+            "new_products",
+            "not_sure",
+        }
+        for field, selected, allowed in (
+            ("assessment_areas", self.assessment_areas, allowed_assessment_areas),
+            ("risk_priorities", self.risk_priorities, allowed_risk_priorities),
+            ("opportunity_priorities", self.opportunity_priorities, allowed_opportunity_priorities),
+        ):
+            if not selected or not isinstance(selected, list) or not set(selected).issubset(allowed):
+                raise ValidationError({field: "Select at least one valid option."})
+        if self.applicant_type == self.ApplicantType.BUSINESS and not self.business_name.strip():
+            raise ValidationError({"business_name": "Enter the business or organisation name."})
+        if self.preferred_contact == self.ContactPreference.EMAIL and not self.email.strip():
+            raise ValidationError({"email": "An email is required for the selected contact method."})
+        if self.preferred_contact in {
+            self.ContactPreference.PHONE,
+            self.ContactPreference.WHATSAPP,
+        } and not self.phone.strip():
+            raise ValidationError({"phone": "A phone number is required for the selected contact method."})
+        if self.status in {self.ServiceStatus.QUOTED, self.ServiceStatus.ACCEPTED}:
+            if self.quote_amount is None:
+                raise ValidationError(
+                    {"quote_amount": "Record the fee before marking a request as quoted."}
+                )
+        if self.status in {
+            self.ServiceStatus.ACCEPTED,
+            self.ServiceStatus.IN_PROGRESS,
+            self.ServiceStatus.COMPLETED,
+        } and self.quote_amount is None:
+            raise ValidationError({"quote_amount": "A recorded quote is required for this status."})
+
+
+class RiskAssessmentDocument(models.Model):
+    class DocumentType(models.TextChoices):
+        BUSINESS_PROFILE = "business_profile", "Business or enterprise profile"
+        PRODUCTION = "production", "Production or operations summary"
+        MARKET = "market", "Market or customer summary"
+        FINANCIAL = "financial", "Redacted financial summary"
+        OTHER = "other", "Other relevant document"
+
+    class ReviewStatus(models.TextChoices):
+        PENDING = "pending", "Pending review"
+        REVIEWED = "reviewed", "Reviewed"
+        FOLLOW_UP = "follow_up", "Follow-up required"
+        NOT_ACCEPTED = "not_accepted", "Not accepted"
+
+    reference = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    request = models.ForeignKey(
+        RiskAssessmentRequest, on_delete=models.CASCADE, related_name="documents"
+    )
+    document_type = models.CharField(max_length=24, choices=DocumentType.choices)
+    description = models.CharField(max_length=200, blank=True)
+    file = models.FileField(upload_to=private_risk_assessment_document_path)
+    review_status = models.CharField(
+        max_length=16, choices=ReviewStatus.choices, default=ReviewStatus.PENDING
+    )
+    review_notes = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_risk_assessment_documents",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    uploaded_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ["uploaded_at"]
+
+    def __str__(self):
+        return f"{self.get_document_type_display()} — {self.request}"
+
+    def clean(self):
+        super().clean()
+        if self.review_status == self.ReviewStatus.REVIEWED and not self.review_notes.strip():
+            raise ValidationError(
+                {"review_notes": "Record what was reviewed before marking this document reviewed."}
+            )
+
+
 class ResearcherApplication(models.Model):
     class ApplicantType(models.TextChoices):
         ORGANISATION = "organisation", "Research organisation"

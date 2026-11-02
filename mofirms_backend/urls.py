@@ -8,6 +8,7 @@ from farmers.views import (
     download_document,
     download_financial_analysis_document,
     download_partner_document,
+    download_risk_assessment_document,
 )
 
 
@@ -28,6 +29,11 @@ urlpatterns = [
         "staff/financial-analysis-documents/<int:document_id>/download/",
         download_financial_analysis_document,
         name="download_financial_analysis_document",
+    ),
+    path(
+        "staff/risk-assessment-documents/<int:document_id>/download/",
+        download_risk_assessment_document,
+        name="download_risk_assessment_document",
     ),
     path("staff/", admin.site.urls),
 ]

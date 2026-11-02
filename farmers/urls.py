@@ -18,6 +18,12 @@ urlpatterns = [
         views.financial_analysis_success,
         name="financial_analysis_success",
     ),
+    path("risk-assessment/", views.request_risk_assessment, name="request_risk_assessment"),
+    path(
+        "risk-assessment/received/<str:reference>/",
+        views.risk_assessment_success,
+        name="risk_assessment_success",
+    ),
     path("research/register/", views.register_researcher, name="register_researcher"),
     path(
         "research/application-received/",

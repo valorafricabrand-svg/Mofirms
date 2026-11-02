@@ -20,6 +20,8 @@ from .models import (
     FinancialAnalysisRequest,
     PartnerDocument,
     PartnerProfile,
+    RiskAssessmentDocument,
+    RiskAssessmentRequest,
     ResearchInvitation,
     ResearchQuestion,
     ResearchResponse,
@@ -691,6 +693,212 @@ class FinancialAnalysisRequestTests(TestCase):
         self.assertTrue(FinancialAnalysisRequest.objects.filter(pk=recent_request.pk).exists())
         self.assertFalse(FinancialAnalysisDocument.objects.filter(pk=expired_document.pk).exists())
         self.assertFalse(Path(expired_document_path).exists())
+
+
+class RiskAssessmentRequestTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.private_files = TemporaryDirectory()
+        self.addCleanup(self.private_files.cleanup)
+        self.settings_override = override_settings(
+            MEDIA_ROOT=self.private_files.name,
+            PRIVATE_UPLOAD_ROOT=self.private_files.name,
+            ANTIVIRUS_ENABLED=False,
+        )
+        self.settings_override.enable()
+        self.addCleanup(self.settings_override.disable)
+        self.url = reverse("request_risk_assessment")
+        self.data = {
+            "applicant_type": "business",
+            "contact_name": "Synthetic Assessment Contact",
+            "business_name": "Synthetic Farm Enterprise",
+            "phone": "0700000000",
+            "preferred_contact": "phone",
+            "county": "Vihiga",
+            "sector": "Horticulture",
+            "enterprise_stage": "production",
+            "assessment_areas": ["enterprise", "market", "climate_environment"],
+            "risk_priorities": ["production", "climate"],
+            "opportunity_priorities": ["market_growth", "climate_resilience"],
+            "time_horizon": "this_year",
+            "request_summary": (
+                "Synthetic request to understand production risks and potential market growth."
+            ),
+            "privacy_consent": "on",
+            "documents-TOTAL_FORMS": "0",
+            "documents-INITIAL_FORMS": "0",
+            "documents-MIN_NUM_FORMS": "0",
+            "documents-MAX_NUM_FORMS": "20",
+        }
+
+    def create_request(self, **overrides):
+        values = {
+            "applicant_type": RiskAssessmentRequest.ApplicantType.BUSINESS,
+            "contact_name": "Synthetic Assessment Contact",
+            "business_name": "Synthetic Farm Enterprise",
+            "phone": "0700000000",
+            "preferred_contact": RiskAssessmentRequest.ContactPreference.PHONE,
+            "county": "Vihiga",
+            "assessment_areas": ["enterprise"],
+            "risk_priorities": ["production"],
+            "opportunity_priorities": ["market_growth"],
+            "time_horizon": RiskAssessmentRequest.TimeHorizon.THIS_YEAR,
+            "request_summary": "Synthetic assessment request.",
+            "contact_consent_at": timezone.now(),
+        }
+        values.update(overrides)
+        return RiskAssessmentRequest.objects.create(**values)
+
+    def test_request_is_saved_for_manual_scope_and_fee_quote(self):
+        response = self.client.post(self.url, self.data)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertRegex(
+            response.url,
+            r"^/portal/risk-assessment/received/[A-F0-9]{8}/$",
+        )
+        assessment_request = RiskAssessmentRequest.objects.get()
+        self.assertEqual(assessment_request.assessment_areas, ["enterprise", "market", "climate_environment"])
+        self.assertEqual(assessment_request.risk_priorities, ["production", "climate"])
+        self.assertEqual(
+            assessment_request.opportunity_priorities,
+            ["market_growth", "climate_resilience"],
+        )
+        self.assertEqual(
+            assessment_request.status,
+            RiskAssessmentRequest.ServiceStatus.PENDING,
+        )
+        self.assertIsNotNone(assessment_request.contact_consent_at)
+        self.assertIsNone(assessment_request.quote_amount)
+
+    def test_missing_contact_consent_and_contact_method_details_are_rejected(self):
+        response = self.client.post(
+            self.url,
+            {**self.data, "phone": "", "privacy_consent": ""},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(RiskAssessmentRequest.objects.count(), 0)
+        self.assertContains(response, "This field is required.")
+        self.assertContains(response, "A phone number is required for the selected contact method.")
+
+    def test_model_rejects_unrecognized_scope_and_quoted_status_without_fee(self):
+        assessment_request = self.create_request(assessment_areas=["made_up"])
+        with self.assertRaises(ValidationError) as error:
+            assessment_request.full_clean()
+        self.assertIn("assessment_areas", error.exception.message_dict)
+
+        assessment_request = self.create_request(
+            status=RiskAssessmentRequest.ServiceStatus.QUOTED
+        )
+        with self.assertRaises(ValidationError) as error:
+            assessment_request.full_clean()
+        self.assertIn("quote_amount", error.exception.message_dict)
+        assessment_request.quote_amount = "7500.00"
+        assessment_request.full_clean()
+
+    def test_staff_can_review_request_and_record_quote(self):
+        response = self.client.post(self.url, self.data)
+        self.assertEqual(response.status_code, 302)
+        assessment_request = RiskAssessmentRequest.objects.get()
+        staff_user = get_user_model().objects.create_user(
+            username="risk-assessment-reviewer",
+            password="Synthetic-Only-Password-123!",
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.client.force_login(staff_user)
+
+        response = self.client.get(
+            reverse(
+                "admin:farmers_riskassessmentrequest_change",
+                args=[assessment_request.pk],
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Under initial review")
+        self.assertContains(response, "Quoted fee (KES)")
+
+    def test_upload_requires_separate_consent_and_is_staff_only(self):
+        data = {
+            **self.data,
+            "documents-TOTAL_FORMS": "1",
+            "documents-INITIAL_FORMS": "0",
+            "documents-MIN_NUM_FORMS": "0",
+            "documents-MAX_NUM_FORMS": "20",
+            "documents-0-document_type": "market",
+            "documents-0-description": "Synthetic market summary",
+            "documents-0-file": SimpleUploadedFile(
+                "synthetic-market-summary.pdf",
+                b"%PDF-1.7 synthetic assessment summary",
+                content_type="application/pdf",
+            ),
+        }
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(RiskAssessmentRequest.objects.count(), 0)
+        self.assertContains(response, "Please agree to the one-year document retention notice")
+
+        data["document_consent"] = "on"
+        data["documents-0-file"] = SimpleUploadedFile(
+            "synthetic-market-summary.pdf",
+            b"%PDF-1.7 synthetic assessment summary",
+            content_type="application/pdf",
+        )
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        assessment_request = RiskAssessmentRequest.objects.get()
+        document = RiskAssessmentDocument.objects.get(request=assessment_request)
+        self.assertIsNotNone(assessment_request.document_consent_at)
+        self.assertEqual(self.client.get(document.file.url).status_code, 404)
+        download_url = reverse("download_risk_assessment_document", args=[document.pk])
+        self.assertEqual(self.client.get(download_url).status_code, 302)
+
+        staff_user = get_user_model().objects.create_user(
+            username="risk-document-reviewer",
+            password="Synthetic-Only-Password-123!",
+            is_staff=True,
+        )
+        self.client.force_login(staff_user)
+        response = self.client.get(download_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["X-Content-Type-Options"], "nosniff")
+        self.assertIn("attachment", response["Content-Disposition"])
+        self.assertIn(
+            b"synthetic assessment summary",
+            b"".join(response.streaming_content),
+        )
+
+    def test_retention_purges_inactive_request_and_cascades_private_files(self):
+        old_date = timezone.now() - timedelta(days=800)
+        assessment_request = self.create_request(
+            contact_consent_at=old_date,
+            created_at=old_date,
+            last_contact_at=old_date,
+        )
+        document = RiskAssessmentDocument.objects.create(
+            request=assessment_request,
+            document_type=RiskAssessmentDocument.DocumentType.BUSINESS_PROFILE,
+        )
+        document.file.save(
+            "synthetic-assessment-profile.pdf",
+            SimpleUploadedFile(
+                "synthetic-assessment-profile.pdf",
+                b"%PDF-1.7 synthetic assessment profile",
+            ),
+            save=True,
+        )
+        stored_path = document.file.path
+
+        with self.captureOnCommitCallbacks(execute=True):
+            call_command("purge_retained_data", "--execute")
+
+        self.assertFalse(
+            RiskAssessmentRequest.objects.filter(pk=assessment_request.pk).exists()
+        )
+        self.assertFalse(RiskAssessmentDocument.objects.filter(pk=document.pk).exists())
+        self.assertFalse(Path(stored_path).exists())
 
 
 class ResearchPortalTests(TestCase):

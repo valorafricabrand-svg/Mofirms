@@ -11,6 +11,8 @@ from .models import (
     FinancialAnalysisRequest,
     PartnerDocument,
     PartnerProfile,
+    RiskAssessmentDocument,
+    RiskAssessmentRequest,
     ResearchInvitation,
     ResearchQuestion,
     ResearchStudy,
@@ -597,6 +599,161 @@ class FinancialAnalysisDocumentAdmin(admin.ModelAdmin):
             return "No file"
         url = reverse("download_financial_analysis_document", args=[obj.pk])
         return format_html('<a href="{}">Download financial document</a>', url)
+
+    def save_model(self, request, obj, form, change):
+        if change and "review_status" in form.changed_data:
+            obj.reviewed_by = request.user
+            obj.reviewed_at = timezone.now()
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(RiskAssessmentRequest)
+class RiskAssessmentRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "public_reference",
+        "contact_name",
+        "business_name",
+        "county",
+        "status",
+        "quote_amount",
+        "created_at",
+    )
+    list_filter = ("status", "applicant_type", "county", "time_horizon", "created_at")
+    search_fields = ("contact_name", "business_name", "email", "phone", "reference")
+    readonly_fields = (
+        "reference",
+        "contact_consent_at",
+        "document_consent_at",
+        "privacy_policy_version",
+        "reviewed_by",
+        "reviewed_at",
+        "quote_sent_at",
+        "created_at",
+        "updated_at",
+    )
+    actions = ("mark_contacted_today",)
+    date_hierarchy = "created_at"
+    fieldsets = (
+        ("Assessment request and working status", {
+            "fields": (
+                "reference",
+                "status",
+                "reviewed_by",
+                "reviewed_at",
+                "internal_notes",
+            )
+        }),
+        ("Applicant and contact", {
+            "fields": (
+                "applicant_type",
+                "contact_name",
+                "business_name",
+                "phone",
+                "email",
+                "preferred_contact",
+                "county",
+                "sector",
+                "enterprise_stage",
+            )
+        }),
+        ("Assessment scope", {
+            "fields": (
+                "assessment_areas",
+                "risk_priorities",
+                "opportunity_priorities",
+                "time_horizon",
+                "request_summary",
+            )
+        }),
+        ("Specialist fee quote", {
+            "fields": ("quote_amount", "quote_notes", "quote_sent_at")
+        }),
+        ("Consent, retention, and contact history", {
+            "fields": (
+                "contact_consent_at",
+                "document_consent_at",
+                "privacy_policy_version",
+                "last_contact_at",
+                "created_at",
+                "updated_at",
+            )
+        }),
+    )
+
+    @admin.display(description="Reference")
+    def public_reference(self, obj):
+        return obj.public_reference
+
+    @admin.action(description="Record that contact occurred today (retention clock)")
+    def mark_contacted_today(self, request, queryset):
+        updated = queryset.update(last_contact_at=timezone.now())
+        self.message_user(
+            request,
+            f"Updated the last-contact date for {updated} assessment request(s).",
+        )
+
+    def save_model(self, request, obj, form, change):
+        review_fields = {"status", "quote_amount", "quote_notes"}
+        if change and review_fields.intersection(form.changed_data):
+            obj.reviewed_by = request.user
+            obj.reviewed_at = timezone.now()
+        if (
+            obj.quote_amount is not None
+            and obj.status in {
+                RiskAssessmentRequest.ServiceStatus.QUOTED,
+                RiskAssessmentRequest.ServiceStatus.ACCEPTED,
+                RiskAssessmentRequest.ServiceStatus.IN_PROGRESS,
+                RiskAssessmentRequest.ServiceStatus.COMPLETED,
+            }
+            and not obj.quote_sent_at
+        ):
+            obj.quote_sent_at = timezone.now()
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(RiskAssessmentDocument)
+class RiskAssessmentDocumentAdmin(admin.ModelAdmin):
+    list_display = (
+        "reference",
+        "request",
+        "document_type",
+        "review_status",
+        "uploaded_at",
+        "secure_download",
+    )
+    list_filter = ("document_type", "review_status", "uploaded_at")
+    search_fields = (
+        "request__contact_name",
+        "request__business_name",
+        "request__reference",
+        "reference",
+    )
+    readonly_fields = (
+        "reference",
+        "uploaded_at",
+        "secure_download",
+        "reviewed_by",
+        "reviewed_at",
+    )
+    fields = (
+        "reference",
+        "request",
+        "document_type",
+        "description",
+        "secure_download",
+        "review_status",
+        "review_notes",
+        "reviewed_by",
+        "reviewed_at",
+        "uploaded_at",
+    )
+
+    @admin.display(description="Private assessment file")
+    def secure_download(self, obj):
+        if not obj.pk or not obj.file:
+            return "No file"
+        url = reverse("download_risk_assessment_document", args=[obj.pk])
+        return format_html('<a href="{}">Download assessment document</a>', url)
 
     def save_model(self, request, obj, form, change):
         if change and "review_status" in form.changed_data:

@@ -27,6 +27,8 @@ from .models import (
     FinancialAnalysisRequest,
     PartnerDocument,
     PartnerProfile,
+    RiskAssessmentDocument,
+    RiskAssessmentRequest,
     ResearchQuestion,
     ResearchStudy,
     ResearcherApplication,
@@ -746,6 +748,137 @@ class FinancialAnalysisDocumentForm(FarmerDocumentForm):
 
 FinancialAnalysisDocumentFormSet = formset_factory(
     FinancialAnalysisDocumentForm,
+    extra=0,
+    max_num=MAX_DOCUMENTS_PER_REGISTRATION,
+    validate_max=True,
+    absolute_max=MAX_DOCUMENTS_PER_REGISTRATION,
+)
+
+
+class RiskAssessmentRequestForm(forms.ModelForm):
+    assessment_areas = forms.MultipleChoiceField(
+        choices=[
+            ("enterprise", "Business model and enterprise resilience"),
+            ("market", "Markets, customers, and competition"),
+            ("operations", "Production and day-to-day operations"),
+            ("financial_resilience", "Financial resilience and exposure"),
+            ("climate_environment", "Climate and environmental factors"),
+            ("supply_chain", "Suppliers, logistics, and value chain"),
+            ("governance_compliance", "Governance and compliance"),
+            ("technology", "Technology and data"),
+            ("other", "Other or not sure"),
+        ],
+        widget=forms.CheckboxSelectMultiple,
+        label="What should the assessment cover?",
+    )
+    risk_priorities = forms.MultipleChoiceField(
+        choices=[
+            ("production", "Production, pests, disease, or input access"),
+            ("climate", "Weather, water, or climate exposure"),
+            ("market", "Price changes, buyer access, or competition"),
+            ("financial", "Cash flow, cost changes, or funding exposure"),
+            ("operations", "People, equipment, process, or continuity"),
+            ("supply_chain", "Suppliers, transport, storage, or delivery"),
+            ("governance", "Management, records, or decision-making"),
+            ("regulatory", "Licensing, standards, or regulatory changes"),
+            ("technology", "Technology access, reliability, or data"),
+            ("not_sure", "I am not sure yet; help us scope the risks"),
+        ],
+        widget=forms.CheckboxSelectMultiple,
+        label="Which risks or uncertainties matter most?",
+    )
+    opportunity_priorities = forms.MultipleChoiceField(
+        choices=[
+            ("market_growth", "New markets, customers, or buyer relationships"),
+            ("value_addition", "Processing, storage, or value addition"),
+            ("productivity", "Productivity, quality, or cost improvements"),
+            ("climate_resilience", "Climate adaptation or resource efficiency"),
+            ("digital", "Digital tools or better business information"),
+            ("partnerships", "Partnerships, aggregation, or collaboration"),
+            ("finance_readiness", "Investment or finance readiness"),
+            ("new_products", "New products or services"),
+            ("not_sure", "I am not sure yet; help identify opportunities"),
+        ],
+        widget=forms.CheckboxSelectMultiple,
+        label="What opportunities would you like to explore?",
+    )
+    privacy_consent = forms.BooleanField(
+        required=True,
+        label=(
+            "I agree that MoFirms may review this request and contact me about its scope "
+            "and a possible fee quote."
+        ),
+    )
+    website_trap = forms.CharField(required=False, widget=forms.HiddenInput)
+
+    class Meta:
+        model = RiskAssessmentRequest
+        fields = [
+            "applicant_type",
+            "contact_name",
+            "business_name",
+            "phone",
+            "email",
+            "preferred_contact",
+            "county",
+            "sector",
+            "enterprise_stage",
+            "assessment_areas",
+            "risk_priorities",
+            "opportunity_priorities",
+            "time_horizon",
+            "request_summary",
+        ]
+        widgets = {
+            "applicant_type": forms.RadioSelect,
+            "request_summary": forms.Textarea(attrs={"rows": 5}),
+        }
+        help_texts = {
+            "business_name": "Required for a business, group, or organisation.",
+            "sector": "For example, dairy, horticulture, produce trading, or farm services.",
+            "request_summary": (
+                "Describe the decision you are considering, the main concern or opportunity, "
+                "and what a useful assessment should help you understand. Do not include "
+                "passwords, ID numbers, tax PINs, account numbers, or confidential third-party data."
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["county"].choices = [("", "Select a county")] + [
+            (county, county) for county in COUNTIES
+        ]
+        self.fields["business_name"].required = False
+        self.fields["phone"].required = False
+        self.fields["email"].required = False
+        self.fields["sector"].required = False
+        self.fields["enterprise_stage"].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get("website_trap"):
+            raise ValidationError("The request could not be submitted. Please try again.")
+        return cleaned_data
+
+    def save(self, commit=True):
+        assessment_request = super().save(commit=False)
+        assessment_request.assessment_areas = self.cleaned_data["assessment_areas"]
+        assessment_request.risk_priorities = self.cleaned_data["risk_priorities"]
+        assessment_request.opportunity_priorities = self.cleaned_data["opportunity_priorities"]
+        if commit:
+            assessment_request.save()
+        return assessment_request
+
+
+class RiskAssessmentDocumentForm(FarmerDocumentForm):
+    document_type = forms.ChoiceField(
+        choices=RiskAssessmentDocument.DocumentType.choices,
+        label="Document type",
+    )
+
+
+RiskAssessmentDocumentFormSet = formset_factory(
+    RiskAssessmentDocumentForm,
     extra=0,
     max_num=MAX_DOCUMENTS_PER_REGISTRATION,
     validate_max=True,

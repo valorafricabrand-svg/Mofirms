@@ -15,6 +15,8 @@ from farmers.models import (
     ResearchResponse,
     ResearcherApplication,
     ResearchStudy,
+    RiskAssessmentDocument,
+    RiskAssessmentRequest,
 )
 
 
@@ -42,6 +44,9 @@ class Command(BaseCommand):
         expired_analysis_documents = FinancialAnalysisDocument.objects.filter(
             uploaded_at__lt=now - timedelta(days=365)
         )
+        expired_risk_documents = RiskAssessmentDocument.objects.filter(
+            uploaded_at__lt=now - timedelta(days=365)
+        )
         expired_profiles = FarmerProfile.objects.filter(
             last_contact_at__lt=now - timedelta(days=730)
         )
@@ -49,6 +54,9 @@ class Command(BaseCommand):
             last_contact_at__lt=now - timedelta(days=730)
         )
         expired_analysis_requests = FinancialAnalysisRequest.objects.filter(
+            last_contact_at__lt=now - timedelta(days=730)
+        )
+        expired_risk_requests = RiskAssessmentRequest.objects.filter(
             last_contact_at__lt=now - timedelta(days=730)
         )
         expired_researchers = ResearcherApplication.objects.filter(
@@ -71,11 +79,13 @@ class Command(BaseCommand):
             expired_documents.count()
             + expired_partner_documents.count()
             + expired_analysis_documents.count()
+            + expired_risk_documents.count()
         )
         profile_count = (
             expired_profiles.count()
             + expired_partners.count()
             + expired_analysis_requests.count()
+            + expired_risk_requests.count()
             + expired_researchers.count()
         )
         response_count = expired_research_responses.count()
@@ -105,6 +115,9 @@ class Command(BaseCommand):
         for document in expired_analysis_documents.iterator():
             document.delete()
             deleted_documents += 1
+        for document in expired_risk_documents.iterator():
+            document.delete()
+            deleted_documents += 1
 
         deleted_research_responses, _ = expired_research_responses.delete()
         deleted_research_invitations, _ = expired_research_invitations.delete()
@@ -120,6 +133,9 @@ class Command(BaseCommand):
             deleted_profiles += 1
         for analysis_request in expired_analysis_requests.iterator():
             analysis_request.delete()
+            deleted_profiles += 1
+        for risk_request in expired_risk_requests.iterator():
+            risk_request.delete()
             deleted_profiles += 1
         for researcher in expired_researchers.select_related("user").iterator():
             researcher.user.delete()
