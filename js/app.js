@@ -21,7 +21,7 @@ const $=s=>document.querySelector(s),el=(h)=>{const d=document.createElement("di
 $("#yr").textContent=new Date().getFullYear();
 $("#burger").onclick=e=>{const o=$("#menu").classList.toggle("open");e.target.setAttribute("aria-expanded",o)};
 $("#menu").onclick=()=>$("#menu").classList.remove("open");
-$("#pv").onclick=e=>{e.preventDefault();$("#privacy").hidden=!$("#privacy").hidden};
+$("#pv").onclick=()=>{const notice=$("#privacy");notice.hidden=!notice.hidden;$("#pv").setAttribute("aria-expanded",String(!notice.hidden))};
 /* agriculture story carousel */
 const carousel=$("#agriCarousel");
 if(carousel){

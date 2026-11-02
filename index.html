@@ -9,7 +9,7 @@
 <meta property="og:title" content="MoFirms | Agribusiness &amp; Enterprise Advisory">
 <meta property="og:description" content="Practical advice for sustainable farms and growing enterprises.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
-<link rel="stylesheet" href="{% static 'css/style.css' %}?v=unified-green-hero">
+<link rel="stylesheet" href="{% static 'css/style.css' %}?v=footer-design">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -112,7 +112,7 @@
   <h3>Vision</h3><p>Productive farms and resilient enterprises supported by dependable information, practical skills and access to markets.</p></div>
 </section>
 
-<section class="alt portal-section"><div class="wrap"><h2>Customer portals</h2>
+<section class="alt portal-section" id="customer-portals"><div class="wrap"><h2>Customer portals</h2>
   <p class="sub">Portals A and B support farmer, supplier, buyer, and service-provider registration. Portals C and D accept specialist financial-analysis and risk-and-opportunity assessment requests; staff review the scope and quote before work begins. Portal E is a separate, manually vetted research service; respondent participation is voluntary and researchers see aggregate results only. These services remain in local development and are not open for real personal, financial, or research data until secure production hosting and the privacy notice are approved.</p>
   <ol class="steps" id="portals"></ol></div></section>
 
@@ -138,10 +138,45 @@
 </section>
 </main>
 
-<footer><div class="wrap">
-  <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). Registered in Kenya, No. PVT-5JULR6L.</p>
-  <p><a href="#privacy" id="pv">Privacy notice</a> · <a href="#contact">Contact</a></p>
-  <div id="privacy" hidden class="note">We collect only the details you submit in the enquiry form, to respond to you. Marketing messages are sent only if you tick the optional box. You may ask us to access, correct or delete your data at any time via the email above. <i>Draft: to be confirmed against company records before launch.</i></div>
-</div></footer>
-<script src="{% static 'js/app.js' %}?v=unified-green-hero"></script>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-main">
+      <div class="footer-brand">
+        <a class="footer-logo" href="#top" aria-label="MoFirms, back to top"><span>Mo</span>Firms</a>
+        <p>Practical agribusiness and enterprise advisory for farmers, entrepreneurs and organisations in Kenya.</p>
+        <a class="footer-email" href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a>
+      </div>
+      <nav class="footer-links" aria-label="Explore MoFirms">
+        <h2>Explore</h2>
+        <a href="#services">Services</a>
+        <a href="#projects">Projects &amp; collaborations</a>
+        <a href="#about">About MoFirms</a>
+        <a href="#smarthasibu">SmartHasibu pilot</a>
+      </nav>
+      <nav class="footer-links" aria-label="Farmer and partner portals">
+        <h2>Portals</h2>
+        <a href="/portal/register/">Farmer registration</a>
+        <a href="/portal/partners/register/">Partner registration</a>
+        <a href="/portal/financial-analysis/">Financial analysis</a>
+        <a href="/portal/risk-assessment/">Risk assessment</a>
+        <a href="/portal/research/register/">Research portal</a>
+      </nav>
+      <div class="footer-contact">
+        <h2>Let’s talk</h2>
+        <p>Have a farm, business or project question? Tell us what support you’re looking for.</p>
+        <a class="footer-cta" href="#contact">Request a consultation <span aria-hidden="true">→</span></a>
+        <a class="footer-top" href="#top">Back to top ↑</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). Registered in Kenya, No. PVT-5JULR6L.</p>
+      <div class="footer-legal">
+        <button type="button" id="pv" aria-expanded="false" aria-controls="privacy">Privacy notice</button>
+        <a href="mailto:mconceptslimited@gmail.com">Contact</a>
+      </div>
+    </div>
+    <div id="privacy" hidden class="footer-privacy">We collect only the details you submit in the enquiry form, to respond to you. Marketing messages are sent only if you tick the optional box. You may ask us to access, correct or delete your data by emailing <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a>. <i>Draft: to be confirmed against company records before launch.</i></div>
+  </div>
+</footer>
+<script src="{% static 'js/app.js' %}?v=footer-design"></script>
 </body></html>
