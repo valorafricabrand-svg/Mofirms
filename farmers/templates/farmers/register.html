@@ -136,7 +136,9 @@
       <legend>Privacy and consent</legend>
       <p>MoFirms uses the information on this form to assess your farming or organisation needs, review submitted evidence, and contact you about the registration. Access is restricted to authorised MoFirms staff.</p>
       <p>Farmer profile and assessment details are scheduled for deletion after two years without recorded contact. You may request access, correction, or deletion by contacting <a href="mailto:{{ mofirms_contact_email }}">{{ mofirms_contact_email }}</a>. This notice and retention schedule must be reviewed and approved by MoFirms before the portal accepts real registrations.</p>
+      <p>Research invitations are separate from registration. You may withdraw optional invitation permission by contacting MoFirms. If you represent a group, this choice applies only to you as the named contact; every participant must make their own choice.</p>
       {% include "farmers/field.html" with field=form.privacy_consent %}
+      {% include "farmers/field.html" with field=form.research_invite_consent %}
     </fieldset>
 
     <button class="btn" type="submit">Submit registration for review</button>

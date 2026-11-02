@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Researcher dashboard | MoFirms Portal E</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav"><div class="wrap bar">
+  <a class="logo" href="/"><span>Mo</span>Firms</a>
+  <span>{{ researcher.organisation_name }}</span>
+</div></header>
+<main id="main">
+<section class="wrap registration">
+  <p class="eyebrow">Portal E · Researcher workspace</p>
+  <h1>Research dashboard</h1>
+  <aside class="notice notice-warning">
+    <h2>Research access rules</h2>
+    <p>Access is limited to your own study proposals and safely aggregated results. You cannot browse registrants, respondent contacts, invitation links, or individual answers. MoFirms staff issue invitations only to customer contacts with a separate research-invitation opt-in. Respondents consent separately for each study.</p>
+    <p>Each study needs its own manual review, accepted fee quote, resolved ethics status, and staff deployment approval. The portal does not send emails or guarantee a sample size.</p>
+  </aside>
+
+  <h2>Your studies</h2>
+  {% if studies %}
+    {% for study in studies %}
+      <article class="card form-section">
+        <h3>{{ study.title }}</h3>
+        <p><strong>Status:</strong> {{ study.get_status_display }}</p>
+        <p><strong>Target:</strong> {{ study.target_sample_size }} planned responses. <strong>Closes:</strong> {{ study.closes_at }}</p>
+        {% if study.fee_quote_kes %}
+          <p><strong>Fee quote:</strong> KSh {{ study.fee_quote_kes }}</p>
+          {% if study.status == "quote_sent" %}
+            <p>{{ study.fee_quote_notes }}</p>
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="accept_quote">
+              <input type="hidden" name="study_id" value="{{ study.pk }}">
+              <button class="btn sm" type="submit">Accept fee quote</button>
+            </form>
+          {% elif study.fee_accepted_at %}
+            <p>Fee quote accepted. MoFirms will complete the deployment review.</p>
+          {% endif %}
+        {% endif %}
+        {% if study.status == "published" %}
+          <p>Questionnaire is open to invited respondents. MoFirms manages invitation delivery; do not solicit respondents outside the approved plan.</p>
+        {% elif study.status == "closed" %}
+          <p>This study is closed to new responses.</p>
+        {% endif %}
+        {% if study.response_count >= 5 %}
+          <h4>Aggregate results (minimum group size met)</h4>
+          <p>{{ study.response_count }} total responses. Researchers cannot access individual response records.</p>
+          {% for result in study.result_questions %}
+            <div class="form-section">
+              <h5>{{ result.prompt }}</h5>
+              {% if result.withheld %}
+                <p>Results withheld because one or more answer categories contain fewer than five responses.</p>
+              {% else %}
+                <ul>
+                  {% for option, count in result.counts %}
+                    <li>{{ option }}: {{ count }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% else %}
+          <p>Aggregate results remain hidden until at least five responses have been received.</p>
+        {% endif %}
+      </article>
+    {% endfor %}
+  {% else %}
+    <p>No study proposals yet.</p>
+  {% endif %}
+
+  <h2>Submit a study proposal</h2>
+  <p>Use fixed-choice questions only. Do not request names, contact details, account data, or sensitive personal information.</p>
+  <form method="post" class="card registration-form" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="err-box" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% if form.errors or question_formset.errors %}<p class="form-hint">Please correct the highlighted fields.</p>{% endif %}
+    <fieldset class="form-section">
+      <legend>Study plan</legend>
+      <div class="form-grid">
+        <div class="wide-field">{% include "farmers/field.html" with field=form.title %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.purpose %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.intended_use %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.methodology %}</div>
+        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.target_audiences %}</div>
+        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.target_counties %}</div>
+        <div>{% include "farmers/field.html" with field=form.target_sample_size %}</div>
+        <div>{% include "farmers/field.html" with field=form.closes_at %}</div>
+      </div>
+    </fieldset>
+    <fieldset class="form-section">
+      <legend>Ethics and respondent information</legend>
+      <div class="form-grid">
+        <div>{% include "farmers/field.html" with field=form.ethics_status %}</div>
+        <div>{% include "farmers/field.html" with field=form.ethics_body %}</div>
+        <div>{% include "farmers/field.html" with field=form.ethics_reference %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.respondent_consent_text %}</div>
+      </div>
+    </fieldset>
+    <fieldset class="form-section">
+      <legend>Fixed-choice questionnaire</legend>
+      <p class="form-hint">Create up to 12 questions. Each has 2–8 answer options. Free-text responses are intentionally unsupported to reduce collection of identifying details.</p>
+      {{ question_formset.management_form }}
+      {{ question_formset.non_form_errors }}
+      <div id="researchQuestionRows" data-prefix="{{ question_formset.prefix }}" data-max="12">
+        {% for question_form in question_formset %}
+          <div class="document-row research-question-row">
+            {% include "farmers/field.html" with field=question_form.prompt %}
+            {% include "farmers/field.html" with field=question_form.answer_type %}
+            {% include "farmers/field.html" with field=question_form.options_text %}
+            {% include "farmers/field.html" with field=question_form.required %}
+            <button class="remove-document opt" type="button">Remove question</button>
+          </div>
+        {% endfor %}
+      </div>
+      <template id="emptyResearchQuestionRow">
+        <div class="document-row research-question-row">
+          {% include "farmers/field.html" with field=question_formset.empty_form.prompt %}
+          {% include "farmers/field.html" with field=question_formset.empty_form.answer_type %}
+          {% include "farmers/field.html" with field=question_formset.empty_form.options_text %}
+          {% include "farmers/field.html" with field=question_formset.empty_form.required %}
+          <button class="remove-document opt" type="button">Remove question</button>
+        </div>
+      </template>
+      <button id="addResearchQuestion" class="opt" type="button">Add another question</button>
+    </fieldset>
+    <button class="btn" type="submit">Submit study for review</button>
+  </form>
+</section>
+</main>
+<script src="/js/researcher.js"></script>
+</body>
+</html>

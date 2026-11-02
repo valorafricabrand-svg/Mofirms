@@ -20,6 +20,11 @@ from .models import (
     FinancialAnalysisRequest,
     PartnerDocument,
     PartnerProfile,
+    ResearchInvitation,
+    ResearchQuestion,
+    ResearchResponse,
+    ResearchStudy,
+    ResearcherApplication,
 )
 
 
@@ -68,6 +73,16 @@ class FarmerRegistrationTests(TestCase):
         self.assertEqual(profile.farm_review_status, FarmerProfile.EvidenceStatus.PENDING)
         self.assertEqual(profile.group_review_status, FarmerProfile.EvidenceStatus.NOT_APPLICABLE)
         self.assertIsNotNone(profile.privacy_consent_at)
+        self.assertIsNone(profile.research_invite_consent_at)
+
+    def test_farmer_can_separately_opt_in_to_research_invitations(self):
+        response = self.client.post(
+            self.url,
+            {**self.individual_data, "research_invite_consent": "on"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIsNotNone(FarmerProfile.objects.get().research_invite_consent_at)
 
     def test_group_requires_details_and_authorisation(self):
         data = {
@@ -270,7 +285,7 @@ class FarmerRegistrationTests(TestCase):
 
         output = StringIO()
         call_command("purge_retained_data", stdout=output)
-        self.assertIn("Dry run: 2 document(s) and 1 profile(s)", output.getvalue())
+        self.assertIn("Dry run: 2 document(s) and 1 profile/request(s)", output.getvalue())
         self.assertTrue(FarmerProfile.objects.filter(pk=profile.pk).exists())
         self.assertTrue(FarmerDocument.objects.filter(pk=document.pk).exists())
 
@@ -335,6 +350,15 @@ class PartnerRegistrationTests(TestCase):
             profile.verification_status,
             PartnerProfile.ReviewStatus.PENDING,
         )
+
+    def test_partner_can_separately_opt_in_to_research_invitations(self):
+        response = self.client.post(
+            self.url,
+            {**self.data, "research_invite_consent": "on"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIsNotNone(PartnerProfile.objects.get().research_invite_consent_at)
 
     def test_multi_role_registration_requires_and_saves_each_role_profile(self):
         data = {
@@ -438,7 +462,7 @@ class PartnerRegistrationTests(TestCase):
 
         output = StringIO()
         call_command("purge_retained_data", stdout=output)
-        self.assertIn("1 document(s) and 1 profile(s)", output.getvalue())
+        self.assertIn("1 document(s) and 1 profile/request(s)", output.getvalue())
 
         with self.captureOnCommitCallbacks(execute=True):
             call_command("purge_retained_data", "--execute")
@@ -667,3 +691,335 @@ class FinancialAnalysisRequestTests(TestCase):
         self.assertTrue(FinancialAnalysisRequest.objects.filter(pk=recent_request.pk).exists())
         self.assertFalse(FinancialAnalysisDocument.objects.filter(pk=expired_document.pk).exists())
         self.assertFalse(Path(expired_document_path).exists())
+
+
+class ResearchPortalTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.url = reverse("register_researcher")
+
+    def researcher_account(self, username="researcher@example.org", approved=True):
+        user = get_user_model().objects.create_user(
+            username=username,
+            email=username,
+            password="E!Research-Portal-2026-long-pass",
+            is_active=approved,
+        )
+        application = ResearcherApplication.objects.create(
+            user=user,
+            applicant_type=ResearcherApplication.ApplicantType.ORGANISATION,
+            organisation_name="Synthetic Research Institute",
+            phone="0700000000",
+            research_purpose="Synthetic market research purpose.",
+            methods_summary="Synthetic methods and participant safeguards.",
+            consent_at=timezone.now(),
+            review_status=(
+                ResearcherApplication.ReviewStatus.APPROVED
+                if approved
+                else ResearcherApplication.ReviewStatus.PENDING
+            ),
+        )
+        return user, application
+
+    def study(self, researcher, title="Synthetic Market Study", status=None):
+        now = timezone.now()
+        study = ResearchStudy.objects.create(
+            researcher=researcher,
+            title=title,
+            purpose="Understand synthetic crop market preferences.",
+            intended_use="Inform a synthetic academic report.",
+            methodology="Voluntary fixed-choice questionnaire.",
+            target_audiences=[ResearchStudy.Audience.FARMER_INDIVIDUAL],
+            target_counties=["Vihiga"],
+            target_sample_size=50,
+            ethics_status=ResearchStudy.EthicsStatus.NOT_REQUIRED,
+            respondent_consent_text=(
+                "This study asks about general market preferences. Participation is voluntary."
+            ),
+            closes_at=now + timedelta(days=14),
+            status=status or ResearchStudy.Status.PUBLISHED,
+            fee_quote_kes="1500.00",
+            fee_accepted_at=now,
+        )
+        question = ResearchQuestion.objects.create(
+            study=study,
+            position=1,
+            prompt="Which crop do you prefer?",
+            answer_type=ResearchQuestion.AnswerType.SINGLE,
+            options=["Maize", "Beans"],
+            required=True,
+        )
+        return study, question
+
+    def opt_in_farmer(self, name="Synthetic Research Participant"):
+        return FarmerProfile.objects.create(
+            registration_type=FarmerProfile.RegistrationType.INDIVIDUAL,
+            full_name=name,
+            phone="0712345678",
+            preferred_contact=FarmerProfile.ContactPreference.PHONE,
+            county="Vihiga",
+            privacy_consent_at=timezone.now(),
+            research_invite_consent_at=timezone.now(),
+        )
+
+    def test_researcher_registration_creates_inactive_account_for_manual_vetting(self):
+        data = {
+            "email": "principal@example.org",
+            "password1": "E!Research-Portal-2026-long-pass",
+            "password2": "E!Research-Portal-2026-long-pass",
+            "applicant_type": "organisation",
+            "organisation_name": "Synthetic Research Institute",
+            "role_title": "Principal Investigator",
+            "phone": "0700000000",
+            "country": "Kenya",
+            "research_purpose": "Study synthetic market preferences.",
+            "methods_summary": "Use voluntary fixed-choice surveys with separate consent.",
+            "consent": "on",
+        }
+
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 302)
+        user = get_user_model().objects.get(email="principal@example.org")
+        self.assertFalse(user.is_active)
+        application = ResearcherApplication.objects.get(user=user)
+        self.assertEqual(application.review_status, ResearcherApplication.ReviewStatus.PENDING)
+        self.assertIsNotNone(application.consent_at)
+        self.assertFalse(self.client.login(username=user.email, password=data["password1"]))
+        self.assertEqual(
+            self.client.get(reverse("researcher_dashboard")).status_code,
+            302,
+        )
+
+    def test_student_application_requires_supervisor_details(self):
+        data = {
+            "email": "student@example.org",
+            "password1": "E!Research-Portal-2026-long-pass",
+            "password2": "E!Research-Portal-2026-long-pass",
+            "applicant_type": "student",
+            "organisation_name": "Synthetic University",
+            "role_title": "Research student",
+            "phone": "0700000000",
+            "country": "Kenya",
+            "research_purpose": "Synthetic student research.",
+            "methods_summary": "Synthetic survey method.",
+            "consent": "on",
+        }
+
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(get_user_model().objects.filter(email=data["email"]).exists())
+        self.assertContains(response, "Student applications require a supervisor.")
+        self.assertContains(response, "Provide the supervisor&#x27;s institutional email.")
+
+    def test_admin_vetting_activates_researcher_account(self):
+        user, application = self.researcher_account(approved=False)
+        staff_user = get_user_model().objects.create_superuser(
+            username="research-staff",
+            email="research-staff@example.org",
+            password="Test-admin-pass-2026!",
+        )
+        self.client.force_login(staff_user)
+        response = self.client.post(
+            reverse("admin:farmers_researcherapplication_change", args=[application.pk]),
+            {
+                "applicant_type": "organisation",
+                "organisation_name": "Synthetic Research Institute",
+                "role_title": "Principal Investigator",
+                "phone": "0700000000",
+                "website": "",
+                "country": "Kenya",
+                "supervisor_name": "",
+                "supervisor_email": "",
+                "research_purpose": "Synthetic market research purpose.",
+                "methods_summary": "Synthetic methods and participant safeguards.",
+                "privacy_policy_url": "",
+                "data_protection_contact": "",
+                "review_status": "approved",
+                "review_notes": "Synthetic vetting completed.",
+                "_save": "Save",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        user.refresh_from_db()
+        application.refresh_from_db()
+        self.assertTrue(user.is_active)
+        self.assertEqual(application.review_status, ResearcherApplication.ReviewStatus.APPROVED)
+        self.assertEqual(application.reviewed_by, staff_user)
+        self.client.force_login(user)
+        self.assertEqual(self.client.get(reverse("researcher_dashboard")).status_code, 200)
+
+    def test_researcher_can_submit_study_and_fixed_choice_questions(self):
+        user, _ = self.researcher_account()
+        self.client.force_login(user)
+        closes_at = timezone.localtime(timezone.now() + timedelta(days=10)).strftime(
+            "%Y-%m-%dT%H:%M"
+        )
+        data = {
+            "title": "Synthetic crop preferences",
+            "purpose": "Measure synthetic crop preferences.",
+            "intended_use": "Prepare a synthetic report.",
+            "methodology": "Voluntary anonymous fixed-choice survey.",
+            "target_audiences": ["farmer_individual"],
+            "target_counties": ["Vihiga"],
+            "target_sample_size": "50",
+            "ethics_status": "not_required",
+            "respondent_consent_text": "Participation is voluntary and answers are aggregated.",
+            "closes_at": closes_at,
+            "questions-TOTAL_FORMS": "1",
+            "questions-INITIAL_FORMS": "0",
+            "questions-MIN_NUM_FORMS": "1",
+            "questions-MAX_NUM_FORMS": "12",
+            "questions-0-prompt": "Which crop do you prefer?",
+            "questions-0-answer_type": "single",
+            "questions-0-options_text": "Maize\nBeans",
+        }
+
+        response = self.client.post(reverse("researcher_dashboard"), data)
+
+        self.assertEqual(response.status_code, 302)
+        study = ResearchStudy.objects.get()
+        self.assertEqual(study.status, ResearchStudy.Status.SUBMITTED)
+        self.assertEqual(study.questions.count(), 1)
+        self.assertEqual(study.questions.get().options, ["Maize", "Beans"])
+        self.assertFalse(ResearchInvitation.objects.exists())
+
+    def test_only_opted_in_target_members_can_receive_study_invitations(self):
+        _, researcher = self.researcher_account()
+        study, _ = self.study(researcher)
+        opted_out = FarmerProfile.objects.create(
+            registration_type=FarmerProfile.RegistrationType.INDIVIDUAL,
+            full_name="Opted Out Farmer",
+            preferred_contact=FarmerProfile.ContactPreference.PHONE,
+            county="Vihiga",
+            privacy_consent_at=timezone.now(),
+        )
+        invitation = ResearchInvitation(study=study, farmer_profile=opted_out)
+
+        with self.assertRaises(ValidationError) as error:
+            invitation.full_clean()
+        self.assertIn("farmer_profile", error.exception.message_dict)
+
+        opted_in = self.opt_in_farmer()
+        invitation = ResearchInvitation(study=study, farmer_profile=opted_in)
+        invitation.full_clean()
+        invitation.save()
+        self.assertTrue(invitation.token)
+        self.assertEqual(invitation.expires_at.date(), (timezone.now() + timedelta(days=14)).date())
+
+    def test_response_requires_separate_consent_and_removes_member_link(self):
+        _, researcher = self.researcher_account()
+        study, question = self.study(researcher)
+        participant = self.opt_in_farmer()
+        invitation = ResearchInvitation.objects.create(study=study, farmer_profile=participant)
+        url = reverse("respond_to_research_invitation", args=[invitation.token])
+        self.assertEqual(self.client.get(url).status_code, 200)
+
+        data = {f"question_{question.pk}": "Maize"}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(ResearchResponse.objects.count(), 0)
+        invitation.refresh_from_db()
+        self.assertIsNone(invitation.completed_on)
+
+        data["participant_consent"] = "on"
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Thank you for participating")
+        research_response = ResearchResponse.objects.get(study=study)
+        self.assertEqual(research_response.answers, {str(question.pk): "Maize"})
+        self.assertFalse(
+            {"phone", "email", "full_name", "farmer_profile", "partner_profile"}
+            & set(research_response.answers)
+        )
+        invitation.refresh_from_db()
+        self.assertIsNotNone(invitation.completed_on)
+        self.assertIsNone(invitation.farmer_profile)
+        self.assertIsNone(invitation.partner_profile)
+        self.assertEqual(self.client.get(url).status_code, 410)
+
+    def test_withdrawing_research_invitation_consent_invalidates_outstanding_link(self):
+        _, researcher = self.researcher_account()
+        study, _ = self.study(researcher)
+        participant = self.opt_in_farmer()
+        invitation = ResearchInvitation.objects.create(study=study, farmer_profile=participant)
+        participant.research_invite_consent_at = None
+        participant.save(update_fields=["research_invite_consent_at"])
+
+        response = self.client.get(
+            reverse("respond_to_research_invitation", args=[invitation.token])
+        )
+
+        self.assertEqual(response.status_code, 410)
+
+    def test_researcher_dashboard_suppresses_small_cells_and_hides_individual_answers(self):
+        user, application = self.researcher_account()
+        suppressed_study, suppressed_question = self.study(
+            application,
+            title="Small cells study",
+            status=ResearchStudy.Status.CLOSED,
+        )
+        visible_study, visible_question = self.study(
+            application,
+            title="Aggregate only study",
+            status=ResearchStudy.Status.CLOSED,
+        )
+        for answer in ["Maize", "Maize", "Maize", "Beans", "Beans"]:
+            ResearchResponse.objects.create(
+                study=suppressed_study,
+                answers={str(suppressed_question.pk): answer},
+            )
+        for _ in range(5):
+            ResearchResponse.objects.create(
+                study=visible_study,
+                answers={str(visible_question.pk): "Maize"},
+            )
+
+        self.client.force_login(user)
+        response = self.client.get(reverse("researcher_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Results withheld because one or more answer categories contain fewer than five responses.",
+        )
+        self.assertContains(response, "Maize: 5")
+        self.assertNotContains(response, "Individual response records")
+        self.assertNotContains(response, "research_response")
+
+    def test_retention_purges_old_responses_expired_invites_and_inactive_researchers(self):
+        user, application = self.researcher_account(approved=False)
+        old_date = timezone.now() - timedelta(days=800)
+        application.last_contact_at = old_date
+        application.save(update_fields=["last_contact_at"])
+        study, question = self.study(
+            application,
+            title="Old retained study",
+            status=ResearchStudy.Status.CLOSED,
+        )
+        ResearchResponse.objects.create(
+            study=study,
+            answers={str(question.pk): "Maize"},
+            submitted_on=timezone.localdate() - timedelta(days=400),
+        )
+        participant = self.opt_in_farmer("Expired invite participant")
+        invitation = ResearchInvitation.objects.create(
+            study=study,
+            farmer_profile=participant,
+            expires_at=timezone.now() - timedelta(days=1),
+        )
+
+        output = StringIO()
+        with self.captureOnCommitCallbacks(execute=True):
+            call_command("purge_retained_data", "--execute", stdout=output)
+
+        self.assertFalse(get_user_model().objects.filter(pk=user.pk).exists())
+        self.assertFalse(ResearchResponse.objects.filter(study=study).exists())
+        self.assertFalse(ResearchInvitation.objects.filter(pk=invitation.pk).exists())
+        self.assertIn(
+            "1 research study record(s), 1 research response record(s), and "
+            "1 invitation record(s)",
+            output.getvalue(),
+        )

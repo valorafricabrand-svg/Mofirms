@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib import admin
 from django.utils import timezone
 from django.utils.html import format_html
@@ -10,6 +11,10 @@ from .models import (
     FinancialAnalysisRequest,
     PartnerDocument,
     PartnerProfile,
+    ResearchInvitation,
+    ResearchQuestion,
+    ResearchStudy,
+    ResearcherApplication,
 )
 
 
@@ -34,6 +39,7 @@ class FarmerProfileAdmin(admin.ModelAdmin):
         "group_review_status",
         "farm_review_status",
         "county",
+        "research_invite_consent_at",
         "group_registration_status",
         "created_at",
     )
@@ -51,6 +57,7 @@ class FarmerProfileAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
         "privacy_consent_at",
+        "research_invite_consent_at",
         "document_consent_at",
         "privacy_policy_version",
         "reviewed_by",
@@ -125,6 +132,7 @@ class FarmerProfileAdmin(admin.ModelAdmin):
         ("Consent, retention, and contact history", {
             "fields": (
                 "privacy_consent_at",
+                "research_invite_consent_at",
                 "document_consent_at",
                 "privacy_policy_version",
                 "last_contact_at",
@@ -224,6 +232,7 @@ class PartnerProfileAdmin(admin.ModelAdmin):
         "offering_review_status",
         "registration_status",
         "county",
+        "research_invite_consent_at",
         "created_at",
     )
     search_fields = (
@@ -242,6 +251,7 @@ class PartnerProfileAdmin(admin.ModelAdmin):
         "updated_at",
         "contact_consent_at",
         "listing_referral_consent_at",
+        "research_invite_consent_at",
         "document_consent_at",
         "privacy_policy_version",
         "reviewed_by",
@@ -335,6 +345,7 @@ class PartnerProfileAdmin(admin.ModelAdmin):
             "fields": (
                 "contact_consent_at",
                 "listing_referral_consent_at",
+                "research_invite_consent_at",
                 "document_consent_at",
                 "privacy_policy_version",
                 "last_contact_at",
@@ -592,3 +603,294 @@ class FinancialAnalysisDocumentAdmin(admin.ModelAdmin):
             obj.reviewed_by = request.user
             obj.reviewed_at = timezone.now()
         super().save_model(request, obj, form, change)
+
+
+@admin.register(ResearcherApplication)
+class ResearcherApplicationAdmin(admin.ModelAdmin):
+    list_display = (
+        "organisation_name",
+        "user_email",
+        "applicant_type",
+        "country",
+        "review_status",
+        "created_at",
+    )
+    list_filter = ("applicant_type", "review_status", "country", "created_at")
+    search_fields = (
+        "organisation_name",
+        "user__email",
+        "phone",
+        "supervisor_email",
+    )
+    readonly_fields = (
+        "user",
+        "consent_at",
+        "last_contact_at",
+        "created_at",
+        "updated_at",
+        "reviewed_by",
+        "reviewed_at",
+    )
+    fieldsets = (
+        ("Applicant and vetting", {
+            "fields": (
+                "user",
+                "applicant_type",
+                "organisation_name",
+                "role_title",
+                "country",
+                "review_status",
+                "review_notes",
+                "reviewed_by",
+                "reviewed_at",
+            )
+        }),
+        ("Contact and supervisor", {
+            "fields": ("phone", "website", "supervisor_name", "supervisor_email")
+        }),
+        ("Research and data practices", {
+            "fields": (
+                "research_purpose",
+                "methods_summary",
+                "privacy_policy_url",
+                "data_protection_contact",
+            )
+        }),
+        ("Consent and dates", {
+            "fields": ("consent_at", "last_contact_at", "created_at", "updated_at")
+        }),
+    )
+    actions = ("mark_contacted_today",)
+
+    @admin.display(description="Account email")
+    def user_email(self, obj):
+        return obj.user.email
+
+    @admin.action(description="Record that contact occurred today (retention clock)")
+    def mark_contacted_today(self, request, queryset):
+        updated = queryset.update(last_contact_at=timezone.now())
+        self.message_user(request, f"Updated the last-contact date for {updated} researcher(s).")
+
+    def save_model(self, request, obj, form, change):
+        review_changed = change and "review_status" in form.changed_data
+        if review_changed:
+            obj.reviewed_by = request.user
+            obj.reviewed_at = timezone.now()
+        super().save_model(request, obj, form, change)
+        obj.user.is_active = obj.review_status == ResearcherApplication.ReviewStatus.APPROVED
+        obj.user.save(update_fields=["is_active"])
+
+    def has_add_permission(self, request):
+        return False
+
+
+class ResearchQuestionInline(admin.TabularInline):
+    model = ResearchQuestion
+    extra = 0
+    fields = ("position", "prompt", "answer_type", "options", "required")
+
+    def has_add_permission(self, request, obj=None):
+        if obj and (obj.status == ResearchStudy.Status.PUBLISHED or obj.responses.exists()):
+            return False
+        return super().has_add_permission(request, obj)
+
+    def has_change_permission(self, request, obj=None):
+        if obj and (obj.status == ResearchStudy.Status.PUBLISHED or obj.responses.exists()):
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj and (obj.status == ResearchStudy.Status.PUBLISHED or obj.responses.exists()):
+            return False
+        return super().has_delete_permission(request, obj)
+
+
+class ResearchInvitationInlineForm(forms.ModelForm):
+    class Meta:
+        model = ResearchInvitation
+        fields = ("farmer_profile", "partner_profile")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "farmer_profile" in self.fields:
+            self.fields["farmer_profile"].queryset = FarmerProfile.objects.filter(
+                research_invite_consent_at__isnull=False
+            )
+        if "partner_profile" in self.fields:
+            self.fields["partner_profile"].queryset = PartnerProfile.objects.filter(
+                research_invite_consent_at__isnull=False
+            )
+
+
+class ResearchInvitationInline(admin.TabularInline):
+    model = ResearchInvitation
+    form = ResearchInvitationInlineForm
+    extra = 0
+    fields = (
+        "farmer_profile",
+        "partner_profile",
+        "invitation_link",
+        "invited_at",
+        "expires_at",
+        "completed_on",
+    )
+    readonly_fields = ("invitation_link", "invited_at", "expires_at", "completed_on")
+    autocomplete_fields = ("farmer_profile", "partner_profile")
+
+    @admin.display(description="Private invitation link")
+    def invitation_link(self, obj):
+        if not obj.pk:
+            return "Save the invitation to generate its link."
+        url = reverse("respond_to_research_invitation", args=[obj.token])
+        return format_html('<a href="{}">Open invitation link</a>', url)
+
+    def has_add_permission(self, request, obj=None):
+        return bool(
+            obj
+            and obj.status == ResearchStudy.Status.PUBLISHED
+            and obj.closes_at > timezone.now()
+            and obj.responses.count() < obj.target_sample_size
+            and super().has_add_permission(request, obj)
+        )
+
+
+@admin.register(ResearchStudy)
+class ResearchStudyAdmin(admin.ModelAdmin):
+    list_display = (
+        "title",
+        "researcher",
+        "status",
+        "target_sample_size",
+        "response_count",
+        "closes_at",
+        "created_at",
+    )
+    list_filter = ("status", "ethics_status", "created_at", "closes_at")
+    search_fields = ("title", "researcher__organisation_name", "researcher__user__email")
+    readonly_fields = (
+        "researcher",
+        "fee_quote_sent_at",
+        "fee_accepted_at",
+        "reviewed_by",
+        "reviewed_at",
+        "created_at",
+        "updated_at",
+        "closed_at",
+        "response_count",
+    )
+    date_hierarchy = "created_at"
+    inlines = (ResearchQuestionInline, ResearchInvitationInline)
+    fieldsets = (
+        ("Study and review status", {
+            "fields": (
+                "researcher",
+                "title",
+                "status",
+                "staff_notes",
+                "reviewed_by",
+                "reviewed_at",
+                "response_count",
+            )
+        }),
+        ("Study plan and target audience", {
+            "fields": (
+                "purpose",
+                "intended_use",
+                "methodology",
+                "target_audiences",
+                "target_counties",
+                "target_sample_size",
+                "closes_at",
+            )
+        }),
+        ("Ethics and respondent information", {
+            "fields": (
+                "ethics_status",
+                "ethics_body",
+                "ethics_reference",
+                "respondent_consent_text",
+            )
+        }),
+        ("Fee quotation", {
+            "fields": (
+                "fee_quote_kes",
+                "fee_quote_notes",
+                "fee_quote_sent_at",
+                "fee_accepted_at",
+            )
+        }),
+        ("Dates", {
+            "fields": ("created_at", "updated_at", "closed_at")
+        }),
+    )
+
+    @admin.display(description="Responses")
+    def response_count(self, obj):
+        return obj.responses.count() if obj.pk else 0
+
+    def save_model(self, request, obj, form, change):
+        status_changed = change and "status" in form.changed_data
+        if status_changed:
+            obj.reviewed_by = request.user
+            obj.reviewed_at = timezone.now()
+        if obj.status == ResearchStudy.Status.QUOTE_SENT and not obj.fee_quote_sent_at:
+            obj.fee_quote_sent_at = timezone.now()
+        if obj.status == ResearchStudy.Status.CLOSED and not obj.closed_at:
+            obj.closed_at = timezone.now()
+        super().save_model(request, obj, form, change)
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(ResearchInvitation)
+class ResearchInvitationAdmin(admin.ModelAdmin):
+    list_display = (
+        "study",
+        "member_summary",
+        "invited_at",
+        "expires_at",
+        "completed_on",
+        "invitation_link",
+    )
+    list_filter = ("study", "invited_at", "expires_at", "completed_on")
+    search_fields = (
+        "study__title",
+        "farmer_profile__full_name",
+        "farmer_profile__group_name",
+        "partner_profile__business_name",
+        "partner_profile__contact_name",
+    )
+    autocomplete_fields = ("study", "farmer_profile", "partner_profile")
+    readonly_fields = ("token", "invited_at", "expires_at", "completed_on", "invitation_link")
+    fields = (
+        "study",
+        "farmer_profile",
+        "partner_profile",
+        "invitation_link",
+        "token",
+        "invited_at",
+        "expires_at",
+        "completed_on",
+    )
+
+    @admin.display(description="Invited member (staff only)")
+    def member_summary(self, obj):
+        return obj.farmer_profile or obj.partner_profile or "Identity removed after response"
+
+    @admin.display(description="Private invitation link")
+    def invitation_link(self, obj):
+        url = reverse("respond_to_research_invitation", args=[obj.token])
+        return format_html('<a href="{}">Open invitation link</a>', url)
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        if "farmer_profile" in form.base_fields:
+            form.base_fields["farmer_profile"].queryset = FarmerProfile.objects.filter(
+                research_invite_consent_at__isnull=False
+            )
+        if "partner_profile" in form.base_fields:
+            form.base_fields["partner_profile"].queryset = PartnerProfile.objects.filter(
+                research_invite_consent_at__isnull=False
+            )
+        return form

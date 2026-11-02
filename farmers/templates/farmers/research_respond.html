@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load research_tags %}
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ study.title }} | MoFirms research</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<main id="main"><section class="wrap registration">
+  <p class="eyebrow">MoFirms · Optional research questionnaire</p>
+  <h1>{{ study.title }}</h1>
+  <aside class="notice">
+    <h2>Study information and your choice</h2>
+    <p><strong>Purpose:</strong> {{ study.purpose }}</p>
+    <p><strong>How findings may be used:</strong> {{ study.intended_use }}</p>
+    <p><strong>Method:</strong> {{ study.methodology }}</p>
+    <p><strong>Researcher:</strong> {{ study.researcher.organisation_name }}</p>
+    <p>{{ study.respondent_consent_text }}</p>
+    <ul>
+      <li>Participation is voluntary. You may stop before submitting; choosing not to participate does not affect MoFirms services.</li>
+      <li>This private invitation is for you; please do not forward it. It can be used once and expires after 14 days.</li>
+      <li>This questionnaire collects only fixed-choice answers; it does not ask for your name or contact details.</li>
+      <li>MoFirms removes the link between your invitation and profile when you submit. Researchers receive aggregate results only, after at least five responses; small answer groups are withheld.</li>
+      <li>De-identified responses are scheduled for deletion one year after submission. Do not enter identifying information in any answer.</li>
+    </ul>
+  </aside>
+  <form method="post" class="card registration-form" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="err-box" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% if form.errors and not form.non_field_errors %}<p class="form-hint">Please review the highlighted answers.</p>{% endif %}
+    {% for question in study.questions.all %}
+      <fieldset class="form-section">
+        <legend>{{ question.position }}. {{ question.prompt }}</legend>
+        {% include "farmers/field.html" with field=form|research_question_field:question.pk %}
+      </fieldset>
+    {% endfor %}
+    <fieldset class="form-section">
+      <legend>Separate respondent consent</legend>
+      {% include "farmers/field.html" with field=form.participant_consent %}
+    </fieldset>
+    <button class="btn" type="submit">Submit my voluntary response</button>
+  </form>
+</section></main>
+</body>
+</html>

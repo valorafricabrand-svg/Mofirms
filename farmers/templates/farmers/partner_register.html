@@ -163,8 +163,10 @@
       <legend>Privacy and permissions</legend>
       <p>MoFirms uses the information on this form to review your partner profile, assess fit with farmer and organisation needs, and contact you about relevant opportunities. Access is restricted to authorised MoFirms staff. Profiles are scheduled for deletion after two years without recorded contact.</p>
       <p>Sharing your details directly with a prospective partner is optional and requires separate consent below. Your details will not be published in a public directory. You may request access, correction, or deletion at <a href="mailto:{{ mofirms_contact_email }}">{{ mofirms_contact_email }}</a>. This notice and retention schedule must be reviewed and approved by MoFirms before real registrations open.</p>
+      <p>You may withdraw optional research-invitation permission by contacting MoFirms. Researchers do not receive your contact details or individual answers.</p>
       {% include "farmers/field.html" with field=form.privacy_consent %}
       {% include "farmers/field.html" with field=form.listing_consent %}
+      {% include "farmers/field.html" with field=form.research_invite_consent %}
     </fieldset>
 
     <button class="btn" type="submit">Submit partner registration for review</button>

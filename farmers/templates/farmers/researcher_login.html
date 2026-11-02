@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Researcher sign in | MoFirms Portal E</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<main id="main"><section class="wrap registration">
+  <div class="card registration-form">
+    <p class="eyebrow">Portal E · Researcher access</p>
+    <h1>Researcher sign in</h1>
+    <p>Use the email address and password from your researcher application. Only manually approved researcher accounts can sign in.</p>
+    {% if form.errors %}<div class="err-box" role="alert">Sign-in failed. Check your email and password, or wait for MoFirms to complete vetting.</div>{% endif %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      {% include "farmers/field.html" with field=form.username %}
+      {% include "farmers/field.html" with field=form.password %}
+      <button class="btn" type="submit">Sign in</button>
+    </form>
+    <p><a href="{% url 'register_researcher' %}">Apply as a researcher</a></p>
+  </div>
+</section></main>
+</body>
+</html>

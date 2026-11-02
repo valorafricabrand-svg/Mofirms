@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -248,6 +249,7 @@ class FarmerProfile(models.Model):
     )
     reviewed_at = models.DateTimeField(null=True, blank=True)
     privacy_consent_at = models.DateTimeField()
+    research_invite_consent_at = models.DateTimeField(null=True, blank=True)
     document_consent_at = models.DateTimeField(null=True, blank=True)
     privacy_policy_version = models.CharField(max_length=24, default="2026-11-01")
     created_at = models.DateTimeField(default=timezone.now, editable=False)
@@ -462,6 +464,7 @@ class PartnerProfile(models.Model):
     additional_notes = models.TextField(blank=True)
     contact_consent_at = models.DateTimeField()
     listing_referral_consent_at = models.DateTimeField(null=True, blank=True)
+    research_invite_consent_at = models.DateTimeField(null=True, blank=True)
     document_consent_at = models.DateTimeField(null=True, blank=True)
     privacy_policy_version = models.CharField(max_length=24, default="2026-11-01")
     verification_status = models.CharField(
@@ -793,3 +796,325 @@ class FinancialAnalysisDocument(models.Model):
             raise ValidationError(
                 {"review_notes": "Record what was reviewed before marking this document reviewed."}
             )
+
+
+class ResearcherApplication(models.Model):
+    class ApplicantType(models.TextChoices):
+        ORGANISATION = "organisation", "Research organisation"
+        UNIVERSITY = "university", "University or academic institution"
+        MARKETING = "marketing", "Marketing or insights company"
+        STUDENT = "student", "Research student"
+
+    class ReviewStatus(models.TextChoices):
+        PENDING = "pending", "Pending vetting"
+        IN_REVIEW = "in_review", "Under review"
+        NEEDS_INFORMATION = "needs_information", "More information requested"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Not approved"
+        SUSPENDED = "suspended", "Access suspended"
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="researcher_application",
+    )
+    applicant_type = models.CharField(max_length=16, choices=ApplicantType.choices)
+    organisation_name = models.CharField(max_length=200)
+    role_title = models.CharField(max_length=120, blank=True)
+    phone = models.CharField(max_length=32)
+    website = models.URLField(blank=True)
+    country = models.CharField(max_length=100, default="Kenya")
+    supervisor_name = models.CharField(max_length=160, blank=True)
+    supervisor_email = models.EmailField(blank=True)
+    research_purpose = models.TextField()
+    methods_summary = models.TextField()
+    privacy_policy_url = models.URLField(blank=True)
+    data_protection_contact = models.CharField(max_length=200, blank=True)
+    review_status = models.CharField(
+        max_length=24, choices=ReviewStatus.choices, default=ReviewStatus.PENDING
+    )
+    review_notes = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="vetted_researcher_applications",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    consent_at = models.DateTimeField()
+    last_contact_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Portal E researcher application"
+        verbose_name_plural = "Portal E researcher applications"
+
+    def __str__(self):
+        return f"{self.organisation_name} — {self.user.email}"
+
+    def clean(self):
+        super().clean()
+        if self.applicant_type == self.ApplicantType.STUDENT:
+            if not self.supervisor_name.strip() or not self.supervisor_email.strip():
+                raise ValidationError(
+                    {
+                        "supervisor_name": "A student application requires an academic or project supervisor.",
+                        "supervisor_email": "Provide the supervisor's institutional email.",
+                    }
+                )
+
+
+class ResearchStudy(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        SUBMITTED = "submitted", "Submitted for review"
+        NEEDS_CHANGES = "needs_changes", "Changes requested"
+        QUOTE_SENT = "quote_sent", "Fee quote sent"
+        QUOTE_ACCEPTED = "quote_accepted", "Fee quote accepted"
+        APPROVED = "approved", "Approved for deployment"
+        PUBLISHED = "published", "Open for invited respondents"
+        PAUSED = "paused", "Paused"
+        CLOSED = "closed", "Closed"
+        DECLINED = "declined", "Not approved"
+
+    class EthicsStatus(models.TextChoices):
+        APPROVED = "approved", "Ethics approval obtained"
+        PENDING = "pending", "Ethics approval pending"
+        NOT_REQUIRED = "not_required", "Formal ethics review not required"
+
+    class Audience(models.TextChoices):
+        FARMER_INDIVIDUAL = "farmer_individual", "Individual farmer contacts"
+        FARMER_GROUP = "farmer_group", "Farmer-group contacts"
+        SUPPLIER = "supplier", "Input or service suppliers"
+        BUYER = "buyer", "Produce buyers"
+        SERVICE_PROVIDER = "service_provider", "Professional service providers"
+
+    researcher = models.ForeignKey(
+        ResearcherApplication, on_delete=models.PROTECT, related_name="studies"
+    )
+    title = models.CharField(max_length=200)
+    purpose = models.TextField()
+    intended_use = models.TextField()
+    methodology = models.TextField()
+    target_audiences = models.JSONField(default=list)
+    target_counties = models.JSONField(default=list, blank=True)
+    target_sample_size = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(5), MaxValueValidator(5000)]
+    )
+    ethics_status = models.CharField(max_length=16, choices=EthicsStatus.choices)
+    ethics_body = models.CharField(max_length=200, blank=True)
+    ethics_reference = models.CharField(max_length=120, blank=True)
+    respondent_consent_text = models.TextField(max_length=1000)
+    closes_at = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    fee_quote_kes = models.DecimalField(
+        "Quoted fee (KES)",
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0.01)],
+    )
+    fee_quote_notes = models.TextField(blank=True)
+    fee_quote_sent_at = models.DateTimeField(null=True, blank=True)
+    fee_accepted_at = models.DateTimeField(null=True, blank=True)
+    staff_notes = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_research_studies",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
+
+    def clean(self):
+        super().clean()
+        valid_audiences = {value for value, _ in self.Audience.choices}
+        if not self.target_audiences or not set(self.target_audiences).issubset(valid_audiences):
+            raise ValidationError({"target_audiences": "Select at least one valid audience."})
+        valid_counties = set(COUNTIES)
+        if not set(self.target_counties).issubset(valid_counties):
+            raise ValidationError({"target_counties": "Select only valid counties."})
+        if self.status in {
+            self.Status.QUOTE_SENT,
+            self.Status.QUOTE_ACCEPTED,
+            self.Status.APPROVED,
+            self.Status.PUBLISHED,
+        } and self.fee_quote_kes is None:
+            raise ValidationError({"fee_quote_kes": "A fee quote is required for this status."})
+        if self.status in {
+            self.Status.QUOTE_ACCEPTED,
+            self.Status.APPROVED,
+            self.Status.PUBLISHED,
+        } and not self.fee_accepted_at:
+            raise ValidationError({"fee_accepted_at": "The researcher must accept the fee quote first."})
+        if self.status in {self.Status.PUBLISHED, self.Status.APPROVED}:
+            if self.ethics_status == self.EthicsStatus.PENDING:
+                raise ValidationError({"ethics_status": "Ethics review must be resolved before approval."})
+            if self.ethics_status == self.EthicsStatus.APPROVED and not self.ethics_body.strip():
+                raise ValidationError({"ethics_body": "Record the ethics approval body."})
+            if not self.questions.exists():
+                raise ValidationError({"status": "Add at least one approved question before approval."})
+        if self.status == self.Status.PUBLISHED and self.responses.count() >= self.target_sample_size:
+            raise ValidationError({"status": "The planned response target has already been reached."})
+        if self.status == self.Status.PUBLISHED and self.closes_at <= timezone.now():
+            raise ValidationError({"closes_at": "The questionnaire closing time must be in the future."})
+
+
+class ResearchQuestion(models.Model):
+    class AnswerType(models.TextChoices):
+        SINGLE = "single", "Choose one answer"
+        MULTIPLE = "multiple", "Choose all that apply"
+
+    study = models.ForeignKey(ResearchStudy, on_delete=models.CASCADE, related_name="questions")
+    position = models.PositiveSmallIntegerField()
+    prompt = models.CharField(max_length=240)
+    answer_type = models.CharField(max_length=12, choices=AnswerType.choices)
+    options = models.JSONField(default=list)
+    required = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["position"]
+        constraints = [
+            models.UniqueConstraint(fields=["study", "position"], name="unique_study_question_position")
+        ]
+
+    def __str__(self):
+        return f"{self.position}. {self.prompt}"
+
+    def clean(self):
+        super().clean()
+        if not isinstance(self.options, list) or not 2 <= len(self.options) <= 8:
+            raise ValidationError({"options": "Each question must have between 2 and 8 answer options."})
+        if any(not isinstance(option, str) or not option.strip() for option in self.options):
+            raise ValidationError({"options": "Answer options must be non-empty text."})
+        normalized = [option.strip().casefold() for option in self.options]
+        if len(normalized) != len(set(normalized)):
+            raise ValidationError({"options": "Answer options must be unique."})
+
+
+def research_invitation_expiry():
+    return timezone.now() + timedelta(days=14)
+
+
+class ResearchInvitation(models.Model):
+    study = models.ForeignKey(ResearchStudy, on_delete=models.CASCADE, related_name="invitations")
+    farmer_profile = models.ForeignKey(
+        FarmerProfile, on_delete=models.CASCADE, null=True, blank=True, related_name="research_invitations"
+    )
+    partner_profile = models.ForeignKey(
+        PartnerProfile, on_delete=models.CASCADE, null=True, blank=True, related_name="research_invitations"
+    )
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    invited_at = models.DateTimeField(default=timezone.now, editable=False)
+    expires_at = models.DateTimeField(default=research_invitation_expiry)
+    completed_on = models.DateField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-invited_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        farmer_profile__isnull=False,
+                        partner_profile__isnull=True,
+                        completed_on__isnull=True,
+                    )
+                    | models.Q(
+                        farmer_profile__isnull=True,
+                        partner_profile__isnull=False,
+                        completed_on__isnull=True,
+                    )
+                    | models.Q(
+                        farmer_profile__isnull=True,
+                        partner_profile__isnull=True,
+                        completed_on__isnull=False,
+                    )
+                ),
+                name="research_invitation_has_one_member",
+            ),
+            models.UniqueConstraint(
+                fields=["study", "farmer_profile"],
+                condition=models.Q(farmer_profile__isnull=False),
+                name="unique_study_farmer_invitation",
+            ),
+            models.UniqueConstraint(
+                fields=["study", "partner_profile"],
+                condition=models.Q(partner_profile__isnull=False),
+                name="unique_study_partner_invitation",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Invitation for {self.study}"
+
+    def clean(self):
+        super().clean()
+        if self.completed_on:
+            if self.farmer_profile_id or self.partner_profile_id:
+                raise ValidationError("Completed invitations must not retain member identity links.")
+            return
+        if bool(self.farmer_profile_id) == bool(self.partner_profile_id):
+            raise ValidationError("Select exactly one opted-in farmer or partner profile.")
+        if self.farmer_profile_id and not self.farmer_profile.research_invite_consent_at:
+            raise ValidationError({"farmer_profile": "This farmer has not opted in to research invitations."})
+        if self.partner_profile_id and not self.partner_profile.research_invite_consent_at:
+            raise ValidationError({"partner_profile": "This partner has not opted in to research invitations."})
+        if self.study_id and self.study.status != ResearchStudy.Status.PUBLISHED:
+            raise ValidationError({"study": "Invitations can only be created for an approved study."})
+        if self.study_id and self.study.responses.count() >= self.study.target_sample_size:
+            raise ValidationError({"study": "The planned response target has already been reached."})
+        if self.study_id and self.farmer_profile_id:
+            audience = (
+                ResearchStudy.Audience.FARMER_GROUP
+                if self.farmer_profile.registration_type == FarmerProfile.RegistrationType.GROUP
+                else ResearchStudy.Audience.FARMER_INDIVIDUAL
+            )
+            if audience not in self.study.target_audiences:
+                raise ValidationError({"farmer_profile": "This study does not target this farmer category."})
+            if (
+                self.study.target_counties
+                and self.farmer_profile.county not in self.study.target_counties
+            ):
+                raise ValidationError({"farmer_profile": "This study does not target this county."})
+        if self.study_id and self.partner_profile_id:
+            role_audiences = {
+                "supplier": ResearchStudy.Audience.SUPPLIER,
+                "buyer": ResearchStudy.Audience.BUYER,
+                "service_provider": ResearchStudy.Audience.SERVICE_PROVIDER,
+            }
+            if not set(self.partner_profile.roles).intersection(
+                role for role, audience in role_audiences.items()
+                if audience in self.study.target_audiences
+            ):
+                raise ValidationError({"partner_profile": "This study does not target this partner category."})
+            if (
+                self.study.target_counties
+                and self.partner_profile.county not in self.study.target_counties
+            ):
+                raise ValidationError({"partner_profile": "This study does not target this county."})
+
+class ResearchResponse(models.Model):
+    study = models.ForeignKey(ResearchStudy, on_delete=models.CASCADE, related_name="responses")
+    answers = models.JSONField()
+    consented_on = models.DateField(default=timezone.localdate, editable=False)
+    submitted_on = models.DateField(default=timezone.localdate, editable=False)
+
+    class Meta:
+        ordering = ["submitted_on"]
+
+    def __str__(self):
+        return f"Anonymous response for {self.study}"

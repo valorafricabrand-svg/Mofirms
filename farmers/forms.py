@@ -9,6 +9,8 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.forms import formset_factory
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from .models import (
@@ -25,6 +27,9 @@ from .models import (
     FinancialAnalysisRequest,
     PartnerDocument,
     PartnerProfile,
+    ResearchQuestion,
+    ResearchStudy,
+    ResearcherApplication,
 )
 
 
@@ -90,6 +95,14 @@ class FarmerRegistrationForm(forms.ModelForm):
     privacy_consent = forms.BooleanField(
         required=True,
         label="I agree that MoFirms may use these details to review this registration and contact me about it.",
+    )
+    research_invite_consent = forms.BooleanField(
+        required=False,
+        label=(
+            "Optional: I consent to MoFirms contacting me about research surveys. "
+            "This does not enroll me or disclose my contact details to researchers. "
+            "For a group, each respondent must separately choose to participate."
+        ),
     )
     website = forms.CharField(required=False, widget=forms.HiddenInput)
     group_authorization_confirmed = forms.BooleanField(
@@ -416,6 +429,13 @@ class PartnerRegistrationForm(forms.ModelForm):
             "a referral. This is not permission to publish my contact details."
         ),
     )
+    research_invite_consent = forms.BooleanField(
+        required=False,
+        label=(
+            "Optional: I consent to MoFirms contacting me about research surveys. "
+            "This does not enroll me or disclose my contact details to researchers."
+        ),
+    )
     document_consent = forms.BooleanField(required=False)
     website_trap = forms.CharField(required=False, widget=forms.HiddenInput)
 
@@ -731,6 +751,228 @@ FinancialAnalysisDocumentFormSet = formset_factory(
     validate_max=True,
     absolute_max=MAX_DOCUMENTS_PER_REGISTRATION,
 )
+
+
+class ResearcherApplicationForm(forms.Form):
+    email = forms.EmailField(label="Institutional or work email")
+    password1 = forms.CharField(
+        label="Password",
+        widget=forms.PasswordInput,
+        strip=False,
+        help_text="Use a unique password. Researcher access stays disabled until staff approval.",
+    )
+    password2 = forms.CharField(
+        label="Confirm password",
+        widget=forms.PasswordInput,
+        strip=False,
+    )
+    applicant_type = forms.ChoiceField(choices=ResearcherApplication.ApplicantType.choices)
+    organisation_name = forms.CharField(max_length=200)
+    role_title = forms.CharField(max_length=120, required=False)
+    phone = forms.CharField(max_length=32)
+    website = forms.URLField(required=False)
+    country = forms.CharField(max_length=100, initial="Kenya")
+    supervisor_name = forms.CharField(max_length=160, required=False)
+    supervisor_email = forms.EmailField(required=False)
+    research_purpose = forms.CharField(
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="What research will you conduct and what decisions may it inform?",
+    )
+    methods_summary = forms.CharField(
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="Describe recruitment, data handling, ethics review, and how findings will be used.",
+    )
+    privacy_policy_url = forms.URLField(required=False)
+    data_protection_contact = forms.CharField(max_length=200, required=False)
+    consent = forms.BooleanField(
+        label=(
+            "I agree to MoFirms reviewing this application and contacting me about vetting. "
+            "I understand that approval is manual and does not provide customer data access."
+        )
+    )
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().lower()
+        user_model = get_user_model()
+        if (
+            user_model.objects.filter(email__iexact=email).exists()
+            or user_model.objects.filter(username__iexact=email).exists()
+        ):
+            raise ValidationError("An account using this email already exists.")
+        return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
+            self.add_error("password2", "The passwords do not match.")
+
+        if (
+            cleaned_data.get("applicant_type") == ResearcherApplication.ApplicantType.STUDENT
+            and not cleaned_data.get("supervisor_name")
+        ):
+            self.add_error("supervisor_name", "Student applications require a supervisor.")
+        if (
+            cleaned_data.get("applicant_type") == ResearcherApplication.ApplicantType.STUDENT
+            and not cleaned_data.get("supervisor_email")
+        ):
+            self.add_error("supervisor_email", "Provide the supervisor's institutional email.")
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+        email = cleaned_data.get("email")
+        if password1 and password1 == password2 and email:
+            user_model = get_user_model()
+            user = user_model(username=email, email=email)
+            try:
+                validate_password(password1, user)
+            except ValidationError as error:
+                self.add_error("password1", error)
+        return cleaned_data
+
+class ResearchStudyForm(forms.ModelForm):
+    target_audiences = forms.MultipleChoiceField(
+        choices=ResearchStudy.Audience.choices,
+        widget=forms.CheckboxSelectMultiple,
+        label="Which MoFirms registrant categories are in scope?",
+    )
+    target_counties = forms.MultipleChoiceField(
+        choices=[(county, county) for county in COUNTIES],
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Target counties (optional)",
+    )
+
+    class Meta:
+        model = ResearchStudy
+        fields = [
+            "title",
+            "purpose",
+            "intended_use",
+            "methodology",
+            "target_audiences",
+            "target_counties",
+            "target_sample_size",
+            "ethics_status",
+            "ethics_body",
+            "ethics_reference",
+            "respondent_consent_text",
+            "closes_at",
+        ]
+        widgets = {
+            "purpose": forms.Textarea(attrs={"rows": 3}),
+            "intended_use": forms.Textarea(attrs={"rows": 3}),
+            "methodology": forms.Textarea(attrs={"rows": 3}),
+            "respondent_consent_text": forms.Textarea(attrs={"rows": 4, "maxlength": "1000"}),
+            "closes_at": forms.DateTimeInput(
+                attrs={"type": "datetime-local"},
+                format="%Y-%m-%dT%H:%M",
+            ),
+        }
+        help_texts = {
+            "target_sample_size": "A planning estimate only; Portal E does not promise a response count.",
+            "respondent_consent_text": (
+                "Explain purpose, voluntary participation, expected time, use and retention. "
+                "Do not promise anonymity beyond what the study actually provides."
+            ),
+            "ethics_reference": "Do not upload ethics documents containing participant data.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["closes_at"].input_formats = ["%Y-%m-%dT%H:%M"]
+
+    def save(self, commit=True):
+        study = super().save(commit=False)
+        study.target_audiences = self.cleaned_data["target_audiences"]
+        study.target_counties = self.cleaned_data["target_counties"]
+        if commit:
+            study.save()
+        return study
+
+
+class ResearchQuestionForm(forms.Form):
+    prompt = forms.CharField(
+        max_length=240,
+        label="Question",
+        widget=forms.TextInput(attrs={"maxlength": "240"}),
+    )
+    answer_type = forms.ChoiceField(choices=ResearchQuestion.AnswerType.choices)
+    options_text = forms.CharField(
+        label="Answer options (one per line)",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="Provide 2–8 short options. Do not use free-text answer questions.",
+    )
+    required = forms.BooleanField(
+        required=False,
+        label="Require respondents to answer",
+    )
+
+    def clean_options_text(self):
+        options = [option.strip() for option in self.cleaned_data["options_text"].splitlines()]
+        options = [option for option in options if option]
+        if not 2 <= len(options) <= 8:
+            raise ValidationError("Each question needs between 2 and 8 answer options.")
+        normalized = [option.casefold() for option in options]
+        if len(normalized) != len(set(normalized)):
+            raise ValidationError("Answer options must be unique.")
+        if any(len(option) > 80 for option in options):
+            raise ValidationError("Each answer option must be 80 characters or fewer.")
+        return options
+
+    def save(self, study, position):
+        return ResearchQuestion.objects.create(
+            study=study,
+            position=position,
+            prompt=self.cleaned_data["prompt"],
+            answer_type=self.cleaned_data["answer_type"],
+            options=self.cleaned_data["options_text"],
+            required=self.cleaned_data["required"],
+        )
+
+
+ResearchQuestionFormSet = formset_factory(
+    ResearchQuestionForm,
+    extra=1,
+    min_num=1,
+    max_num=12,
+    validate_min=True,
+    validate_max=True,
+    absolute_max=12,
+)
+
+
+class ResearchResponseForm(forms.Form):
+    participant_consent = forms.BooleanField(
+        label="I have read the study information and freely choose to participate."
+    )
+
+    def __init__(self, *args, questions, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.questions = list(questions)
+        for question in self.questions:
+            choices = [(option, option) for option in question.options]
+            field_name = f"question_{question.pk}"
+            if question.answer_type == ResearchQuestion.AnswerType.MULTIPLE:
+                self.fields[field_name] = forms.MultipleChoiceField(
+                    choices=choices,
+                    required=question.required,
+                    widget=forms.CheckboxSelectMultiple,
+                    label=question.prompt,
+                )
+            else:
+                self.fields[field_name] = forms.ChoiceField(
+                    choices=choices,
+                    required=question.required,
+                    widget=forms.RadioSelect,
+                    label=question.prompt,
+                )
+
+    def response_answers(self):
+        return {
+            str(question.pk): self.cleaned_data.get(f"question_{question.pk}", [])
+            for question in self.questions
+        }
 
 
 def sanitize_uploaded_image(uploaded):

@@ -2,8 +2,9 @@ import hashlib
 import logging
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from django.db import transaction
+from django.db import DatabaseError, IntegrityError, transaction
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -15,6 +16,10 @@ from .forms import (
     FarmerRegistrationForm,
     FinancialAnalysisDocumentFormSet,
     FinancialAnalysisRequestForm,
+    ResearcherApplicationForm,
+    ResearchQuestionFormSet,
+    ResearchResponseForm,
+    ResearchStudyForm,
     MAX_DOCUMENT_SIZE,
     MAX_DOCUMENTS_PER_REGISTRATION,
     PartnerDocumentFormSet,
@@ -28,6 +33,10 @@ from .models import (
     FinancialAnalysisRequest,
     PartnerDocument,
     PartnerProfile,
+    ResearchInvitation,
+    ResearchResponse,
+    ResearchStudy,
+    ResearcherApplication,
 )
 
 
@@ -106,6 +115,8 @@ def register_farmer(request):
                     now = timezone.now()
                     profile.privacy_consent_at = now
                     profile.last_contact_at = now
+                    if form.cleaned_data["research_invite_consent"]:
+                        profile.research_invite_consent_at = now
                     if has_documents:
                         profile.document_consent_at = now
                     profile.save()
@@ -205,6 +216,8 @@ def register_partner(request):
                     profile.contact_consent_at = now
                     if form.cleaned_data["listing_consent"]:
                         profile.listing_referral_consent_at = now
+                    if form.cleaned_data["research_invite_consent"]:
+                        profile.research_invite_consent_at = now
                     profile.last_contact_at = now
                     if has_documents:
                         profile.document_consent_at = now
@@ -354,6 +367,284 @@ def financial_analysis_success(request, reference):
         request,
         "farmers/financial_analysis_success.html",
         {"reference": reference},
+    )
+
+
+def register_researcher(request):
+    if request.method == "POST" and _rate_limit_reached(request, "researcher-application"):
+        return render(
+            request,
+            "farmers/rate_limited.html",
+            {"retry_after": settings.PORTAL_RATE_PERIOD // 60},
+            status=429,
+        )
+
+    form = ResearcherApplicationForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            with transaction.atomic():
+                user_model = get_user_model()
+                email = form.cleaned_data["email"]
+                user = user_model(
+                    username=email,
+                    email=email,
+                    first_name=form.cleaned_data["organisation_name"][:150],
+                    is_active=False,
+                )
+                user.set_password(form.cleaned_data["password1"])
+                user.save()
+                ResearcherApplication.objects.create(
+                    user=user,
+                    applicant_type=form.cleaned_data["applicant_type"],
+                    organisation_name=form.cleaned_data["organisation_name"],
+                    role_title=form.cleaned_data["role_title"],
+                    phone=form.cleaned_data["phone"],
+                    website=form.cleaned_data["website"],
+                    country=form.cleaned_data["country"],
+                    supervisor_name=form.cleaned_data["supervisor_name"],
+                    supervisor_email=form.cleaned_data["supervisor_email"],
+                    research_purpose=form.cleaned_data["research_purpose"],
+                    methods_summary=form.cleaned_data["methods_summary"],
+                    privacy_policy_url=form.cleaned_data["privacy_policy_url"],
+                    data_protection_contact=form.cleaned_data["data_protection_contact"],
+                    consent_at=timezone.now(),
+                )
+        except IntegrityError:
+            logger.exception("Could not save a Portal E researcher application.")
+            form.add_error(
+                None,
+                "The application could not be saved. Please try again or contact MoFirms.",
+            )
+        else:
+            return redirect("researcher_application_received")
+
+    return render(request, "farmers/researcher_register.html", {"form": form})
+
+
+def researcher_application_received(request):
+    return render(request, "farmers/researcher_application_received.html")
+
+
+def _approved_researcher(request):
+    if not request.user.is_authenticated:
+        return None
+    application = ResearcherApplication.objects.filter(user=request.user).first()
+    if application and application.review_status == ResearcherApplication.ReviewStatus.APPROVED:
+        return application
+    return None
+
+
+def researcher_login(request):
+    from django.contrib.auth.views import LoginView
+
+    if request.method == "POST" and _rate_limit_reached(request, "researcher-login"):
+        return render(
+            request,
+            "farmers/rate_limited.html",
+            {"retry_after": settings.PORTAL_RATE_PERIOD // 60},
+            status=429,
+        )
+    return LoginView.as_view(
+        template_name="farmers/researcher_login.html",
+        redirect_authenticated_user=True,
+    )(request)
+
+
+@require_http_methods(["GET", "POST"])
+def researcher_dashboard(request):
+    if not request.user.is_authenticated:
+        return redirect("researcher_login")
+    researcher = _approved_researcher(request)
+    if not researcher:
+        return render(
+            request,
+            "farmers/researcher_access_pending.html",
+            status=403,
+        )
+
+    if request.method == "POST" and request.POST.get("action") != "accept_quote":
+        if _rate_limit_reached(request, "research-study"):
+            return render(
+                request,
+                "farmers/rate_limited.html",
+                {"retry_after": settings.PORTAL_RATE_PERIOD // 60},
+                status=429,
+            )
+
+    form = ResearchStudyForm(request.POST or None)
+    question_formset = ResearchQuestionFormSet(
+        request.POST or None,
+        prefix="questions",
+    )
+    if request.method == "POST":
+        if request.POST.get("action") == "accept_quote":
+            study = get_object_or_404(
+                ResearchStudy,
+                pk=request.POST.get("study_id"),
+                researcher=researcher,
+                status=ResearchStudy.Status.QUOTE_SENT,
+                fee_quote_kes__isnull=False,
+            )
+            study.fee_accepted_at = timezone.now()
+            study.status = ResearchStudy.Status.QUOTE_ACCEPTED
+            study.save(update_fields=["fee_accepted_at", "status", "updated_at"])
+            return redirect("researcher_dashboard")
+
+        if form.is_valid() and question_formset.is_valid():
+            try:
+                with transaction.atomic():
+                    study = form.save(commit=False)
+                    study.researcher = researcher
+                    study.status = ResearchStudy.Status.SUBMITTED
+                    study.save()
+                    position = 1
+                    for question_form in question_formset.forms:
+                        if not question_form.has_changed():
+                            continue
+                        question_form.save(study, position)
+                        position += 1
+            except IntegrityError:
+                logger.exception("Could not save a Portal E study proposal.")
+                form.add_error(
+                    None,
+                    "The study could not be submitted. Please review the information and try again.",
+                )
+            else:
+                return redirect("researcher_dashboard")
+
+    studies = list(researcher.studies.prefetch_related("questions"))
+    for study in studies:
+        responses = list(study.responses.all())
+        study.response_count = len(responses)
+        study.results_available = study.response_count >= 5
+        study.result_questions = []
+        if study.results_available:
+            for question in study.questions.all():
+                counts = {option: 0 for option in question.options}
+                for response in responses:
+                    answer = response.answers.get(str(question.pk), [])
+                    if isinstance(answer, str):
+                        answer = [answer]
+                    for choice in answer:
+                        if choice in counts:
+                            counts[choice] += 1
+                low_count = any(0 < count < 5 for count in counts.values())
+                study.result_questions.append(
+                    {
+                        "prompt": question.prompt,
+                        "withheld": low_count,
+                        "counts": [] if low_count else list(counts.items()),
+                    }
+                )
+
+    return render(
+        request,
+        "farmers/researcher_dashboard.html",
+        {
+            "researcher": researcher,
+            "studies": studies,
+            "form": form,
+            "question_formset": question_formset,
+        },
+    )
+
+
+def respond_to_research_invitation(request, token):
+    if request.method == "POST" and _rate_limit_reached(
+        request, f"research-response:{token}"
+    ):
+        return render(
+            request,
+            "farmers/rate_limited.html",
+            {"retry_after": settings.PORTAL_RATE_PERIOD // 60},
+            status=429,
+        )
+
+    invitation = get_object_or_404(
+        ResearchInvitation.objects.select_related("study", "farmer_profile", "partner_profile"),
+        token=token,
+    )
+    study = invitation.study
+    now = timezone.now()
+    unavailable = (
+        invitation.completed_on is not None
+        or invitation.expires_at <= now
+        or study.status != ResearchStudy.Status.PUBLISHED
+        or study.closes_at <= now
+        or study.responses.count() >= study.target_sample_size
+        or (
+            invitation.farmer_profile
+            and not invitation.farmer_profile.research_invite_consent_at
+        )
+        or (
+            invitation.partner_profile
+            and not invitation.partner_profile.research_invite_consent_at
+        )
+    )
+    if unavailable:
+        return render(request, "farmers/research_unavailable.html", status=410)
+
+    questions = study.questions.all()
+    form = ResearchResponseForm(
+        request.POST or None,
+        questions=questions,
+    )
+    if request.method == "POST":
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    locked_invitation = ResearchInvitation.objects.select_for_update().select_related(
+                        "study", "farmer_profile", "partner_profile"
+                    ).get(pk=invitation.pk)
+                    current_time = timezone.now()
+                    if (
+                        locked_invitation.completed_on is not None
+                        or locked_invitation.expires_at <= current_time
+                        or locked_invitation.study.status != ResearchStudy.Status.PUBLISHED
+                        or locked_invitation.study.closes_at <= current_time
+                        or locked_invitation.study.responses.count()
+                        >= locked_invitation.study.target_sample_size
+                        or (
+                            locked_invitation.farmer_profile
+                            and not locked_invitation.farmer_profile.research_invite_consent_at
+                        )
+                        or (
+                            locked_invitation.partner_profile
+                            and not locked_invitation.partner_profile.research_invite_consent_at
+                        )
+                    ):
+                        return render(
+                            request,
+                            "farmers/research_unavailable.html",
+                            status=410,
+                        )
+                    ResearchResponse.objects.create(
+                        study=locked_invitation.study,
+                        answers=form.response_answers(),
+                        consented_on=timezone.localdate(current_time),
+                        submitted_on=timezone.localdate(current_time),
+                    )
+                    locked_invitation.completed_on = timezone.localdate(current_time)
+                    locked_invitation.farmer_profile = None
+                    locked_invitation.partner_profile = None
+                    locked_invitation.save(
+                        update_fields=["completed_on", "farmer_profile", "partner_profile"]
+                    )
+            except ResearchInvitation.DoesNotExist:
+                return render(request, "farmers/research_unavailable.html", status=410)
+            except DatabaseError:
+                logger.exception("Could not save an anonymous Portal E response.")
+                form.add_error(
+                    None,
+                    "Your response could not be saved. Please try again.",
+                )
+            else:
+                return render(request, "farmers/research_thanks.html")
+
+    return render(
+        request,
+        "farmers/research_respond.html",
+        {"study": study, "form": form},
     )
 
 

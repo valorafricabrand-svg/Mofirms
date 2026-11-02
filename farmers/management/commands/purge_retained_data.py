@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.core.management.base import BaseCommand
+from django.db.models import Q
 from django.utils import timezone
 
 from farmers.models import (
@@ -10,13 +11,17 @@ from farmers.models import (
     FinancialAnalysisRequest,
     PartnerDocument,
     PartnerProfile,
+    ResearchInvitation,
+    ResearchResponse,
+    ResearcherApplication,
+    ResearchStudy,
 )
 
 
 class Command(BaseCommand):
     help = (
-        "Preview or delete evidence older than 365 days and farmer, partner, or financial "
-        "requests inactive for 730 days."
+        "Preview or delete evidence and research data older than 365 days, plus farmer, "
+        "partner, financial, or researcher records inactive for 730 days."
     )
 
     def add_arguments(self, parser):
@@ -46,6 +51,22 @@ class Command(BaseCommand):
         expired_analysis_requests = FinancialAnalysisRequest.objects.filter(
             last_contact_at__lt=now - timedelta(days=730)
         )
+        expired_researchers = ResearcherApplication.objects.filter(
+            last_contact_at__lt=now - timedelta(days=730)
+        )
+        expired_research_studies = ResearchStudy.objects.filter(
+            researcher__in=expired_researchers
+        )
+        expired_research_responses = ResearchResponse.objects.filter(
+            Q(submitted_on__lt=now.date() - timedelta(days=365))
+            | Q(study__in=expired_research_studies)
+        ).distinct()
+        expired_research_invitations = ResearchInvitation.objects.filter(
+            Q(expires_at__lt=now)
+            | Q(study__in=expired_research_studies)
+            | Q(farmer_profile__in=expired_profiles)
+            | Q(partner_profile__in=expired_partners)
+        ).distinct()
         document_count = (
             expired_documents.count()
             + expired_partner_documents.count()
@@ -55,13 +76,20 @@ class Command(BaseCommand):
             expired_profiles.count()
             + expired_partners.count()
             + expired_analysis_requests.count()
+            + expired_researchers.count()
         )
+        response_count = expired_research_responses.count()
+        invitation_count = expired_research_invitations.count()
+        study_count = expired_research_studies.count()
 
         if not options["execute"]:
             self.stdout.write(
                 self.style.WARNING(
                     f"Dry run: {document_count} document(s) and "
-                    f"{profile_count} profile(s) are eligible for deletion. "
+                    f"{profile_count} profile/request(s), {study_count} research study/studies, "
+                    f"{response_count} research response(s), and {invitation_count} "
+                    f"invitation(s) are eligible "
+                    "for deletion. "
                     "Add --execute to delete them."
                 )
             )
@@ -78,6 +106,11 @@ class Command(BaseCommand):
             document.delete()
             deleted_documents += 1
 
+        deleted_research_responses, _ = expired_research_responses.delete()
+        deleted_research_invitations, _ = expired_research_invitations.delete()
+        expired_research_studies.delete()
+        deleted_research_studies = study_count
+
         deleted_profiles = 0
         for profile in expired_profiles.iterator():
             profile.delete()
@@ -88,10 +121,16 @@ class Command(BaseCommand):
         for analysis_request in expired_analysis_requests.iterator():
             analysis_request.delete()
             deleted_profiles += 1
+        for researcher in expired_researchers.select_related("user").iterator():
+            researcher.user.delete()
+            deleted_profiles += 1
 
         self.stdout.write(
             self.style.SUCCESS(
                 f"Deleted {deleted_documents} expired farmer/partner/financial document(s) and "
-                f"{deleted_profiles} expired farmer/partner/financial request(s)."
+                f"{deleted_profiles} expired farmer/partner/financial/research record(s), "
+                f"{deleted_research_studies} research study record(s), "
+                f"{deleted_research_responses} research response record(s), and "
+                f"{deleted_research_invitations} invitation record(s)."
             )
         )

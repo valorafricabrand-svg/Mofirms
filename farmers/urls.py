@@ -18,4 +18,17 @@ urlpatterns = [
         views.financial_analysis_success,
         name="financial_analysis_success",
     ),
+    path("research/register/", views.register_researcher, name="register_researcher"),
+    path(
+        "research/application-received/",
+        views.researcher_application_received,
+        name="researcher_application_received",
+    ),
+    path("research/login/", views.researcher_login, name="researcher_login"),
+    path("research/dashboard/", views.researcher_dashboard, name="researcher_dashboard"),
+    path(
+        "research/respond/<uuid:token>/",
+        views.respond_to_research_invitation,
+        name="respond_to_research_invitation",
+    ),
 ]
