@@ -8,7 +8,7 @@
 <meta property="og:title" content="MoFirms | Agribusiness &amp; Enterprise Advisory">
 <meta property="og:description" content="Practical advice for sustainable farms and growing enterprises.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=compact-layout">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -27,7 +27,7 @@
   <h1>Practical advice for sustainable farms and growing enterprises</h1>
   <p class="lead">Marks Organic Farms Concepts Limited, trading as MoFirms, was established in 2019. We help farmers, entrepreneurs and organisations plan agricultural enterprises, assess opportunities and grow responsibly, with financial analysis, market development and digital tools.</p>
   <div class="cta"><a class="btn" href="#contact">Request a consultation</a><a class="btn ghost" href="#services">Explore services</a></div>
-  <ul class="stats"><li><b>2019</b>Incorporated in Kenya</li><li><b>5</b>Customer and research portals</li><li><b>1</b>Planned bookkeeping product</li></ul>
+  <ul class="stats"><li><b>2019</b>Incorporated in Kenya</li><li><b>5</b>Customer and research portals</li><li><b>1</b>Local bookkeeping pilot</li></ul>
 </div></section>
 
 <section id="path" class="wrap"><h2>Where do you fit?</h2><p class="sub">Choose who you are and we’ll point you to the most relevant support.</p>
@@ -46,10 +46,10 @@
 </section>
 
 <section id="smarthasibu" class="alt"><div class="wrap two">
-  <div><span class="tag planned">Farmer pilot · use synthetic data</span>
+  <div><span class="tag planned">Local pilot · synthetic data only</span>
   <h2>SmartHasibu</h2>
-  <p>“Hasibu” is Kiswahili for account or reckoning. SmartHasibu is a phone-friendly bookkeeping pilot for farmers and small enterprises. Record sales and costs, keep separate farm activities, track unpaid credit, and review simple monthly totals.</p>
-  <p>Your cashbook is private to your account. The current pilot uses synthetic information only; do not enter real financial or personal details.</p>
+  <p>“Hasibu” is Kiswahili for account or reckoning. SmartHasibu is a phone-friendly bookkeeping pilot for farmers and small enterprises. Record sales and costs, separate farm activities, track unpaid credit, and review monthly totals.</p>
+  <p>The pilot runs locally and is not yet publicly launched. Use synthetic information only; do not enter real financial or personal details.</p>
   <a class="btn" href="/smart-hasibu/">Open SmartHasibu pilot</a></div>
   <div class="card"><h3>Available in this pilot</h3>
   <ul class="feat" id="feat"></ul>
@@ -78,21 +78,23 @@
   <h3>Vision</h3><p>Productive farms and resilient enterprises supported by dependable information, practical skills and access to markets.</p></div>
 </section>
 
-<section class="alt"><div class="wrap"><h2>Customer portals</h2>
+<section class="alt portal-section"><div class="wrap"><h2>Customer portals</h2>
   <p class="sub">Portals A and B support farmer, supplier, buyer, and service-provider registration. Portals C and D accept specialist financial-analysis and risk-and-opportunity assessment requests; staff review the scope and quote before work begins. Portal E is a separate, manually vetted research service; respondent participation is voluntary and researchers see aggregate results only. These services remain in local development and are not open for real personal, financial, or research data until secure production hosting and the privacy notice are approved.</p>
   <ol class="steps" id="portals"></ol></div></section>
 
-<section id="contact" class="wrap two">
+<section id="contact" class="wrap two contact-section">
   <div><h2>Request a consultation</h2>
   <p>Tell us briefly what you need. Please don’t include ID numbers, tax PINs, land records or detailed financial information here.</p>
   <p><b>Email:</b> <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a></p></div>
-  <form class="card" id="form" novalidate>
-    <label for="name">Name *</label><input id="name" required autocomplete="name">
-    <label for="how">Preferred contact</label><select id="how"><option>Email</option><option>Phone</option><option>WhatsApp</option></select>
-    <label for="who">Email or phone *</label><input id="who" required>
-    <label for="org">Organisation / county (optional)</label><input id="org">
-    <label for="cat">Enquiry category</label><select id="cat"></select>
-    <label for="msg">Message *</label><textarea id="msg" rows="4" required></textarea>
+  <form class="card contact-form" id="form" novalidate>
+    <div class="contact-fields">
+      <div><label for="name">Name *</label><input id="name" required autocomplete="name"></div>
+      <div><label for="how">Preferred contact</label><select id="how"><option>Email</option><option>Phone</option><option>WhatsApp</option></select></div>
+      <div><label for="who">Email or phone *</label><input id="who" required></div>
+      <div><label for="org">Organisation / county (optional)</label><input id="org"></div>
+      <div class="contact-wide"><label for="cat">Enquiry category</label><select id="cat"></select></div>
+      <div class="contact-wide"><label for="msg">Message *</label><textarea id="msg" rows="3" required></textarea></div>
+    </div>
     <label class="chk"><input type="checkbox" id="mk"> I’d also like occasional updates from MoFirms (optional).</label>
     <p class="note">We use these details only to respond to your enquiry. See the privacy notice below.</p>
     <p id="err" class="err" role="alert"></p>
