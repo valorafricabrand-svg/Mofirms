@@ -588,3 +588,208 @@ class PartnerDocument(models.Model):
             raise ValidationError(
                 {"review_notes": "Record what evidence was reviewed before accepting this document."}
             )
+
+
+def private_financial_analysis_document_path(instance, filename):
+    suffix = filename.rsplit(".", 1)[-1].lower() if "." in filename else "bin"
+    return f"financial-analysis/{instance.request.reference}/{uuid.uuid4()}.{suffix}"
+
+
+class FinancialAnalysisRequest(models.Model):
+    class ApplicantType(models.TextChoices):
+        INDIVIDUAL = "individual", "Individual or sole proprietor"
+        BUSINESS = "business", "Business, group, or organisation"
+
+    class ContactPreference(models.TextChoices):
+        PHONE = "phone", "Phone or SMS"
+        WHATSAPP = "whatsapp", "WhatsApp"
+        EMAIL = "email", "Email"
+
+    class ServiceStatus(models.TextChoices):
+        PENDING = "pending", "New request"
+        IN_REVIEW = "in_review", "Under initial review"
+        NEEDS_INFORMATION = "needs_information", "More information requested"
+        QUOTED = "quoted", "Quote sent"
+        ACCEPTED = "accepted", "Quote accepted"
+        IN_PROGRESS = "in_progress", "Analysis in progress"
+        COMPLETED = "completed", "Completed"
+        DECLINED = "declined", "Not proceeding"
+        CANCELLED = "cancelled", "Cancelled"
+
+    class RevenueBand(models.TextChoices):
+        PRE_REVENUE = "pre_revenue", "Not yet generating revenue"
+        UNDER_500K = "under_500k", "Under KSh 500,000 per year"
+        FROM_500K_TO_2M = "500k_2m", "KSh 500,000–2 million per year"
+        FROM_2M_TO_10M = "2m_10m", "KSh 2–10 million per year"
+        OVER_10M = "over_10m", "Over KSh 10 million per year"
+        PREFER_NOT = "prefer_not", "Prefer not to say"
+
+    class FundingNeedBand(models.TextChoices):
+        NONE = "none", "No funding request"
+        UNDER_500K = "under_500k", "Under KSh 500,000"
+        FROM_500K_TO_2M = "500k_2m", "KSh 500,000–2 million"
+        FROM_2M_TO_10M = "2m_10m", "KSh 2–10 million"
+        OVER_10M = "over_10m", "Over KSh 10 million"
+        PREFER_NOT = "prefer_not", "Prefer not to say"
+
+    class Timeline(models.TextChoices):
+        ASAP = "asap", "As soon as practical"
+        TWO_WEEKS = "two_weeks", "Within two weeks"
+        MONTH = "month", "Within one month"
+        FLEXIBLE = "flexible", "Flexible"
+
+    class ReviewStatus(models.TextChoices):
+        PENDING = "pending", "Pending review"
+        IN_REVIEW = "in_review", "In review"
+        ACCEPTED = "accepted", "Records reviewed"
+        FOLLOW_UP = "follow_up", "Needs follow-up"
+        NOT_ACCEPTED = "not_accepted", "Not accepted"
+        NOT_APPLICABLE = "not_applicable", "Not applicable"
+
+    reference = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    applicant_type = models.CharField(max_length=16, choices=ApplicantType.choices)
+    contact_name = models.CharField(max_length=160)
+    business_name = models.CharField(max_length=180, blank=True)
+    phone = models.CharField(max_length=32, blank=True)
+    email = models.EmailField(blank=True)
+    preferred_contact = models.CharField(max_length=12, choices=ContactPreference.choices)
+    county = models.CharField(max_length=32, choices=[(county, county) for county in COUNTIES])
+    sector = models.CharField(max_length=120, blank=True)
+    services_requested = models.JSONField(default=list)
+    financial_period = models.CharField(max_length=100, blank=True)
+    records_available = models.JSONField(default=list, blank=True)
+    accounting_software = models.CharField(max_length=120, blank=True)
+    annual_revenue_band = models.CharField(max_length=16, choices=RevenueBand.choices, blank=True)
+    funding_need_band = models.CharField(max_length=16, choices=FundingNeedBand.choices, blank=True)
+    timeline = models.CharField(max_length=16, choices=Timeline.choices, blank=True)
+    request_summary = models.TextField()
+    contact_consent_at = models.DateTimeField()
+    document_consent_at = models.DateTimeField(null=True, blank=True)
+    privacy_policy_version = models.CharField(max_length=24, default="2026-11-01")
+
+    status = models.CharField(
+        max_length=20, choices=ServiceStatus.choices, default=ServiceStatus.PENDING
+    )
+    review_status = models.CharField(
+        max_length=16, choices=ReviewStatus.choices, default=ReviewStatus.PENDING
+    )
+    internal_notes = models.TextField(blank=True)
+    quote_amount = models.DecimalField(
+        "Quoted fee (KES)",
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0.01)],
+        help_text="A quote is not a payment or proof of payment.",
+    )
+    quote_notes = models.TextField(blank=True)
+    quote_sent_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_financial_analysis_requests",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_contact_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "financial analysis request"
+        verbose_name_plural = "financial analysis requests"
+
+    def __str__(self):
+        return f"{self.public_reference} — {self.business_name or self.contact_name}"
+
+    @property
+    def public_reference(self):
+        return str(self.reference).split("-")[0].upper()
+
+    def clean(self):
+        super().clean()
+        allowed_services = {
+            "statement_review",
+            "business_plan",
+            "cash_flow",
+            "budget_forecast",
+            "funding_readiness",
+            "other",
+        }
+        if not self.services_requested or not set(self.services_requested).issubset(allowed_services):
+            raise ValidationError({"services_requested": "Select at least one valid service."})
+        if (
+            self.applicant_type == self.ApplicantType.BUSINESS
+            and not self.business_name.strip()
+        ):
+            raise ValidationError({"business_name": "Enter the business or organisation name."})
+        if self.preferred_contact == self.ContactPreference.EMAIL and not self.email.strip():
+            raise ValidationError({"email": "An email is required for the selected contact method."})
+        if (
+            self.preferred_contact in {self.ContactPreference.PHONE, self.ContactPreference.WHATSAPP}
+            and not self.phone.strip()
+        ):
+            raise ValidationError({"phone": "A phone number is required for the selected contact method."})
+        if self.status in {self.ServiceStatus.QUOTED, self.ServiceStatus.ACCEPTED}:
+            if self.quote_amount is None:
+                raise ValidationError(
+                    {"quote_amount": "Record the fee before marking a request as quoted."}
+                )
+        if self.status in {
+            self.ServiceStatus.ACCEPTED,
+            self.ServiceStatus.IN_PROGRESS,
+            self.ServiceStatus.COMPLETED,
+        } and self.quote_amount is None:
+            raise ValidationError({"quote_amount": "A recorded quote is required for this status."})
+
+
+class FinancialAnalysisDocument(models.Model):
+    class DocumentType(models.TextChoices):
+        FINANCIAL_STATEMENT = "statement", "Financial statement or accounts"
+        BUSINESS_PLAN = "business_plan", "Business plan"
+        CASH_FLOW = "cash_flow", "Cash-flow or budget records"
+        SALES_RECORDS = "sales_records", "Sales or bookkeeping records"
+        OTHER = "other", "Other relevant document"
+
+    class ReviewStatus(models.TextChoices):
+        PENDING = "pending", "Pending review"
+        REVIEWED = "reviewed", "Reviewed"
+        FOLLOW_UP = "follow_up", "Follow-up required"
+        NOT_ACCEPTED = "not_accepted", "Not accepted"
+
+    reference = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    request = models.ForeignKey(
+        FinancialAnalysisRequest, on_delete=models.CASCADE, related_name="documents"
+    )
+    document_type = models.CharField(max_length=16, choices=DocumentType.choices)
+    description = models.CharField(max_length=200, blank=True)
+    file = models.FileField(upload_to=private_financial_analysis_document_path)
+    review_status = models.CharField(
+        max_length=16, choices=ReviewStatus.choices, default=ReviewStatus.PENDING
+    )
+    review_notes = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_financial_analysis_documents",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    uploaded_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ["uploaded_at"]
+
+    def __str__(self):
+        return f"{self.get_document_type_display()} — {self.request}"
+
+    def clean(self):
+        super().clean()
+        if self.review_status == self.ReviewStatus.REVIEWED and not self.review_notes.strip():
+            raise ValidationError(
+                {"review_notes": "Record what was reviewed before marking this document reviewed."}
+            )

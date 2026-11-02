@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Financial analysis request | MoFirms</title>
+<meta name="description" content="Request specialist-reviewed financial analysis and business planning support from MoFirms.">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav"><div class="wrap bar">
+  <a class="logo" href="/"><span>Mo</span>Firms</a>
+  <a class="btn sm" href="/">Back to MoFirms</a>
+</div></header>
+
+<main id="main">
+<section class="wrap registration">
+  <p class="eyebrow">Portal C · Financial analysis</p>
+  <h1>Request financial analysis or business planning</h1>
+  <p class="lead">Tell us what decision you need help with and which records are available. A MoFirms reviewer will assess the scope and contact you with any questions and a fee quote before work begins.</p>
+
+  <aside class="notice notice-warning">
+    <h2>Before you begin</h2>
+    <ul>
+      <li>Submitting a request is not a loan application, funding approval, audit, tax filing, or guarantee of finance.</li>
+      <li>Any analysis is scoped and reviewed by a person; this form does not provide automated advice or make lending, investment, tax, or legal decisions.</li>
+      <li>Do not send account passwords, PINs, personal ID numbers, tax PINs, or information about people who have not agreed to share it. Redact full bank account and card numbers from documents before uploading.</li>
+      <li>Only upload records relevant to the requested work. Files are optional, private, limited to {{ max_documents }} per request, {{ max_file_size_mb }} MB each and {{ max_total_size_mb }} MB total. Accepted types: PDF, JPG and PNG.</li>
+      <li>Uploaded files are scheduled for deletion after one year; requests are scheduled for deletion after two years without recorded contact.</li>
+    </ul>
+    <p>This service is running in local development. Use synthetic information only; do not enter real financial or personal information or upload real statements until MoFirms has approved the privacy notice and deployed the portal to secure production hosting.</p>
+  </aside>
+
+  <form method="post" enctype="multipart/form-data" class="card registration-form" novalidate>
+    {% csrf_token %}
+    {{ form.website_trap }}
+    {% if form.non_field_errors %}<div class="err-box" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% if form.errors and not form.non_field_errors %}<p class="form-hint">Please correct the highlighted fields.</p>{% endif %}
+
+    <fieldset class="form-section choice-set">
+      <legend>Applicant</legend>
+      <div class="form-grid">
+        <div class="wide-field">{% include "farmers/field.html" with field=form.applicant_type %}</div>
+        <div>{% include "farmers/field.html" with field=form.contact_name %}</div>
+        <div>{% include "farmers/field.html" with field=form.business_name %}</div>
+        <div>{% include "farmers/field.html" with field=form.phone %}</div>
+        <div>{% include "farmers/field.html" with field=form.email %}</div>
+        <div>{% include "farmers/field.html" with field=form.preferred_contact %}</div>
+        <div>{% include "farmers/field.html" with field=form.county %}</div>
+        <div>{% include "farmers/field.html" with field=form.sector %}</div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section choice-set">
+      <legend>Analysis requested</legend>
+      {% include "farmers/checkboxes.html" with field=form.services_requested %}
+      <div class="form-grid">
+        <div>{% include "farmers/field.html" with field=form.financial_period %}</div>
+        <div>{% include "farmers/field.html" with field=form.timeline %}</div>
+        <div>{% include "farmers/field.html" with field=form.annual_revenue_band %}</div>
+        <div>{% include "farmers/field.html" with field=form.funding_need_band %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.accounting_software %}</div>
+        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.records_available %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.request_summary %}</div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Optional supporting documents</legend>
+      <p class="form-hint">Examples: financial statements, a business plan, a cashbook, sales summaries, or budgets. You may submit the request without files and discuss a secure exchange method with staff first.</p>
+      {{ document_formset.management_form }}
+      {{ document_formset.non_form_errors }}
+      {% for error in upload_errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+      <div id="documentRows" data-prefix="{{ document_formset.prefix }}" data-max="{{ max_documents }}">
+        {% for document_form in document_formset %}
+          {% include "farmers/document_row.html" with document_form=document_form %}
+        {% endfor %}
+      </div>
+      <template id="emptyDocumentRow">{% include "farmers/document_row.html" with document_form=document_formset.empty_form %}</template>
+      <button id="addDocument" class="opt" type="button">Add a document</button>
+      <p class="form-hint">Files are private and available only to authorised MoFirms staff as downloads. They are scheduled for deletion no later than one year after upload.</p>
+      <label class="choice consent"><input type="checkbox" name="document_consent">
+        I consent to authorised MoFirms staff reviewing files I choose to upload and deleting them no later than one year after upload.
+      </label>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Privacy and contact permission</legend>
+      <p>MoFirms uses this information to assess your request, prepare a possible service scope and fee quote, and contact you about the request. Access is restricted to authorised staff. Requests are scheduled for deletion after two years without recorded contact. Please review the request carefully and provide only information you are authorised to share.</p>
+      {% include "farmers/field.html" with field=form.privacy_consent %}
+    </fieldset>
+
+    <button class="btn" type="submit">Submit analysis request</button>
+  </form>
+</section>
+</main>
+<footer><div class="wrap">
+  <p>Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
+</div></footer>
+<script src="/js/register.js"></script>
+</body>
+</html>

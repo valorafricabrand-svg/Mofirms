@@ -21,6 +21,8 @@ from .models import (
     SUPPORT_CHOICES,
     FarmerDocument,
     FarmerProfile,
+    FinancialAnalysisDocument,
+    FinancialAnalysisRequest,
     PartnerDocument,
     PartnerProfile,
 )
@@ -313,9 +315,7 @@ class FarmerDocumentForm(forms.Form):
             finally:
                 uploaded.seek(0)
             if result.returncode != 0:
-                logger.warning(
-                    "A farmer registration upload was rejected by the malware scanner."
-                )
+                logger.warning("A registration portal upload was rejected by the malware scanner.")
                 raise ValidationError(
                     "The evidence could not be accepted. Check the file and try again."
                 )
@@ -607,6 +607,125 @@ class PartnerDocumentForm(FarmerDocumentForm):
 
 PartnerDocumentFormSet = formset_factory(
     PartnerDocumentForm,
+    extra=0,
+    max_num=MAX_DOCUMENTS_PER_REGISTRATION,
+    validate_max=True,
+    absolute_max=MAX_DOCUMENTS_PER_REGISTRATION,
+)
+
+
+class FinancialAnalysisRequestForm(forms.ModelForm):
+    services_requested = forms.MultipleChoiceField(
+        choices=[
+            ("statement_review", "Financial statement or accounts review"),
+            ("business_plan", "Business plan development or review"),
+            ("cash_flow", "Cash-flow analysis"),
+            ("budget_forecast", "Budget or financial forecast"),
+            ("funding_readiness", "Funding or lender readiness"),
+            ("other", "Other financial analysis"),
+        ],
+        required=True,
+        widget=forms.CheckboxSelectMultiple,
+        label="What financial support do you need?",
+    )
+    records_available = forms.MultipleChoiceField(
+        choices=[
+            ("financial_statements", "Financial statements"),
+            ("sales_records", "Sales or income records"),
+            ("expense_records", "Expense or purchase records"),
+            ("cashbook", "Cashbook or bookkeeping records"),
+            ("bank_statements", "Bank statements"),
+            ("business_plan", "Existing business plan"),
+            ("budgets", "Budgets or forecasts"),
+            ("none", "I do not have formal records yet"),
+        ],
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Which records are available?",
+    )
+    privacy_consent = forms.BooleanField(
+        required=True,
+        label=(
+            "I agree that MoFirms may review this request and contact me about its scope "
+            "and a possible fee quote."
+        ),
+    )
+    website_trap = forms.CharField(required=False, widget=forms.HiddenInput)
+
+    class Meta:
+        model = FinancialAnalysisRequest
+        fields = [
+            "applicant_type",
+            "contact_name",
+            "business_name",
+            "phone",
+            "email",
+            "preferred_contact",
+            "county",
+            "sector",
+            "services_requested",
+            "financial_period",
+            "records_available",
+            "accounting_software",
+            "annual_revenue_band",
+            "funding_need_band",
+            "timeline",
+            "request_summary",
+        ]
+        widgets = {
+            "applicant_type": forms.RadioSelect,
+            "request_summary": forms.Textarea(attrs={"rows": 4}),
+        }
+        help_texts = {
+            "financial_period": "For example, January–December 2025. Approximate dates are fine.",
+            "accounting_software": "Optional. Do not enter account names, passwords, or sign-in links.",
+            "annual_revenue_band": "Optional estimate only; do not enter exact account balances.",
+            "funding_need_band": "Optional estimate only; submitting a request is not a loan application.",
+            "request_summary": (
+                "Describe the decision or output you need. Do not include passwords, account "
+                "numbers, personal ID numbers, tax PINs, or unrelated people's data."
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["county"].choices = [("", "Select a county")] + [
+            (county, county) for county in COUNTIES
+        ]
+        self.fields["business_name"].required = False
+        self.fields["phone"].required = False
+        self.fields["email"].required = False
+        self.fields["sector"].required = False
+        self.fields["financial_period"].required = False
+        self.fields["accounting_software"].required = False
+        self.fields["annual_revenue_band"].required = False
+        self.fields["funding_need_band"].required = False
+        self.fields["timeline"].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get("website_trap"):
+            raise ValidationError("The request could not be submitted. Please try again.")
+        return cleaned_data
+
+    def save(self, commit=True):
+        request = super().save(commit=False)
+        request.services_requested = self.cleaned_data["services_requested"]
+        request.records_available = self.cleaned_data["records_available"]
+        if commit:
+            request.save()
+        return request
+
+
+class FinancialAnalysisDocumentForm(FarmerDocumentForm):
+    document_type = forms.ChoiceField(
+        choices=FinancialAnalysisDocument.DocumentType.choices,
+        label="Document type",
+    )
+
+
+FinancialAnalysisDocumentFormSet = formset_factory(
+    FinancialAnalysisDocumentForm,
     extra=0,
     max_num=MAX_DOCUMENTS_PER_REGISTRATION,
     validate_max=True,

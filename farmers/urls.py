@@ -12,4 +12,10 @@ urlpatterns = [
         views.partner_registration_success,
         name="partner_registration_success",
     ),
+    path("financial-analysis/", views.request_financial_analysis, name="request_financial_analysis"),
+    path(
+        "financial-analysis/received/<str:reference>/",
+        views.financial_analysis_success,
+        name="financial_analysis_success",
+    ),
 ]

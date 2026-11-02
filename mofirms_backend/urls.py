@@ -4,7 +4,11 @@ from django.urls import include, path, re_path
 from django.views.static import serve
 from django.views.generic import TemplateView
 
-from farmers.views import download_document, download_partner_document
+from farmers.views import (
+    download_document,
+    download_financial_analysis_document,
+    download_partner_document,
+)
 
 
 urlpatterns = [
@@ -19,6 +23,11 @@ urlpatterns = [
         "staff/partner-documents/<int:document_id>/download/",
         download_partner_document,
         name="download_partner_document",
+    ),
+    path(
+        "staff/financial-analysis-documents/<int:document_id>/download/",
+        download_financial_analysis_document,
+        name="download_financial_analysis_document",
     ),
     path("staff/", admin.site.urls),
 ]

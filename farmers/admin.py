@@ -3,7 +3,14 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.urls import reverse
 
-from .models import FarmerDocument, FarmerProfile, PartnerDocument, PartnerProfile
+from .models import (
+    FarmerDocument,
+    FarmerProfile,
+    FinancialAnalysisDocument,
+    FinancialAnalysisRequest,
+    PartnerDocument,
+    PartnerProfile,
+)
 
 
 @admin.register(FarmerProfile)
@@ -412,6 +419,173 @@ class PartnerDocumentAdmin(admin.ModelAdmin):
             return "No file"
         url = reverse("download_partner_document", args=[obj.pk])
         return format_html('<a href="{}">Download evidence</a>', url)
+
+    def save_model(self, request, obj, form, change):
+        if change and "review_status" in form.changed_data:
+            obj.reviewed_by = request.user
+            obj.reviewed_at = timezone.now()
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(FinancialAnalysisRequest)
+class FinancialAnalysisRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "public_reference",
+        "contact_name",
+        "business_name",
+        "services_summary",
+        "status",
+        "quote_amount",
+        "created_at",
+    )
+    list_filter = ("status", "review_status", "applicant_type", "county", "created_at")
+    search_fields = ("contact_name", "business_name", "email", "phone", "reference")
+    readonly_fields = (
+        "reference",
+        "contact_consent_at",
+        "document_consent_at",
+        "privacy_policy_version",
+        "reviewed_by",
+        "reviewed_at",
+        "quote_sent_at",
+        "created_at",
+        "updated_at",
+    )
+    actions = ("mark_contacted_today",)
+    date_hierarchy = "created_at"
+    fieldsets = (
+        ("Service request and working status", {
+            "fields": (
+                "reference",
+                "status",
+                "review_status",
+                "reviewed_by",
+                "reviewed_at",
+                "internal_notes",
+            )
+        }),
+        ("Applicant and contact", {
+            "fields": (
+                "applicant_type",
+                "contact_name",
+                "business_name",
+                "phone",
+                "email",
+                "preferred_contact",
+                "county",
+                "sector",
+            )
+        }),
+        ("Requested analysis", {
+            "fields": (
+                "services_requested",
+                "financial_period",
+                "records_available",
+                "accounting_software",
+                "annual_revenue_band",
+                "funding_need_band",
+                "timeline",
+                "request_summary",
+            )
+        }),
+        ("Quote", {
+            "fields": ("quote_amount", "quote_notes", "quote_sent_at")
+        }),
+        ("Consent, retention, and contact history", {
+            "fields": (
+                "contact_consent_at",
+                "document_consent_at",
+                "privacy_policy_version",
+                "last_contact_at",
+                "created_at",
+                "updated_at",
+            )
+        }),
+    )
+
+    @admin.display(description="Reference")
+    def public_reference(self, obj):
+        return obj.public_reference
+
+    @admin.display(description="Requested service(s)")
+    def services_summary(self, obj):
+        labels = dict((
+            ("statement_review", "Statements"),
+            ("business_plan", "Business plan"),
+            ("cash_flow", "Cash flow"),
+            ("budget_forecast", "Budget/forecast"),
+            ("funding_readiness", "Funding readiness"),
+            ("other", "Other"),
+        ))
+        return ", ".join(labels.get(service, service) for service in obj.services_requested)
+
+    @admin.action(description="Record that contact occurred today (retention clock)")
+    def mark_contacted_today(self, request, queryset):
+        updated = queryset.update(last_contact_at=timezone.now())
+        self.message_user(request, f"Updated the last-contact date for {updated} request(s).")
+
+    def save_model(self, request, obj, form, change):
+        review_fields = {"status", "review_status", "quote_amount", "quote_notes"}
+        if change and review_fields.intersection(form.changed_data):
+            obj.reviewed_by = request.user
+            obj.reviewed_at = timezone.now()
+        if (
+            obj.quote_amount is not None
+            and obj.status in {
+                FinancialAnalysisRequest.ServiceStatus.QUOTED,
+                FinancialAnalysisRequest.ServiceStatus.ACCEPTED,
+                FinancialAnalysisRequest.ServiceStatus.IN_PROGRESS,
+                FinancialAnalysisRequest.ServiceStatus.COMPLETED,
+            }
+            and not obj.quote_sent_at
+        ):
+            obj.quote_sent_at = timezone.now()
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(FinancialAnalysisDocument)
+class FinancialAnalysisDocumentAdmin(admin.ModelAdmin):
+    list_display = (
+        "reference",
+        "request",
+        "document_type",
+        "review_status",
+        "uploaded_at",
+        "secure_download",
+    )
+    list_filter = ("document_type", "review_status", "uploaded_at")
+    search_fields = (
+        "request__contact_name",
+        "request__business_name",
+        "request__reference",
+        "reference",
+    )
+    readonly_fields = (
+        "reference",
+        "uploaded_at",
+        "secure_download",
+        "reviewed_by",
+        "reviewed_at",
+    )
+    fields = (
+        "reference",
+        "request",
+        "document_type",
+        "description",
+        "secure_download",
+        "review_status",
+        "review_notes",
+        "reviewed_by",
+        "reviewed_at",
+        "uploaded_at",
+    )
+
+    @admin.display(description="Private financial document")
+    def secure_download(self, obj):
+        if not obj.pk or not obj.file:
+            return "No file"
+        url = reverse("download_financial_analysis_document", args=[obj.pk])
+        return format_html('<a href="{}">Download financial document</a>', url)
 
     def save_model(self, request, obj, form, change):
         if change and "review_status" in form.changed_data:

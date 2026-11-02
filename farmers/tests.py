@@ -13,7 +13,14 @@ from django.urls import reverse
 from django.utils import timezone
 from PIL import Image, PngImagePlugin
 
-from .models import FarmerDocument, FarmerProfile, PartnerDocument, PartnerProfile
+from .models import (
+    FarmerDocument,
+    FarmerProfile,
+    FinancialAnalysisDocument,
+    FinancialAnalysisRequest,
+    PartnerDocument,
+    PartnerProfile,
+)
 
 
 def png_upload(name="proof.png", metadata=None):
@@ -439,3 +446,224 @@ class PartnerRegistrationTests(TestCase):
         self.assertFalse(PartnerProfile.objects.filter(pk=profile.pk).exists())
         self.assertFalse(PartnerDocument.objects.filter(pk=document.pk).exists())
         self.assertFalse(Path(stored_path).exists())
+
+
+class FinancialAnalysisRequestTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.private_files = TemporaryDirectory()
+        self.addCleanup(self.private_files.cleanup)
+        self.settings_override = override_settings(
+            MEDIA_ROOT=self.private_files.name,
+            PRIVATE_UPLOAD_ROOT=self.private_files.name,
+            ANTIVIRUS_ENABLED=False,
+        )
+        self.settings_override.enable()
+        self.addCleanup(self.settings_override.disable)
+        self.url = reverse("request_financial_analysis")
+        self.data = {
+            "applicant_type": "business",
+            "contact_name": "Synthetic Finance Contact",
+            "business_name": "Synthetic Farm Enterprise",
+            "phone": "0700000000",
+            "preferred_contact": "phone",
+            "county": "Vihiga",
+            "sector": "Horticulture",
+            "services_requested": ["statement_review", "cash_flow"],
+            "financial_period": "January to December 2025",
+            "records_available": ["cashbook", "sales_records"],
+            "annual_revenue_band": "under_500k",
+            "funding_need_band": "none",
+            "timeline": "flexible",
+            "request_summary": "Synthetic request for a sample cash-flow review.",
+            "privacy_consent": "on",
+            "documents-TOTAL_FORMS": "0",
+            "documents-INITIAL_FORMS": "0",
+            "documents-MIN_NUM_FORMS": "0",
+            "documents-MAX_NUM_FORMS": "20",
+        }
+
+    def test_request_is_saved_for_manual_scope_and_quote(self):
+        response = self.client.post(self.url, self.data)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertRegex(
+            response.url,
+            r"^/portal/financial-analysis/received/[A-F0-9]{8}/$",
+        )
+        analysis_request = FinancialAnalysisRequest.objects.get()
+        self.assertEqual(
+            analysis_request.services_requested,
+            ["statement_review", "cash_flow"],
+        )
+        self.assertEqual(analysis_request.records_available, ["cashbook", "sales_records"])
+        self.assertEqual(
+            analysis_request.status,
+            FinancialAnalysisRequest.ServiceStatus.PENDING,
+        )
+        self.assertIsNotNone(analysis_request.contact_consent_at)
+
+    def test_selected_contact_method_requires_matching_contact_detail(self):
+        data = {
+            **self.data,
+            "phone": "",
+            "email": "",
+        }
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(FinancialAnalysisRequest.objects.count(), 0)
+        self.assertContains(response, "A phone number is required for the selected contact method.")
+
+    def test_quote_status_requires_recorded_fee(self):
+        analysis_request = FinancialAnalysisRequest.objects.create(
+            applicant_type=FinancialAnalysisRequest.ApplicantType.BUSINESS,
+            contact_name="Synthetic Finance Contact",
+            business_name="Synthetic Farm Enterprise",
+            phone="0700000000",
+            preferred_contact=FinancialAnalysisRequest.ContactPreference.PHONE,
+            county="Vihiga",
+            services_requested=["statement_review"],
+            request_summary="Synthetic request.",
+            contact_consent_at=timezone.now(),
+        )
+        analysis_request.status = FinancialAnalysisRequest.ServiceStatus.QUOTED
+
+        with self.assertRaises(ValidationError) as error:
+            analysis_request.full_clean()
+        self.assertIn("quote_amount", error.exception.message_dict)
+
+        analysis_request.quote_amount = "5000.00"
+        analysis_request.full_clean()
+
+    def test_staff_can_open_financial_request_in_admin_for_status_management(self):
+        response = self.client.post(self.url, self.data)
+        self.assertEqual(response.status_code, 302)
+        analysis_request = FinancialAnalysisRequest.objects.get()
+        staff_user = get_user_model().objects.create_user(
+            username="finance-admin",
+            password="test-password",
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.client.force_login(staff_user)
+
+        response = self.client.get(
+            reverse(
+                "admin:farmers_financialanalysisrequest_change",
+                args=[analysis_request.pk],
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "New request")
+        self.assertContains(response, "Quoted fee (KES)")
+
+    def test_upload_requires_consent_and_staff_only_access(self):
+        pdf = SimpleUploadedFile(
+            "synthetic-statement.pdf",
+            b"%PDF-1.7 synthetic financial document",
+            content_type="application/pdf",
+        )
+        data = {
+            **self.data,
+            "documents-TOTAL_FORMS": "1",
+            "documents-INITIAL_FORMS": "0",
+            "documents-MIN_NUM_FORMS": "0",
+            "documents-MAX_NUM_FORMS": "20",
+            "documents-0-document_type": "statement",
+            "documents-0-description": "Synthetic sample statement",
+            "documents-0-file": pdf,
+        }
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(FinancialAnalysisRequest.objects.count(), 0)
+        self.assertContains(response, "Please agree to the one-year document retention notice")
+
+        data["documents-0-file"] = SimpleUploadedFile(
+            "synthetic-statement.pdf",
+            b"%PDF-1.7 synthetic financial document",
+            content_type="application/pdf",
+        )
+        data["document_consent"] = "on"
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+
+        analysis_request = FinancialAnalysisRequest.objects.get()
+        document = FinancialAnalysisDocument.objects.get(request=analysis_request)
+        self.assertIsNotNone(analysis_request.document_consent_at)
+        self.assertEqual(self.client.get(document.file.url).status_code, 404)
+        download_url = reverse("download_financial_analysis_document", args=[document.pk])
+        self.assertEqual(self.client.get(download_url).status_code, 302)
+
+        staff_user = get_user_model().objects.create_user(
+            username="finance-reviewer",
+            password="test-password",
+            is_staff=True,
+        )
+        self.client.force_login(staff_user)
+        response = self.client.get(download_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["X-Content-Type-Options"], "nosniff")
+        self.assertIn("attachment", response["Content-Disposition"])
+        self.assertIn(b"synthetic financial document", b"".join(response.streaming_content))
+
+    def test_financial_requests_and_documents_are_removed_by_retention_command(self):
+        old_date = timezone.now() - timedelta(days=800)
+        analysis_request = FinancialAnalysisRequest.objects.create(
+            applicant_type=FinancialAnalysisRequest.ApplicantType.BUSINESS,
+            contact_name="Old Synthetic Contact",
+            business_name="Old Synthetic Enterprise",
+            phone="0700000000",
+            preferred_contact=FinancialAnalysisRequest.ContactPreference.PHONE,
+            county="Vihiga",
+            services_requested=["business_plan"],
+            request_summary="Synthetic historic request.",
+            contact_consent_at=old_date,
+            created_at=old_date,
+            last_contact_at=old_date,
+        )
+        document = FinancialAnalysisDocument.objects.create(
+            request=analysis_request,
+            document_type=FinancialAnalysisDocument.DocumentType.BUSINESS_PLAN,
+            uploaded_at=old_date,
+        )
+        document.file.save(
+            "old-synthetic-plan.pdf",
+            SimpleUploadedFile("old-synthetic-plan.pdf", b"%PDF-1.7 synthetic"),
+            save=True,
+        )
+        stored_path = document.file.path
+        recent_request = FinancialAnalysisRequest.objects.create(
+            applicant_type=FinancialAnalysisRequest.ApplicantType.BUSINESS,
+            contact_name="Recent Synthetic Contact",
+            business_name="Recent Synthetic Enterprise",
+            phone="0700000000",
+            preferred_contact=FinancialAnalysisRequest.ContactPreference.PHONE,
+            county="Vihiga",
+            services_requested=["business_plan"],
+            request_summary="Synthetic recent request.",
+            contact_consent_at=timezone.now(),
+        )
+        expired_document = FinancialAnalysisDocument.objects.create(
+            request=recent_request,
+            document_type=FinancialAnalysisDocument.DocumentType.BUSINESS_PLAN,
+            uploaded_at=old_date,
+        )
+        expired_document.file.save(
+            "expired-synthetic-plan.pdf",
+            SimpleUploadedFile("expired-synthetic-plan.pdf", b"%PDF-1.7 synthetic"),
+            save=True,
+        )
+        expired_document_path = expired_document.file.path
+
+        with self.captureOnCommitCallbacks(execute=True):
+            call_command("purge_retained_data", "--execute")
+
+        self.assertFalse(FinancialAnalysisRequest.objects.filter(pk=analysis_request.pk).exists())
+        self.assertFalse(FinancialAnalysisDocument.objects.filter(pk=document.pk).exists())
+        self.assertFalse(Path(stored_path).exists())
+        self.assertTrue(FinancialAnalysisRequest.objects.filter(pk=recent_request.pk).exists())
+        self.assertFalse(FinancialAnalysisDocument.objects.filter(pk=expired_document.pk).exists())
+        self.assertFalse(Path(expired_document_path).exists())
