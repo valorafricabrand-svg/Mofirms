@@ -9,7 +9,7 @@
 <meta property="og:title" content="MoFirms | Agribusiness &amp; Enterprise Advisory">
 <meta property="og:description" content="Practical advice for sustainable farms and growing enterprises.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
-<link rel="stylesheet" href="{% static 'css/style.css' %}?v=footer-design">
+<link rel="stylesheet" href="{% static 'css/style.css' %}?v=vofa-cluster-banners-1">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -71,7 +71,20 @@
 <section id="services" class="alt"><div class="wrap">
   <h2>Services</h2>
   <p class="sub">Every service carries an honest status label. Advice supports applications and decisions; it does not guarantee funding or returns.</p>
-  <div class="filters" id="filters"></div><div class="grid" id="svcGrid"></div>
+  <div class="filters" id="filters" aria-label="Filter services"></div>
+  <div class="service-controls" role="group" aria-label="Service banner controls">
+    <button class="service-arrow" id="servicesPrevious" type="button" aria-label="Show previous services">←</button>
+    <button class="service-arrow" id="servicesNext" type="button" aria-label="Show next services">→</button>
+    <button class="service-motion" id="servicesMotion" type="button">Pause motion</button>
+  </div>
+  <div class="service-viewport" id="servicesViewport" role="region" aria-label="MoFirms services, moving from right to left" tabindex="0">
+    <div class="service-track" id="serviceTrack">
+      <div class="service-set" id="serviceSet"></div>
+      <div class="service-set" id="serviceSetCopy" aria-hidden="true" inert></div>
+    </div>
+  </div>
+  <p class="service-hint">Browse every service with the arrows or scroll horizontally. Pause the banners at any time.</p>
+  <p class="visually-hidden" id="servicesAnnouncement" aria-live="polite" aria-atomic="true"></p>
 </div></section>
 
 <section id="check" class="wrap"><h2>Enterprise readiness check</h2>
@@ -95,7 +108,42 @@
 
 <section id="projects" class="wrap"><h2>Projects &amp; collaborations</h2>
   <p class="sub">Each entry states the owner, MoFirms’ role and the stage. Proposals and models are not presented as results.</p>
+  <aside class="project-context card" aria-labelledby="vofa-context-title">
+    <div class="project-context-heading"><span class="tag now">Association milestones reported</span><span class="note">VOFA guide · 31 October 2026</span></div>
+    <h3 id="vofa-context-title">A farmer-led association building its next steps</h3>
+    <p>Vihiga Organic Farmers Association (VOFA) is a separate, farmer-governed community-based organisation—not a MoFirms subsidiary. Its guide reports that VOFA has adopted its Constitution, completed CBO registration, opened a bank account, and begun farmer registration across Vihiga’s 29 wards. These are guide-reported milestones, not independently verified by MoFirms.</p>
+    <p class="project-context-note"><b>Reported seedling progress:</b> the guide says KALRO committed oil-palm seedlings for Emuhaya and that 500 of 1,000 discussed seedlings had been delivered to two members. VOFA noted this delivery had not yet been entered in its asset register.</p>
+  </aside>
   <div class="grid" id="projGrid"></div>
+  <div class="cluster-intro">
+    <h3>Project clusters under consideration</h3>
+    <p class="sub">VOFA reports written proposals and illustrative financial models for these ideas. None is yet an approved or funded project. Activities under consideration are shown on each card.</p>
+  </div>
+  <div class="cluster-controls" role="group" aria-label="Project cluster banner controls">
+    <button class="cluster-arrow" id="clustersPrevious" type="button" aria-label="Show previous project clusters">←</button>
+    <button class="cluster-arrow" id="clustersNext" type="button" aria-label="Show next project clusters">→</button>
+    <button class="cluster-motion" id="clustersMotion" type="button">Pause motion</button>
+  </div>
+  <div class="cluster-viewport" id="clustersViewport" role="region" aria-label="Proposed VOFA project clusters, moving from right to left" tabindex="0">
+    <div class="cluster-track" id="clusterTrack">
+      <div class="cluster-set" id="clusterGrid"></div>
+      <div class="cluster-set" id="clusterGridCopy" aria-hidden="true" inert></div>
+    </div>
+  </div>
+  <p class="cluster-hint">Use the arrows or scroll to browse every proposed cluster. Pause the banners at any time.</p>
+  <p class="visually-hidden" id="clustersAnnouncement" aria-live="polite" aria-atomic="true"></p>
+  <section class="project-readiness" aria-labelledby="project-readiness-title">
+    <h3 id="project-readiness-title">What needs to happen before a cluster can proceed</h3>
+    <ol class="concept-steps">
+      <li><b>Understand member readiness.</b><span>Survey interested members’ production, capacity, and willingness to participate.</span></li>
+      <li><b>Check demand and viability.</b><span>Assess potential buyers, supply terms, costs, likely earnings after costs, working-capital needs, and environmental fit.</span></li>
+      <li><b>Share a clear plan.</b><span>Give interested members the proposed costs, responsibilities, risks, and terms to review.</span></li>
+      <li><b>Obtain formal approval.</b><span>VOFA’s Committee must approve a cluster before the association commits resources or confirms partners.</span></li>
+    </ol>
+    <p>With enough interested, verified members, a cluster could explore buyer negotiations, group input prices, and shared transport. Any approach to financiers depends on demonstrated production and genuine buyer interest; no outcome is guaranteed.</p>
+    <p class="project-safeguard"><b>Financial safeguards:</b> the proposed mutual-guarantee fund is not an approved scheme; VOFA’s guide says no deposits are being requested. Carbon budgets assume zero income until eligibility, methodology, and net benefit are independently verified.</p>
+    <a class="project-link" href="#contact" data-cat="Project collaboration">Discuss a similar project <span aria-hidden="true">→</span></a>
+  </section>
 </section>
 
 <section id="products" class="alt"><div class="wrap">
@@ -114,7 +162,20 @@
 
 <section class="alt portal-section" id="customer-portals"><div class="wrap"><h2>Customer portals</h2>
   <p class="sub">Portals A and B support farmer, supplier, buyer, and service-provider registration. Portals C and D accept specialist financial-analysis and risk-and-opportunity assessment requests; staff review the scope and quote before work begins. Portal E is a separate, manually vetted research service; respondent participation is voluntary and researchers see aggregate results only. These services remain in local development and are not open for real personal, financial, or research data until secure production hosting and the privacy notice are approved.</p>
-  <ol class="steps" id="portals"></ol></div></section>
+  <div class="portal-controls" role="group" aria-label="Customer portal banner controls">
+    <button class="portal-arrow" id="portalsPrevious" type="button" aria-label="Show previous portals">←</button>
+    <button class="portal-arrow" id="portalsNext" type="button" aria-label="Show next portals">→</button>
+    <button class="portal-motion" id="portalsMotion" type="button">Pause motion</button>
+  </div>
+  <div class="portal-viewport" id="portalsViewport" role="region" aria-label="Customer portals, moving from right to left" tabindex="0">
+    <div class="portal-track" id="portalTrack">
+      <ol class="portal-set steps" id="portals"></ol>
+      <ol class="portal-set steps" id="portalsCopy" aria-hidden="true" inert></ol>
+    </div>
+  </div>
+  <p class="portal-hint">Use the arrows or scroll to explore all five portals. Pause the banners at any time.</p>
+  <p class="visually-hidden" id="portalsAnnouncement" aria-live="polite" aria-atomic="true"></p>
+</div></section>
 
 <section id="contact" class="wrap two contact-section">
   <div><h2>Request a consultation</h2>
@@ -178,5 +239,5 @@
     <div id="privacy" hidden class="footer-privacy">We collect only the details you submit in the enquiry form, to respond to you. Marketing messages are sent only if you tick the optional box. You may ask us to access, correct or delete your data by emailing <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a>. <i>Draft: to be confirmed against company records before launch.</i></div>
   </div>
 </footer>
-<script src="{% static 'js/app.js' %}?v=footer-design"></script>
+<script src="{% static 'js/app.js' %}?v=vofa-cluster-banners-1"></script>
 </body></html>
