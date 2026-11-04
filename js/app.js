@@ -24,6 +24,7 @@ const PORTALS=[["Portal A: Farmer registration","Securely capture farmer and gro
 const PATHS={Farmer:["Farmers & farmer groups","Register an individual farmer or group, share farming and business needs, and request a MoFirms review.","/portal/register/"],Entrepreneur:["Entrepreneurs","Business planning, cash-flow modelling and finance readiness for your venture.","#services"],Institution:["Institutions & partners","Project design, analysis and partnership enquiries, with clear roles and ownership.","#projects"]};
 const CATS=["Agribusiness advice","Business intelligence","Training","Products","Project collaboration","SmartHasibu waitlist","Other"];
 const $=s=>document.querySelector(s),el=(h)=>{const d=document.createElement("div");d.innerHTML=h.trim();return d.firstChild};
+const reducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)");
 $("#yr").textContent=new Date().getFullYear();
 $("#burger").onclick=e=>{const o=$("#menu").classList.toggle("open");e.target.setAttribute("aria-expanded",o)};
 $("#menu").onclick=()=>$("#menu").classList.remove("open");
@@ -32,33 +33,78 @@ $("#pv").onclick=()=>{const notice=$("#privacy");notice.hidden=!notice.hidden;$(
 const carousel=$("#agriCarousel");
 if(carousel){
   const slides=[...carousel.querySelectorAll(".carousel-slide")];
-  const dots=[...carousel.querySelectorAll(".carousel-dot")];
   const announcement=$("#carouselAnnouncement");
+  const currentDisplay=$("#carouselCurrent");
+  const totalDisplay=$("#carouselTotal");
+  const progress=carousel.querySelector(".carousel-progress");
+  const progressFill=$("#carouselProgress");
+  const toggle=$("#carouselToggle");
   let currentSlide=0;
+  let carouselPaused=reducedMotion.matches;
+  let carouselEngaged=false;
+  let lastCarouselChange=Date.now();
+  totalDisplay.textContent=String(slides.length).padStart(2,"0");
+  progress.setAttribute("aria-valuemax",String(slides.length));
+  function updateCarouselToggle(){
+    toggle.disabled=reducedMotion.matches;
+    toggle.textContent=carouselPaused?"▶":"Ⅱ";
+    toggle.setAttribute("aria-label",reducedMotion.matches?"Automatic slide rotation is disabled by your reduced motion setting":carouselPaused?"Resume automatic slide rotation":"Pause automatic slide rotation");
+  }
   function showSlide(index,announce=false){
     currentSlide=(index+slides.length)%slides.length;
     slides.forEach((slide,i)=>{
       const active=i===currentSlide;
       slide.hidden=!active;
       slide.classList.toggle("is-active",active);
+      slide.setAttribute("aria-label",`${i+1} of ${slides.length}: ${slide.querySelector("h1,h2").textContent}`);
     });
-    dots.forEach((dot,i)=>{
-      const active=i===currentSlide;
-      dot.classList.toggle("is-active",active);
-      if(active)dot.setAttribute("aria-current","true");
-      else dot.removeAttribute("aria-current");
-    });
+    currentDisplay.textContent=String(currentSlide+1).padStart(2,"0");
+    progress.setAttribute("aria-valuenow",String(currentSlide+1));
+    progressFill.style.width=`${((currentSlide+1)/slides.length)*100}%`;
+    lastCarouselChange=Date.now();
     if(announce)announcement.textContent=`Slide ${currentSlide+1} of ${slides.length}: ${slides[currentSlide].querySelector("h1,h2").textContent}`;
+  }
+  function setCarouselEngaged(engaged){
+    carouselEngaged=engaged;
+    lastCarouselChange=Date.now();
   }
   $("#carouselPrevious").onclick=()=>showSlide(currentSlide-1,true);
   $("#carouselNext").onclick=()=>showSlide(currentSlide+1,true);
-  dots.forEach((dot,i)=>dot.onclick=()=>showSlide(i,true));
+  toggle.onclick=()=>{carouselPaused=!carouselPaused;updateCarouselToggle();lastCarouselChange=Date.now()};
+  carousel.addEventListener("pointerenter",()=>setCarouselEngaged(true));
+  carousel.addEventListener("pointerleave",()=>setCarouselEngaged(false));
+  carousel.addEventListener("focusin",()=>setCarouselEngaged(true));
+  carousel.addEventListener("focusout",event=>{if(!carousel.contains(event.relatedTarget))setCarouselEngaged(false)});
+  let touchStart=null;
+  carousel.addEventListener("pointerdown",event=>{
+    if(event.pointerType==="touch")touchStart={x:event.clientX,y:event.clientY};
+  });
+  carousel.addEventListener("pointerup",event=>{
+    if(!touchStart)return;
+    const deltaX=event.clientX-touchStart.x;
+    const deltaY=event.clientY-touchStart.y;
+    if(Math.abs(deltaX)>50&&Math.abs(deltaX)>Math.abs(deltaY)){
+      showSlide(currentSlide+(deltaX<0?1:-1),true);
+    }
+    touchStart=null;
+  });
+  carousel.addEventListener("pointercancel",()=>{touchStart=null});
   carousel.addEventListener("keydown",event=>{
     if(event.key==="ArrowLeft"||event.key==="ArrowRight"){
       event.preventDefault();
       showSlide(currentSlide+(event.key==="ArrowRight"?1:-1),true);
     }
   });
+  reducedMotion.addEventListener("change",()=>{
+    if(reducedMotion.matches)carouselPaused=true;
+    updateCarouselToggle();
+  });
+  window.setInterval(()=>{
+    if(!carouselPaused&&!carouselEngaged&&!document.hidden&&Date.now()-lastCarouselChange>=7000){
+      showSlide(currentSlide+1);
+    }
+  },500);
+  updateCarouselToggle();
   showSlide(0);
 }
 /* pathways */
@@ -68,7 +114,6 @@ function show(k){const p=PATHS[k];$("#pathOut").innerHTML=`<h3>${p[0]}</h3><p>${
 let flt="all";const F=$("#filters");
 [["all","All"],...Object.entries(STATUS)].forEach(([k,v])=>{const b=el(`<button type="button" class="${k=="all"?"on":""}" aria-pressed="${k=="all"}">${v}</button>`);b.onclick=()=>{flt=k;F.querySelectorAll("button").forEach(x=>{x.classList.remove("on");x.setAttribute("aria-pressed","false")});b.classList.add("on");b.setAttribute("aria-pressed","true");draw()};F.append(b)});
 const serviceViewport=$("#servicesViewport"),serviceSet=$("#serviceSet"),serviceSetCopy=$("#serviceSetCopy"),servicesMotion=$("#servicesMotion"),servicesAnnouncement=$("#servicesAnnouncement");
-const reducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)");
 let servicesPaused=reducedMotion.matches,servicesEngaged=false,lastServicesFrame=0;
 function draw(){
   const visibleServices=SERVICES.filter(s=>flt=="all"||s.s==flt);
