@@ -25,6 +25,27 @@ python -m venv .venv
 
 Open the site at `http://127.0.0.1:8002/`, submit farmer registrations at `/portal/register/`, partner registrations at `/portal/partners/register/`, financial analysis requests at `/portal/financial-analysis/`, risk and opportunity assessment requests at `/portal/risk-assessment/`, SmartHasibu at `/smart-hasibu/`, researcher applications at `/portal/research/register/`, researcher sign-in at `/portal/research/login/`, and staff review at `/staff/`.
 
+### Private beta, service plans, and M-PESA
+
+The public pricing page (`/pricing/`) reads active packages from the `ServicePlan` table. Migration `0008` creates the initial Farm Starter (KSh 4,500), Growth (KSh 12,500), and Enterprise Accelerator (KSh 29,000) packages. These are proposed launch prices; confirm the fees, deliverables, taxes, and refund/cancellation terms before accepting live payments. Staff can edit or deactivate packages in Django admin.
+
+The private beta flow is deliberately staff-gated:
+
+1. Review the farmer or entrepreneur in the Farmer registrations or Supplier and buyer registrations admin. Set verification to Verified only after recording the evidence and scope in verification notes.
+2. Create a Beta invite for the verified profile in Django admin. Send its private link directly through an authorised channel; there is no automated email or SMS integration. Invites expire after 30 days and can be revoked.
+3. The invited person consents and submits a beta access request. Staff review the resulting Beta enrollment and set its status to Approved or Declined.
+4. Share the access link with an approved member. They select an active package and a Kenyan M-PESA number; the server starts an STK Push using the package price stored in the database.
+5. MoFirms marks the payment paid only after the Daraja callback is matched to the stored checkout request and confirmed using the STK Query API. Review the resulting payment record in Django admin before beginning paid work.
+
+Configure these server environment variables through the hosting provider's secret manager. Never commit or send credentials in source control, support tickets, or chat:
+
+- `MPESA_ENVIRONMENT=sandbox` for test credentials; use `production` only after Safaricom merchant onboarding and test approval.
+- `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`, and `MPESA_PASSKEY` from the matching Daraja app and shortcode.
+- `MPESA_CALLBACK_URL=https://<production-host>/portal/payments/mpesa/callback/` using the exact public HTTPS address.
+- `MPESA_TRANSACTION_TYPE=CustomerPayBillOnline` for a PayBill shortcode, or `CustomerBuyGoodsOnline` for a Till where enabled.
+
+The callback must be reachable over HTTPS in production. Keep the configured environment and merchant credentials paired (sandbox credentials with sandbox, live credentials with production). The site does not store M-PESA PINs or card details. Payment attempts retain the package, amount, M-PESA receipt, and status; phone numbers are masked after a terminal result and when beta/profile data is removed. Agree a finance-record retention schedule with the accountant and privacy lead before launch. The local development database and this repository's Render demo service are not live-payment environments.
+
 ### Data and file safeguards
 
 - Staff pages require a Django staff account. Evidence files are stored outside the static website, are not exposed through a public media URL, and are served only to authenticated staff as downloads.

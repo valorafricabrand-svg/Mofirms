@@ -1,9 +1,15 @@
 from django.urls import path
 
+from . import billing
 from . import views
 
 
 urlpatterns = [
+    path("beta/<uuid:token>/", billing.redeem_beta_invite, name="redeem_beta_invite"),
+    path("beta/access/<uuid:token>/", billing.beta_enrollment, name="beta_enrollment"),
+    path("beta/checkout/<uuid:token>/", billing.beta_checkout, name="beta_checkout"),
+    path("beta/payment-status/<uuid:token>/", billing.payment_status, name="payment_status"),
+    path("payments/mpesa/callback/", billing.mpesa_callback, name="mpesa_callback"),
     path("register/", views.register_farmer, name="register_farmer"),
     path("registered/<str:reference>/", views.registration_success, name="registration_success"),
     path("partners/register/", views.register_partner, name="register_partner"),

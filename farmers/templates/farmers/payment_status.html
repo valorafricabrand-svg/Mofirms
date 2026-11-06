@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+{% load static humanize %}
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payment status | MoFirms</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="marketing-page">
+  <main class="wrap onboarding-hero">
+    <section class="card">
+      <p class="eyebrow">Private beta payments</p>
+      <h1>Payment status</h1>
+      <p>Payment is recorded only after confirmation from M-PESA. Refresh this page if your phone transaction has just completed.</p>
+      {% for payment in payments %}
+        <article class="summary-box">
+          <h2>{{ payment.plan.name }} — KSh {{ payment.amount|floatformat:0|intcomma }}</h2>
+          <p><strong>{{ payment.get_status_display }}</strong></p>
+          {% if payment.mpesa_receipt %}<p>M-PESA receipt: <strong>{{ payment.mpesa_receipt }}</strong></p>{% endif %}
+          {% if payment.status == "failed" %}<p>M-PESA did not confirm this payment. You may try again or contact MoFirms for help.</p>{% endif %}
+          <p class="note">Request date: {{ payment.created_at|date:"j M Y, H:i" }}</p>
+        </article>
+      {% empty %}
+        <p>You do not have a payment request yet.</p>
+      {% endfor %}
+      {% if enrollment.status == "approved" %}<a class="btn" href="{% url 'beta_checkout' token=enrollment.access_token %}">Return to checkout</a>{% endif %}
+    </section>
+  </main>
+</body>
+</html>

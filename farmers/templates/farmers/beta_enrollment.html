@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Beta access review | MoFirms</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="marketing-page">
+  <main class="wrap onboarding-hero">
+    <section class="card">
+      <p class="eyebrow">Private beta access</p>
+      <h1>{{ enrollment.get_status_display }}</h1>
+      {% if enrollment.status == "pending" %}
+        <p>Your request is received. A MoFirms staff member will review it and contact you using the details on your verified profile. This private link is your access key; keep it private.</p>
+      {% elif enrollment.status == "declined" %}
+        <p>We are unable to offer beta access at this time. MoFirms may contact you with any relevant next steps.</p>
+      {% else %}
+        <p>Beta access is closed. Contact MoFirms if you believe this is an error.</p>
+      {% endif %}
+      <a class="btn ghost" href="/">Return to MoFirms</a>
+    </section>
+  </main>
+</body>
+</html>

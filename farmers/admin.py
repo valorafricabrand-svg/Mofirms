@@ -9,6 +9,9 @@ from .models import (
     FarmerProfile,
     FinancialAnalysisDocument,
     FinancialAnalysisRequest,
+    BetaEnrollment,
+    BetaInvite,
+    MpesaPayment,
     PartnerDocument,
     PartnerProfile,
     RiskAssessmentDocument,
@@ -17,7 +20,25 @@ from .models import (
     ResearchQuestion,
     ResearchStudy,
     ResearcherApplication,
+    ServicePlan,
 )
+
+
+class BetaInviteAdminForm(forms.ModelForm):
+    class Meta:
+        model = BetaInvite
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "farmer_profile" in self.fields:
+            self.fields["farmer_profile"].queryset = FarmerProfile.objects.filter(
+                verification_status=FarmerProfile.VerificationStatus.VERIFIED
+            )
+        if "partner_profile" in self.fields:
+            self.fields["partner_profile"].queryset = PartnerProfile.objects.filter(
+                verification_status=PartnerProfile.ReviewStatus.VERIFIED
+            )
 
 
 @admin.register(FarmerProfile)
@@ -34,6 +55,8 @@ class FarmerProfileAdmin(admin.ModelAdmin):
         "farm_review_status",
         "created_at",
     )
+
+
     list_filter = (
         "registration_type",
         "verification_status",
@@ -1051,3 +1074,178 @@ class ResearchInvitationAdmin(admin.ModelAdmin):
                 research_invite_consent_at__isnull=False
             )
         return form
+
+
+@admin.register(ServicePlan)
+class ServicePlanAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "price", "active", "display_order", "updated_at")
+    list_filter = ("active",)
+    search_fields = ("name", "slug", "tagline")
+    prepopulated_fields = {"slug": ("name",)}
+    readonly_fields = ("created_at", "updated_at")
+    fields = (
+        "name",
+        "slug",
+        "price",
+        "tagline",
+        "description",
+        "features",
+        "active",
+        "display_order",
+        "created_at",
+        "updated_at",
+    )
+
+
+@admin.register(BetaInvite)
+class BetaInviteAdmin(admin.ModelAdmin):
+    form = BetaInviteAdminForm
+    list_display = (
+        "token",
+        "profile_summary",
+        "invitation_link",
+        "active",
+        "expires_at",
+        "redeemed_at",
+        "created_at",
+    )
+    list_filter = ("active", "created_at", "expires_at", "redeemed_at")
+    search_fields = (
+        "farmer_profile__full_name",
+        "farmer_profile__group_name",
+        "partner_profile__business_name",
+        "partner_profile__contact_name",
+        "token",
+    )
+    readonly_fields = ("token", "created_by", "created_at", "redeemed_at", "invitation_link")
+    fields = (
+        "farmer_profile",
+        "partner_profile",
+        "token",
+        "invitation_link",
+        "expires_at",
+        "active",
+        "created_by",
+        "created_at",
+        "redeemed_at",
+    )
+
+    @admin.display(description="Verified member")
+    def profile_summary(self, obj):
+        return obj.farmer_profile or obj.partner_profile
+
+    @admin.display(description="Private beta invitation link")
+    def invitation_link(self, obj):
+        return format_html(
+            '<a href="{}">Open private invitation</a>',
+            reverse("redeem_beta_invite", args=[obj.token]),
+        )
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly = list(super().get_readonly_fields(request, obj))
+        if obj:
+            readonly.extend(("farmer_profile", "partner_profile"))
+        return tuple(readonly)
+
+
+@admin.register(BetaEnrollment)
+class BetaEnrollmentAdmin(admin.ModelAdmin):
+    list_display = (
+        "profile_summary",
+        "status",
+        "reviewed_by",
+        "reviewed_at",
+        "created_at",
+    )
+    list_filter = ("status", "created_at", "reviewed_at")
+    search_fields = (
+        "invite__farmer_profile__full_name",
+        "invite__farmer_profile__group_name",
+        "invite__partner_profile__business_name",
+        "invite__partner_profile__contact_name",
+    )
+    readonly_fields = (
+        "invite",
+        "access_token",
+        "member_link",
+        "consent_at",
+        "terms_version",
+        "reviewed_by",
+        "reviewed_at",
+        "created_at",
+        "updated_at",
+    )
+    fields = (
+        "invite",
+        "access_token",
+        "member_link",
+        "status",
+        "review_notes",
+        "consent_at",
+        "terms_version",
+        "reviewed_by",
+        "reviewed_at",
+        "created_at",
+        "updated_at",
+    )
+
+    @admin.display(description="Verified member")
+    def profile_summary(self, obj):
+        return obj.profile
+
+    @admin.display(description="Private member access link")
+    def member_link(self, obj):
+        return format_html(
+            '<a href="{}">Open private member link</a>',
+            reverse("beta_enrollment", args=[obj.access_token]),
+        )
+
+    def save_model(self, request, obj, form, change):
+        if change and "status" in form.changed_data:
+            obj.reviewed_by = request.user
+            obj.reviewed_at = timezone.now()
+        super().save_model(request, obj, form, change)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(MpesaPayment)
+class MpesaPaymentAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "enrollment",
+        "plan",
+        "amount",
+        "phone_number",
+        "status",
+        "mpesa_receipt",
+        "created_at",
+    )
+    list_filter = ("status", "plan", "created_at", "paid_at")
+    search_fields = ("phone_number", "mpesa_receipt", "checkout_request_id")
+    readonly_fields = tuple(field.name for field in MpesaPayment._meta.fields)
+    fields = readonly_fields
+    date_hierarchy = "created_at"
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related(
+            "enrollment", "plan", "enrollment__invite"
+        )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

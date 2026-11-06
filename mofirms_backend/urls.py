@@ -10,10 +10,14 @@ from farmers.views import (
     download_partner_document,
     download_risk_assessment_document,
 )
+from farmers.billing import pricing, public_checkout
 
 
 urlpatterns = [
     path("", TemplateView.as_view(template_name="index.html"), name="home"),
+    path("pricing/", pricing, name="pricing"),
+    path("onboarding/", TemplateView.as_view(template_name="onboarding.html"), name="onboarding"),
+    path("checkout/", public_checkout, name="checkout"),
     path("portal/", include("farmers.urls")),
     path("smart-hasibu/", include("smart_hasibu.urls")),
     path(

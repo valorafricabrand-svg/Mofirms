@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+{% load static humanize %}
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Private beta checkout | MoFirms</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="marketing-page">
+  <header class="nav"><div class="wrap bar">
+    <a class="logo" href="/"><span>Mo</span>Firms</a>
+    <nav id="menu" aria-label="Main"><a href="/pricing/">Pricing</a><a href="{% url 'payment_status' token=enrollment.access_token %}">Payment status</a></nav>
+  </div></header>
+  <main class="wrap checkout-layout">
+    <section>
+      <p class="eyebrow">Verified private beta account</p>
+      <h1>Choose your support plan</h1>
+      <p class="lead">M-PESA STK Push is available after staff approval. Confirm the package and scope with MoFirms before paying.</p>
+      <div class="plan-grid pricing-grid">
+        {% for plan in plans %}
+          <article class="plan-card pricing-card">
+            <span class="plan-tag">{{ plan.name }}</span>
+            <div class="plan-price">KSh {{ plan.price|floatformat:0|intcomma }}</div>
+            <p class="plan-caption">{{ plan.tagline }}</p>
+            <ul class="checklist">{% for feature in plan.features %}<li>{{ feature }}</li>{% endfor %}</ul>
+          </article>
+        {% empty %}
+          <p>There are no active packages. Please contact MoFirms.</p>
+        {% endfor %}
+      </div>
+      <section class="payment-options">
+        <h2>Start secure M-PESA payment</h2>
+        <form class="card" method="post">
+          {% csrf_token %}
+          {{ form.non_field_errors }}
+          <p><label for="{{ form.plan.id_for_label }}">Package</label>{{ form.plan }}{{ form.plan.errors }}</p>
+          <p><label for="{{ form.phone_number.id_for_label }}">M-PESA phone number</label>{{ form.phone_number }}{{ form.phone_number.errors }}</p>
+          <p class="field">{{ form.payment_consent }} {{ form.payment_consent.label_tag }}{{ form.payment_consent.errors }}</p>
+          {% if mpesa_ready %}
+            <button class="btn" type="submit">Send M-PESA payment prompt</button>
+          {% else %}
+            <p role="status">M-PESA checkout is not enabled yet. Contact MoFirms to confirm when payment setup is complete.</p>
+            <button class="btn" type="submit" disabled>Payment setup incomplete</button>
+          {% endif %}
+        </form>
+        <p class="note">An STK Push prompt is sent to your phone. MoFirms marks an invoice paid only after M-PESA transaction confirmation. Never share your M-PESA PIN.</p>
+      </section>
+    </section>
+    <aside class="checkout-panel card">
+      <h2>Payment records</h2>
+      {% for payment in payments %}
+        <div class="summary-line"><span>{{ payment.plan.name }} · KSh {{ payment.amount|floatformat:0|intcomma }}</span><strong>{{ payment.get_status_display }}</strong></div>
+        {% if payment.mpesa_receipt %}<p class="note">Receipt: {{ payment.mpesa_receipt }}</p>{% endif %}
+      {% empty %}
+        <p>No payment requests yet.</p>
+      {% endfor %}
+      <a class="btn ghost" href="{% url 'payment_status' token=enrollment.access_token %}">View payment status</a>
+    </aside>
+  </main>
+</body>
+</html>

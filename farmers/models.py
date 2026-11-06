@@ -5,7 +5,12 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
+
+
+def default_beta_invite_expiry():
+    return timezone.now() + timedelta(days=30)
 
 
 COUNTIES = (
@@ -1333,3 +1338,180 @@ class ResearchResponse(models.Model):
 
     def __str__(self):
         return f"Anonymous response for {self.study}"
+
+
+class ServicePlan(models.Model):
+    slug = models.SlugField(max_length=48, unique=True)
+    name = models.CharField(max_length=100)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    tagline = models.CharField(max_length=220)
+    description = models.TextField()
+    features = models.JSONField(default=list, blank=True)
+    active = models.BooleanField(default=True)
+    display_order = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["display_order", "price"]
+
+    def __str__(self):
+        return f"{self.name} — KSh {self.price:,.0f}"
+
+    def clean(self):
+        super().clean()
+        if self.price <= 0 or self.price != self.price.to_integral_value():
+            raise ValidationError(
+                {"price": "M-PESA package prices must be a positive whole number of Kenyan shillings."}
+            )
+
+
+class BetaInvite(models.Model):
+    farmer_profile = models.ForeignKey(
+        FarmerProfile,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="beta_invites",
+    )
+    partner_profile = models.ForeignKey(
+        PartnerProfile,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="beta_invites",
+    )
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_beta_invites",
+    )
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    expires_at = models.DateTimeField(default=default_beta_invite_expiry)
+    active = models.BooleanField(default=True)
+    redeemed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Private beta invite {self.token}"
+
+    @property
+    def profile_is_verified(self):
+        if self.farmer_profile_id:
+            return self.farmer_profile.verification_status == FarmerProfile.VerificationStatus.VERIFIED
+        if self.partner_profile_id:
+            return self.partner_profile.verification_status == PartnerProfile.ReviewStatus.VERIFIED
+        return False
+
+    def clean(self):
+        super().clean()
+        if bool(self.farmer_profile_id) == bool(self.partner_profile_id):
+            raise ValidationError("Select exactly one verified farmer or entrepreneur profile.")
+        if self.active and self.farmer_profile_id and not self.profile_is_verified:
+            raise ValidationError({"farmer_profile": "Only MoFirms-verified farmers can be invited."})
+        if self.active and self.partner_profile_id and not self.profile_is_verified:
+            raise ValidationError(
+                {"partner_profile": "Only MoFirms-verified entrepreneurs can be invited."}
+            )
+class BetaEnrollment(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Awaiting beta approval"
+        APPROVED = "approved", "Approved for private beta"
+        DECLINED = "declined", "Not approved"
+        CLOSED = "closed", "Access closed"
+
+    invite = models.OneToOneField(
+        BetaInvite, on_delete=models.CASCADE, related_name="enrollment"
+    )
+    access_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    consent_at = models.DateTimeField()
+    terms_version = models.CharField(max_length=24, default="beta-2026-11-07")
+    review_notes = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_beta_enrollments",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.profile_label} — {self.get_status_display()}"
+
+    @property
+    def profile(self):
+        return self.invite.farmer_profile or self.invite.partner_profile
+
+    @property
+    def profile_label(self):
+        profile = self.profile
+        if isinstance(profile, FarmerProfile):
+            return profile.group_name or profile.full_name
+        return profile.business_name or profile.trading_name or profile.contact_name
+
+    def clean(self):
+        super().clean()
+        if (
+            self.status == self.Status.APPROVED
+            and self.invite_id
+            and (not self.invite.active or not self.invite.profile_is_verified)
+        ):
+            raise ValidationError("Private beta access requires a verified MoFirms profile.")
+
+
+class MpesaPayment(models.Model):
+    class Status(models.TextChoices):
+        INITIATING = "initiating", "Starting M-PESA request"
+        PENDING = "pending", "Awaiting M-PESA payment"
+        PAID = "paid", "Paid"
+        FAILED = "failed", "Failed"
+
+    enrollment = models.ForeignKey(
+        BetaEnrollment,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payments",
+    )
+    plan = models.ForeignKey(ServicePlan, on_delete=models.PROTECT, related_name="payments")
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    phone_number = models.CharField(max_length=16)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.INITIATING)
+    checkout_request_id = models.CharField(max_length=120, unique=True, null=True, blank=True)
+    merchant_request_id = models.CharField(max_length=120, blank=True)
+    mpesa_receipt = models.CharField(max_length=32, unique=True, null=True, blank=True)
+    result_code = models.CharField(max_length=24, blank=True)
+    result_description = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["enrollment"],
+                condition=Q(status__in=["initiating", "pending"]),
+                name="one_active_mpesa_payment_per_beta_enrollment",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.plan.name} — {self.get_status_display()} — {self.phone_number}"
+
+    def clean(self):
+        super().clean()
+        if self.amount != self.plan.price:
+            raise ValidationError({"amount": "The payment amount must match the selected plan price."})

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+{% load static humanize %}
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Secure checkout | MoFirms</title>
+  <meta name="description" content="M-PESA checkout is available to approved MoFirms private beta members." />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=checkout-private-beta">
+</head>
+<body class="marketing-page">
+  <header class="nav"><div class="wrap bar">
+    <a class="logo" href="/"><span>Mo</span>Firms</a>
+    <nav id="menu" aria-label="Main"><a href="/">Home</a><a href="/pricing/">Pricing</a><a href="/onboarding/">Onboarding</a></nav>
+  </div></header>
+  <main class="wrap onboarding-hero">
+    <section class="card">
+      <p class="eyebrow">Secure M-PESA checkout</p>
+      <h1>Payments are currently invitation-only</h1>
+      <p class="lead">MoFirms accepts online payments only after a farmer or entrepreneur profile has been verified, a private beta application has been approved, and the package scope has been confirmed.</p>
+      <h2>Available packages</h2>
+      <div class="plan-grid pricing-grid">
+        {% for plan in plans %}
+          <article class="plan-card pricing-card">
+            <h3>{{ plan.name }}</h3>
+            <div class="plan-price">KSh {{ plan.price|floatformat:0|intcomma }}</div>
+            <p class="plan-caption">{{ plan.tagline }}</p>
+          </article>
+        {% empty %}
+          <p>Packages are not currently available.</p>
+        {% endfor %}
+      </div>
+      <div class="section-cta">
+        <a class="btn" href="/portal/register/">Register for staff review</a>
+        <a class="btn ghost" href="/pricing/">View package details</a>
+      </div>
+      <p class="note">This page does not collect payment details. MoFirms will never ask for your M-PESA PIN or one-time security code.</p>
+    </section>
+  </main>
+</body>
+</html>

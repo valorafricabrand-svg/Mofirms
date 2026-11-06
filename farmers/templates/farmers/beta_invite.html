@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Private beta invitation | MoFirms</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="marketing-page">
+  <header class="nav"><div class="wrap bar">
+    <a class="logo" href="/"><span>Mo</span>Firms</a>
+    <nav id="menu" aria-label="Main"><a href="/">Home</a><a href="/pricing/">Pricing</a></nav>
+  </div></header>
+  <main class="wrap onboarding-hero">
+    <section class="card">
+      <p class="eyebrow">Private beta invitation</p>
+      <h1>Join the MoFirms private beta</h1>
+      <p>This invitation is for <strong>{{ profile }}</strong>, whose farmer or enterprise profile has been verified by MoFirms.</p>
+      <p>Submitting this application requests beta access; it does not guarantee acceptance. Staff will review capacity and suitability before enabling service access.</p>
+      <form method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="field">{{ form.consent }} {{ form.consent.label_tag }}{{ form.consent.errors }}</div>
+        <button class="btn" type="submit">Request beta access</button>
+      </form>
+      <p class="note">Do not forward this private invitation. Contact MoFirms if it reached you unexpectedly.</p>
+    </section>
+  </main>
+</body>
+</html>

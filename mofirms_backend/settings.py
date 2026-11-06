@@ -150,6 +150,56 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "webmaster@localhost")
 MOFIRMS_CONTACT_EMAIL = os.environ.get(
     "MOFIRMS_CONTACT_EMAIL", "mconceptslimited@gmail.com"
 )
+MPESA_ENVIRONMENT = os.environ.get("MPESA_ENVIRONMENT", "sandbox").strip().lower()
+if MPESA_ENVIRONMENT not in {"sandbox", "production"}:
+    raise ImproperlyConfigured("MPESA_ENVIRONMENT must be 'sandbox' or 'production'.")
+MPESA_BASE_URL = (
+    "https://api.safaricom.co.ke"
+    if MPESA_ENVIRONMENT == "production"
+    else "https://sandbox.safaricom.co.ke"
+)
+MPESA_CONSUMER_KEY = os.environ.get("MPESA_CONSUMER_KEY", "").strip()
+MPESA_CONSUMER_SECRET = os.environ.get("MPESA_CONSUMER_SECRET", "").strip()
+MPESA_SHORTCODE = os.environ.get("MPESA_SHORTCODE", "").strip()
+MPESA_PASSKEY = os.environ.get("MPESA_PASSKEY", "").strip()
+MPESA_CALLBACK_URL = os.environ.get("MPESA_CALLBACK_URL", "").strip()
+MPESA_TRANSACTION_TYPE = os.environ.get(
+    "MPESA_TRANSACTION_TYPE", "CustomerPayBillOnline"
+).strip()
+if MPESA_TRANSACTION_TYPE not in {
+    "CustomerPayBillOnline",
+    "CustomerBuyGoodsOnline",
+}:
+    raise ImproperlyConfigured(
+        "MPESA_TRANSACTION_TYPE must be CustomerPayBillOnline or CustomerBuyGoodsOnline."
+    )
+if not DEBUG and not DEMO_MODE:
+    if MPESA_ENVIRONMENT != "production":
+        raise ImproperlyConfigured(
+            "MPESA_ENVIRONMENT must be 'production' before enabling production service."
+        )
+    missing_mpesa_settings = [
+        name
+        for name, value in {
+            "MPESA_CONSUMER_KEY": MPESA_CONSUMER_KEY,
+            "MPESA_CONSUMER_SECRET": MPESA_CONSUMER_SECRET,
+            "MPESA_SHORTCODE": MPESA_SHORTCODE,
+            "MPESA_PASSKEY": MPESA_PASSKEY,
+            "MPESA_CALLBACK_URL": MPESA_CALLBACK_URL,
+        }.items()
+        if not value
+    ]
+    if missing_mpesa_settings:
+        raise ImproperlyConfigured(
+            "Production M-PESA configuration is incomplete: "
+            + ", ".join(missing_mpesa_settings)
+            + "."
+        )
+    callback_url = urlparse(MPESA_CALLBACK_URL)
+    if callback_url.scheme != "https" or not callback_url.netloc:
+        raise ImproperlyConfigured(
+            "MPESA_CALLBACK_URL must be an absolute HTTPS URL in production."
+        )
 
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"

@@ -194,3 +194,49 @@ button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:420px){.footer-main{grid-template-columns:1fr;gap:22px}.footer-brand{grid-column:auto}.footer-bottom p{line-height:1.55}.footer-legal{gap:16px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}.reveal{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.carousel-arrow{transform:none}.carousel-slide.is-active{animation:none}}
+
+.marketing-page{background:linear-gradient(180deg,var(--bg) 0%,#f6f9f6 100%)}
+.marketing-page .nav{background:rgba(255,255,255,.88)}
+.pricing-hero,.onboarding-hero,.checkout-layout{padding:72px 0 24px}
+.pricing-hero,.onboarding-hero{display:grid;grid-template-columns:1.8fr 1fr;gap:24px;align-items:center}
+.pricing-hero-copy h1,.onboarding-hero h1{margin-top:10px;max-width:620px}
+.lead{font-size:1.08rem;max-width:62ch;color:var(--mut)}
+.cta-inline,.section-cta,.panel-cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
+.trust-box,.alt-box,.summary-box,.checkout-panel{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 12px 28px rgba(18,42,26,.06)}
+.trust-box h3,.checkout-panel h2{margin-top:0}
+.trust-box ul,.checklist{margin:16px 0 0;padding-left:20px;list-style:none}
+.trust-box li,.checklist li{position:relative;padding-left:24px;margin:10px 0;color:var(--ink)}
+.trust-box li::before,.checklist li::before{content:"✓";position:absolute;left:0;color:var(--g);font-weight:800}
+.pricing-section,.comparison-section,.flow-section,.support-section,.faq-section{padding-top:12px;padding-bottom:24px}
+.pricing-grid,.flow-grid,.journey-grid,.payment-grid,.faq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
+.plan-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.plan-card.featured{border-color:var(--g);box-shadow:0 16px 32px rgba(28,97,52,.12);background:linear-gradient(180deg,#f7faf7 0%,#edf9f1 100%)}
+.plan-tag{display:inline-block;width:max-content;padding:7px 12px;border-radius:999px;background:#eef6ee;color:var(--g);font-size:.74rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.featured-tag{background:var(--g);color:#fff}
+.plan-price{font-size:2rem;font-weight:800;letter-spacing:-.04em;color:var(--ink)}
+.plan-caption{color:var(--mut);margin:0}
+.plan-card .btn,.pricing-card .btn{margin-top:auto}
+.comparison-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:20px;background:#fff}
+.comparison-table{width:100%;border-collapse:collapse;min-width:640px}
+.comparison-table th,.comparison-table td{padding:14px 18px;border-bottom:1px solid var(--line);text-align:left}
+.comparison-table th{background:#f7faf7;
+font-size:.82rem;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
+.comparison-table tbody tr:last-child td{border-bottom:none}
+.card.faq-item{height:100%}
+.flow-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.flow-step{padding:22px;position:relative}
+.step-number{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;background:#edf7ee;color:var(--g);font-weight:800}
+.alt-box{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;align-items:start;background:#f7faf7}
+.trust-list{margin-top:0}
+.support-section{padding-top:40px}
+.checkout-layout{display:grid;grid-template-columns:1.55fr .9fr;gap:24px;align-items:start}
+.summary-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+.summary-line{display:flex;justify-content:space-between;gap:20px;padding:12px 0;border-bottom:1px solid var(--line);color:var(--mut)}
+.summary-line:last-child{border-bottom:none}
+.summary-line strong{color:var(--ink)}
+.payment-grid{margin-top:16px}
+.payment-option{padding:20px}
+.checkout-panel{position:sticky;top:80px}
+.checkout-panel .checklist{padding-left:0}
+@media(max-width:760px){.pricing-hero,.onboarding-hero,.alt-box,.checkout-layout{grid-template-columns:1fr}.pricing-hero,.onboarding-hero,.checkout-layout{padding-top:48px}.checkout-panel{position:static}.summary-head{align-items:flex-start;flex-direction:column}}
+@media(max-width:560px){.pricing-hero,.onboarding-hero{padding-top:40px}.plan-card,.trust-box,.alt-box,.summary-box,.checkout-panel{padding:18px}.comparison-table{min-width:540px}}
