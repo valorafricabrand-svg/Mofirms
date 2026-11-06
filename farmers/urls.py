@@ -20,6 +20,16 @@ urlpatterns = [
     ),
     path("financial-analysis/", views.request_financial_analysis, name="request_financial_analysis"),
     path(
+        "business-readiness/",
+        views.request_business_readiness,
+        name="request_business_readiness",
+    ),
+    path(
+        "business-readiness/received/<str:reference>/",
+        views.business_readiness_success,
+        name="business_readiness_success",
+    ),
+    path(
         "financial-analysis/received/<str:reference>/",
         views.financial_analysis_success,
         name="financial_analysis_success",

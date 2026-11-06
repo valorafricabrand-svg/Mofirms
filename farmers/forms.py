@@ -739,6 +739,129 @@ class FinancialAnalysisRequestForm(forms.ModelForm):
         return request
 
 
+class BusinessReadinessForm(forms.ModelForm):
+    records_available = forms.MultipleChoiceField(
+        choices=[
+            ("financial_statements", "Financial statements"),
+            ("sales_records", "Sales or income records"),
+            ("expense_records", "Expense or purchase records"),
+            ("cashbook", "Cashbook or bookkeeping records"),
+            ("bank_statements", "Bank statements"),
+            ("business_plan", "Existing business plan"),
+            ("budgets", "Budgets or forecasts"),
+            ("none", "I do not have formal records yet"),
+        ],
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Which records are available?",
+    )
+    privacy_consent = forms.BooleanField(
+        required=True,
+        label=(
+            "I agree that MoFirms may review this request and contact me about its scope "
+            "and any proposed fee."
+        ),
+    )
+    website_trap = forms.CharField(required=False, widget=forms.HiddenInput)
+
+    class Meta:
+        model = FinancialAnalysisRequest
+        fields = [
+            "applicant_type",
+            "contact_name",
+            "business_name",
+            "phone",
+            "email",
+            "preferred_contact",
+            "county",
+            "sector",
+            "business_goal",
+            "current_challenge",
+            "average_monthly_sales",
+            "average_monthly_costs",
+            "financial_period",
+            "records_available",
+            "annual_revenue_band",
+            "seasonality_notes",
+        ]
+        widgets = {
+            "applicant_type": forms.RadioSelect,
+            "business_goal": forms.Textarea(attrs={"rows": 3}),
+            "current_challenge": forms.Textarea(attrs={"rows": 3}),
+            "financial_period": forms.TextInput(
+                attrs={"placeholder": "For example, Jan-Dec 2025"}
+            ),
+            "seasonality_notes": forms.Textarea(attrs={"rows": 2}),
+        }
+        labels = {
+            "average_monthly_sales": "Approximate average monthly sales (KSh)",
+            "average_monthly_costs": "Approximate average monthly operating costs (KSh)",
+        }
+        help_texts = {
+            "average_monthly_sales": "Optional estimate. Do not enter bank balances or account numbers.",
+            "average_monthly_costs": "Optional estimate for the same period as monthly sales.",
+            "financial_period": "Optional period covered by the records or estimates.",
+            "business_goal": "What would you like the farm or enterprise to achieve?",
+            "current_challenge": "What is the main issue you would like help addressing?",
+            "seasonality_notes": "Optional: note months when sales, production, or costs change.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.instance.request_type = (
+            FinancialAnalysisRequest.RequestType.BUSINESS_READINESS
+        )
+        self.instance.services_requested = [
+            "business_plan",
+            "cash_flow",
+            "funding_readiness",
+        ]
+        self.fields["county"].choices = [("", "Select a county")] + [
+            (county, county) for county in COUNTIES
+        ]
+        for field_name in ("business_name", "phone", "email", "sector"):
+            self.fields[field_name].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get("website_trap"):
+            raise ValidationError("The request could not be submitted. Please try again.")
+        if (
+            "none" in cleaned_data.get("records_available", [])
+            and len(cleaned_data["records_available"]) > 1
+        ):
+            self.add_error(
+                "records_available",
+                "Choose 'I do not have formal records yet' by itself.",
+            )
+        sales = cleaned_data.get("average_monthly_sales")
+        costs = cleaned_data.get("average_monthly_costs")
+        if (sales is None) != (costs is None):
+            raise ValidationError(
+                "Enter both monthly sales and monthly costs, or leave both blank."
+            )
+        return cleaned_data
+
+    def save(self, commit=True):
+        readiness_request = super().save(commit=False)
+        readiness_request.request_type = (
+            FinancialAnalysisRequest.RequestType.BUSINESS_READINESS
+        )
+        readiness_request.services_requested = [
+            "business_plan",
+            "cash_flow",
+            "funding_readiness",
+        ]
+        readiness_request.records_available = self.cleaned_data["records_available"]
+        readiness_request.request_summary = (
+            f"Business goal: {self.cleaned_data['business_goal'].strip()}\n"
+            f"Main challenge: {self.cleaned_data['current_challenge'].strip()}"
+        )
+        if commit:
+            readiness_request.save()
+        return readiness_request
+
+
 class FinancialAnalysisDocumentForm(FarmerDocumentForm):
     document_type = forms.ChoiceField(
         choices=FinancialAnalysisDocument.DocumentType.choices,

@@ -1,4 +1,7 @@
+import hashlib
+import hmac
 import json
+import time
 from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
@@ -7,6 +10,8 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+
+from mofirms_backend.retention_client import send_retention_purge
 
 from .billing import PaymentForm
 from .models import (
@@ -418,3 +423,84 @@ class MpesaApiRequestTests(TestCase):
                 description="Growth",
             )
         urlopen.assert_not_called()
+
+
+class ProductionOperationsEndpointTests(TestCase):
+    @override_settings(RETENTION_WEBHOOK_SECRET="test-retention-secret-with-at-least-32-chars")
+    @patch("mofirms_backend.retention.call_command")
+    def test_retention_endpoint_requires_hmac_and_runs_the_purge(self, call_command):
+        timestamp = str(int(time.time()))
+        signature = hmac.new(
+            b"test-retention-secret-with-at-least-32-chars",
+            timestamp.encode("ascii") + b".",
+            hashlib.sha256,
+        ).hexdigest()
+
+        response = self.client.post(
+            reverse("run_retention_purge"),
+            data=b"",
+            content_type="application/octet-stream",
+            HTTP_X_MOFIRMS_TIMESTAMP=timestamp,
+            HTTP_X_MOFIRMS_SIGNATURE=signature,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        call_command.assert_called_once()
+        self.assertEqual(
+            call_command.call_args.args,
+            ("purge_retained_data",),
+        )
+        self.assertEqual(call_command.call_args.kwargs["execute"], True)
+
+    @override_settings(RETENTION_WEBHOOK_SECRET="test-retention-secret-with-at-least-32-chars")
+    @patch("mofirms_backend.retention.call_command")
+    def test_retention_endpoint_rejects_bad_signatures_and_replays(self, call_command):
+        bad_signature = self.client.post(
+            reverse("run_retention_purge"),
+            data=b"",
+            content_type="application/octet-stream",
+            HTTP_X_MOFIRMS_TIMESTAMP=str(int(time.time())),
+            HTTP_X_MOFIRMS_SIGNATURE="invalid",
+        )
+        stale = str(int(time.time()) - 301)
+        stale_signature = hmac.new(
+            b"test-retention-secret-with-at-least-32-chars",
+            stale.encode("ascii") + b".",
+            hashlib.sha256,
+        ).hexdigest()
+        stale_request = self.client.post(
+            reverse("run_retention_purge"),
+            data=b"",
+            content_type="application/octet-stream",
+            HTTP_X_MOFIRMS_TIMESTAMP=stale,
+            HTTP_X_MOFIRMS_SIGNATURE=stale_signature,
+        )
+
+        self.assertEqual(bad_signature.status_code, 403)
+        self.assertEqual(stale_request.status_code, 403)
+        call_command.assert_not_called()
+
+    def test_health_check_reports_application_dependencies(self):
+        response = self.client.get(reverse("health_check"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b"OK")
+
+    @patch("mofirms_backend.retention_client.urlopen")
+    def test_retention_client_sends_signed_post_and_checks_response(self, urlopen):
+        response = MagicMock()
+        response.status = 200
+        response.read.return_value = b"Retention purge completed."
+        response.__enter__.return_value = response
+        urlopen.return_value = response
+
+        send_retention_purge(
+            "https://mofirm.co.ke/internal/retention/purge/",
+            "test-retention-secret-with-at-least-32-chars",
+        )
+
+        request = urlopen.call_args.args[0]
+        self.assertEqual(request.get_method(), "POST")
+        self.assertEqual(request.data, b"")
+        self.assertTrue(request.get_header("X-mofirms-timestamp").isdecimal())
+        self.assertEqual(len(request.get_header("X-mofirms-signature")), 64)

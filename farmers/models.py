@@ -604,6 +604,10 @@ def private_financial_analysis_document_path(instance, filename):
 
 
 class FinancialAnalysisRequest(models.Model):
+    class RequestType(models.TextChoices):
+        GENERAL = "general", "Financial analysis request"
+        BUSINESS_READINESS = "business_readiness", "Business readiness pilot"
+
     class ApplicantType(models.TextChoices):
         INDIVIDUAL = "individual", "Individual or sole proprietor"
         BUSINESS = "business", "Business, group, or organisation"
@@ -655,6 +659,11 @@ class FinancialAnalysisRequest(models.Model):
         NOT_APPLICABLE = "not_applicable", "Not applicable"
 
     reference = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    request_type = models.CharField(
+        max_length=24,
+        choices=RequestType.choices,
+        default=RequestType.GENERAL,
+    )
     applicant_type = models.CharField(max_length=16, choices=ApplicantType.choices)
     contact_name = models.CharField(max_length=160)
     business_name = models.CharField(max_length=180, blank=True)
@@ -663,6 +672,23 @@ class FinancialAnalysisRequest(models.Model):
     preferred_contact = models.CharField(max_length=12, choices=ContactPreference.choices)
     county = models.CharField(max_length=32, choices=[(county, county) for county in COUNTIES])
     sector = models.CharField(max_length=120, blank=True)
+    business_goal = models.TextField(blank=True)
+    current_challenge = models.TextField(blank=True)
+    average_monthly_sales = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+    )
+    average_monthly_costs = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+    )
+    seasonality_notes = models.CharField(max_length=500, blank=True)
     services_requested = models.JSONField(default=list)
     financial_period = models.CharField(max_length=100, blank=True)
     records_available = models.JSONField(default=list, blank=True)
@@ -741,6 +767,15 @@ class FinancialAnalysisRequest(models.Model):
             and not self.phone.strip()
         ):
             raise ValidationError({"phone": "A phone number is required for the selected contact method."})
+        if self.request_type == self.RequestType.BUSINESS_READINESS:
+            if not self.business_goal.strip():
+                raise ValidationError({"business_goal": "Describe the business goal for this pilot."})
+            if not self.current_challenge.strip():
+                raise ValidationError({"current_challenge": "Describe the main business challenge."})
+            if (self.average_monthly_sales is None) != (self.average_monthly_costs is None):
+                raise ValidationError(
+                    "Enter both monthly sales and monthly costs, or leave both blank."
+                )
         if self.status in {self.ServiceStatus.QUOTED, self.ServiceStatus.ACCEPTED}:
             if self.quote_amount is None:
                 raise ValidationError(
@@ -801,6 +836,69 @@ class FinancialAnalysisDocument(models.Model):
             raise ValidationError(
                 {"review_notes": "Record what was reviewed before marking this document reviewed."}
             )
+
+
+class BusinessReadinessDraft(models.Model):
+    class ReviewStatus(models.TextChoices):
+        DRAFT = "draft", "Draft — staff review required"
+        APPROVED = "approved", "Approved by staff"
+
+    request = models.OneToOneField(
+        FinancialAnalysisRequest,
+        on_delete=models.CASCADE,
+        related_name="readiness_draft",
+    )
+    generation_method = models.CharField(max_length=32, default="rules-v1")
+    business_summary = models.TextField()
+    cash_flow = models.JSONField(default=dict)
+    key_gaps = models.JSONField(default=list)
+    next_steps = models.JSONField(default=list)
+    source_citations = models.JSONField(default=list)
+    review_status = models.CharField(
+        max_length=16,
+        choices=ReviewStatus.choices,
+        default=ReviewStatus.DRAFT,
+    )
+    generated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="generated_business_readiness_drafts",
+    )
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_business_readiness_drafts",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "business readiness draft"
+        verbose_name_plural = "business readiness drafts"
+
+    def __str__(self):
+        return f"Readiness draft for {self.request.public_reference}"
+
+    def clean(self):
+        super().clean()
+        if (
+            self.review_status == self.ReviewStatus.APPROVED
+            and not self.review_notes.strip()
+        ):
+            raise ValidationError(
+                {"review_notes": "Add reviewer notes before approving this draft."}
+            )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
 
 def private_risk_assessment_document_path(instance, filename):

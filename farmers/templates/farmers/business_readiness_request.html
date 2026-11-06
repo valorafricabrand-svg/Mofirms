@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farmer Business Readiness pilot | MoFirms</title>
+<meta name="description" content="Request a staff-reviewed Farmer Business Readiness pilot from MoFirms.">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav"><div class="wrap bar">
+  <a class="logo" href="/"><span>Mo</span>Firms</a>
+  <a class="btn sm" href="/">Back to MoFirms</a>
+</div></header>
+
+<main id="main">
+<section class="wrap registration">
+  <p class="eyebrow">Private pilot · Business readiness</p>
+  <h1>Farmer Business Readiness Pack</h1>
+  <p class="lead">Share a few details about your farm or enterprise. A MoFirms staff member will review the request and agree the scope, fee, and delivery timing with you before any paid work begins.</p>
+
+  <aside class="notice notice-warning">
+    <h2>Pilot information</h2>
+    <ul>
+      <li>This is a request for a proposed pilot service, not an accepted order. No price or delivery time is published or guaranteed here.</li>
+      <li>Any draft figures are simple arithmetic based only on the estimates you provide. They are not forecasts, audited accounts, loan eligibility, investment advice, or a guarantee of results.</li>
+      <li>MoFirms staff review requests and any documents. Automated rules may prepare an internal draft for staff; there is no external AI service connected, and no AI-generated report is sent to you.</li>
+      <li>Do not enter passwords, PINs, personal ID numbers, tax PINs, bank account or card numbers, or information about another person without permission.</li>
+      <li>Supporting documents are optional. Upload only relevant, redacted files. Files are private, antivirus scanned in production, and scheduled for deletion after one year.</li>
+    </ul>
+    <p>This site is not yet a production service. Use synthetic information only; do not enter real personal or financial data or upload real documents.</p>
+  </aside>
+
+  <form method="post" enctype="multipart/form-data" class="card registration-form" novalidate>
+    {% csrf_token %}
+    {{ form.website_trap }}
+    {% if form.non_field_errors %}<div class="err-box" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% if form.errors and not form.non_field_errors %}<p class="form-hint">Please correct the highlighted fields.</p>{% endif %}
+
+    <fieldset class="form-section choice-set">
+      <legend>About you and your enterprise</legend>
+      <div class="form-grid">
+        <div class="wide-field">{% include "farmers/field.html" with field=form.applicant_type %}</div>
+        <div>{% include "farmers/field.html" with field=form.contact_name %}</div>
+        <div>{% include "farmers/field.html" with field=form.business_name %}</div>
+        <div>{% include "farmers/field.html" with field=form.phone %}</div>
+        <div>{% include "farmers/field.html" with field=form.email %}</div>
+        <div>{% include "farmers/field.html" with field=form.preferred_contact %}</div>
+        <div>{% include "farmers/field.html" with field=form.county %}</div>
+        <div>{% include "farmers/field.html" with field=form.sector %}</div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section choice-set">
+      <legend>Your goal and current challenge</legend>
+      <div class="form-grid">
+        <div class="wide-field">{% include "farmers/field.html" with field=form.business_goal %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.current_challenge %}</div>
+        <div>{% include "farmers/field.html" with field=form.annual_revenue_band %}</div>
+        <div>{% include "farmers/field.html" with field=form.financial_period %}</div>
+        <div>{% include "farmers/field.html" with field=form.average_monthly_sales %}</div>
+        <div>{% include "farmers/field.html" with field=form.average_monthly_costs %}</div>
+        <div class="wide-field">{% include "farmers/field.html" with field=form.seasonality_notes %}</div>
+        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.records_available %}</div>
+      </div>
+      <p class="form-hint">Monthly sales and costs are optional. Enter both for a simple monthly difference calculation, or leave both blank. No automatic forecast will be produced.</p>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Optional supporting documents</legend>
+      <p class="form-hint">Examples: redacted sales summaries, expense records, a cashbook, or an existing plan. You may submit without files.</p>
+      {{ document_formset.management_form }}
+      {{ document_formset.non_form_errors }}
+      {% for error in upload_errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+      <div id="documentRows" data-prefix="{{ document_formset.prefix }}" data-max="{{ max_documents }}">
+        {% for document_form in document_formset %}
+          {% include "farmers/document_row.html" with document_form=document_form %}
+        {% endfor %}
+      </div>
+      <template id="emptyDocumentRow">{% include "farmers/document_row.html" with document_form=document_formset.empty_form %}</template>
+      <button id="addDocument" class="opt" type="button">Add a document</button>
+      <p class="form-hint">Files can be downloaded only by authorised MoFirms staff. The current service schedules deletion no later than one year after upload.</p>
+      <label class="choice consent"><input type="checkbox" name="document_consent">
+        I consent to authorised MoFirms staff reviewing files I choose to upload and deleting them no later than one year after upload.
+      </label>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Privacy and contact permission</legend>
+      <p>MoFirms uses this information to assess your request, prepare a possible service scope and fee quote, and contact you. A rules-based draft may be created for staff review from the information you enter; it is not shown to customers automatically. No external AI provider is connected.</p>
+      {% include "farmers/field.html" with field=form.privacy_consent %}
+    </fieldset>
+
+    <button class="btn" type="submit">Request pilot review</button>
+  </form>
+</section>
+</main>
+<footer><div class="wrap">
+  <p>Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
+</div></footer>
+<script src="/js/register.js"></script>
+</body>
+</html>

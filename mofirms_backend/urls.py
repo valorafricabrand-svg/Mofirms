@@ -4,6 +4,8 @@ from django.urls import include, path, re_path
 from django.views.static import serve
 from django.views.generic import TemplateView
 
+from mofirms_backend.health import health_check
+from mofirms_backend.retention import run_retention_purge
 from farmers.views import (
     download_document,
     download_financial_analysis_document,
@@ -15,6 +17,12 @@ from farmers.billing import pricing, public_checkout
 
 urlpatterns = [
     path("", TemplateView.as_view(template_name="index.html"), name="home"),
+    path("health/", health_check, name="health_check"),
+    path(
+        "internal/retention/purge/",
+        run_retention_purge,
+        name="run_retention_purge",
+    ),
     path("pricing/", pricing, name="pricing"),
     path("onboarding/", TemplateView.as_view(template_name="onboarding.html"), name="onboarding"),
     path("checkout/", public_checkout, name="checkout"),

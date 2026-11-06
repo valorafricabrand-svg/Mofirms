@@ -1,10 +1,12 @@
 from django import forms
 from django.contrib import admin
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.html import format_html
 from django.urls import reverse
 
 from .models import (
+    BusinessReadinessDraft,
     FarmerDocument,
     FarmerProfile,
     FinancialAnalysisDocument,
@@ -22,6 +24,7 @@ from .models import (
     ResearcherApplication,
     ServicePlan,
 )
+from .readiness_drafting import save_readiness_draft
 
 
 class BetaInviteAdminForm(forms.ModelForm):
@@ -463,10 +466,46 @@ class PartnerDocumentAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
+class BusinessReadinessDraftInline(admin.StackedInline):
+    model = BusinessReadinessDraft
+    extra = 0
+    can_delete = False
+    fields = (
+        "generation_method",
+        "business_summary",
+        "cash_flow",
+        "key_gaps",
+        "next_steps",
+        "source_citations",
+        "review_status",
+        "review_notes",
+        "generated_by",
+        "reviewed_by",
+        "reviewed_at",
+        "created_at",
+        "updated_at",
+    )
+    readonly_fields = (
+        "generation_method",
+        "source_citations",
+        "generated_by",
+        "reviewed_by",
+        "reviewed_at",
+        "created_at",
+        "updated_at",
+    )
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
 @admin.register(FinancialAnalysisRequest)
 class FinancialAnalysisRequestAdmin(admin.ModelAdmin):
     list_display = (
         "public_reference",
+        "request_type",
         "contact_name",
         "business_name",
         "services_summary",
@@ -474,7 +513,14 @@ class FinancialAnalysisRequestAdmin(admin.ModelAdmin):
         "quote_amount",
         "created_at",
     )
-    list_filter = ("status", "review_status", "applicant_type", "county", "created_at")
+    list_filter = (
+        "request_type",
+        "status",
+        "review_status",
+        "applicant_type",
+        "county",
+        "created_at",
+    )
     search_fields = ("contact_name", "business_name", "email", "phone", "reference")
     readonly_fields = (
         "reference",
@@ -487,12 +533,14 @@ class FinancialAnalysisRequestAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
-    actions = ("mark_contacted_today",)
+    actions = ("mark_contacted_today", "generate_readiness_drafts")
+    inlines = (BusinessReadinessDraftInline,)
     date_hierarchy = "created_at"
     fieldsets = (
         ("Service request and working status", {
             "fields": (
                 "reference",
+                "request_type",
                 "status",
                 "review_status",
                 "reviewed_by",
@@ -510,6 +558,11 @@ class FinancialAnalysisRequestAdmin(admin.ModelAdmin):
                 "preferred_contact",
                 "county",
                 "sector",
+                "business_goal",
+                "current_challenge",
+                "average_monthly_sales",
+                "average_monthly_costs",
+                "seasonality_notes",
             )
         }),
         ("Requested analysis", {
@@ -560,6 +613,26 @@ class FinancialAnalysisRequestAdmin(admin.ModelAdmin):
         updated = queryset.update(last_contact_at=timezone.now())
         self.message_user(request, f"Updated the last-contact date for {updated} request(s).")
 
+    @admin.action(description="Generate staff-only readiness drafts")
+    def generate_readiness_drafts(self, request, queryset):
+        readiness_requests = queryset.filter(
+            request_type=FinancialAnalysisRequest.RequestType.BUSINESS_READINESS
+        )
+        generated = 0
+        skipped = queryset.count() - readiness_requests.count()
+        for readiness_request in readiness_requests:
+            try:
+                save_readiness_draft(readiness_request, request.user)
+            except ValidationError:
+                skipped += 1
+            else:
+                generated += 1
+        self.message_user(
+            request,
+            f"Generated or refreshed {generated} staff-only draft(s); skipped {skipped} request(s).",
+            level="WARNING" if skipped else "INFO",
+        )
+
     def save_model(self, request, obj, form, change):
         review_fields = {"status", "review_status", "quote_amount", "quote_notes"}
         if change and review_fields.intersection(form.changed_data):
@@ -577,6 +650,44 @@ class FinancialAnalysisRequestAdmin(admin.ModelAdmin):
         ):
             obj.quote_sent_at = timezone.now()
         super().save_model(request, obj, form, change)
+
+    def save_formset(self, request, form, formset, change):
+        if formset.model is not BusinessReadinessDraft:
+            return super().save_formset(request, form, formset, change)
+
+        changed_reviews = set()
+        for inline_form in formset.forms:
+            if "review_status" in inline_form.changed_data:
+                changed_reviews.add(inline_form.instance.pk)
+            elif (
+                inline_form.initial.get("review_status")
+                == BusinessReadinessDraft.ReviewStatus.APPROVED
+                and {
+                    "business_summary",
+                    "cash_flow",
+                    "key_gaps",
+                    "next_steps",
+                    "review_notes",
+                }
+                .intersection(inline_form.changed_data)
+            ):
+                inline_form.cleaned_data["review_status"] = (
+                    BusinessReadinessDraft.ReviewStatus.DRAFT
+                )
+                inline_form.cleaned_data["review_notes"] = ""
+                changed_reviews.add(inline_form.instance.pk)
+
+        instances = formset.save(commit=False)
+        for instance in instances:
+            if instance.pk in changed_reviews:
+                if instance.review_status == BusinessReadinessDraft.ReviewStatus.APPROVED:
+                    instance.reviewed_by = request.user
+                    instance.reviewed_at = timezone.now()
+                else:
+                    instance.reviewed_by = None
+                    instance.reviewed_at = None
+            instance.save()
+        formset.save_m2m()
 
 
 @admin.register(FinancialAnalysisDocument)

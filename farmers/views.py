@@ -12,6 +12,7 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.admin.views.decorators import staff_member_required
 
 from .forms import (
+    BusinessReadinessForm,
     FarmerDocumentFormSet,
     FarmerRegistrationForm,
     FinancialAnalysisDocumentFormSet,
@@ -276,7 +277,32 @@ def partner_registration_success(request, reference):
 
 @require_http_methods(["GET", "POST"])
 def request_financial_analysis(request):
-    if request.method == "POST" and _rate_limit_reached(request, "financial-analysis"):
+    return _submit_financial_analysis_request(
+        request,
+        form_class=FinancialAnalysisRequestForm,
+        request_type=FinancialAnalysisRequest.RequestType.GENERAL,
+        success_view="financial_analysis_success",
+        template="farmers/financial_analysis_request.html",
+        rate_key="financial-analysis",
+    )
+
+
+@require_http_methods(["GET", "POST"])
+def request_business_readiness(request):
+    return _submit_financial_analysis_request(
+        request,
+        form_class=BusinessReadinessForm,
+        request_type=FinancialAnalysisRequest.RequestType.BUSINESS_READINESS,
+        success_view="business_readiness_success",
+        template="farmers/business_readiness_request.html",
+        rate_key="business-readiness",
+    )
+
+
+def _submit_financial_analysis_request(
+    request, *, form_class, request_type, success_view, template, rate_key
+):
+    if request.method == "POST" and _rate_limit_reached(request, rate_key):
         return render(
             request,
             "farmers/rate_limited.html",
@@ -284,7 +310,7 @@ def request_financial_analysis(request):
             status=429,
         )
 
-    form = FinancialAnalysisRequestForm(
+    form = form_class(
         request.POST if request.method == "POST" else None
     )
     document_formset = FinancialAnalysisDocumentFormSet(
@@ -320,6 +346,7 @@ def request_financial_analysis(request):
             try:
                 with transaction.atomic():
                     analysis_request = form.save(commit=False)
+                    analysis_request.request_type = request_type
                     now = timezone.now()
                     analysis_request.contact_consent_at = now
                     analysis_request.last_contact_at = now
@@ -348,13 +375,13 @@ def request_financial_analysis(request):
                 )
             else:
                 return redirect(
-                    "financial_analysis_success",
+                    success_view,
                     reference=analysis_request.public_reference,
                 )
 
     return render(
         request,
-        "farmers/financial_analysis_request.html",
+        template,
         {
             "form": form,
             "document_formset": document_formset,
@@ -370,6 +397,14 @@ def financial_analysis_success(request, reference):
     return render(
         request,
         "farmers/financial_analysis_success.html",
+        {"reference": reference},
+    )
+
+
+def business_readiness_success(request, reference):
+    return render(
+        request,
+        "farmers/business_readiness_success.html",
         {"reference": reference},
     )
 

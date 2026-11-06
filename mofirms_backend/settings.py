@@ -8,6 +8,15 @@ from django.core.exceptions import ImproperlyConfigured
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in {"1", "true", "yes"}
 DEMO_MODE = os.environ.get("DEMO_MODE", "False").lower() in {"1", "true", "yes"}
+DJANGO_ENVIRONMENT = os.environ.get("DJANGO_ENVIRONMENT", "development").strip().lower()
+if DJANGO_ENVIRONMENT not in {"development", "staging", "production"}:
+    raise ImproperlyConfigured(
+        "DJANGO_ENVIRONMENT must be 'development', 'staging', or 'production'."
+    )
+if DJANGO_ENVIRONMENT in {"staging", "production"} and (DEBUG or DEMO_MODE):
+    raise ImproperlyConfigured(
+        "Staging and production require DJANGO_DEBUG=False and DEMO_MODE=False."
+    )
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 if not SECRET_KEY:
     if not DEBUG:
@@ -75,7 +84,9 @@ ASGI_APPLICATION = "mofirms_backend.asgi.application"
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 if not DEBUG and not DEMO_MODE and not DATABASE_URL:
-    raise ImproperlyConfigured("DATABASE_URL must point to the production PostgreSQL database.")
+    raise ImproperlyConfigured(
+        "DATABASE_URL must point to the staging or production PostgreSQL database."
+    )
 if DATABASE_URL:
     parsed_database = urlparse(DATABASE_URL)
     if parsed_database.scheme in {"postgres", "postgresql"}:
@@ -163,6 +174,8 @@ MPESA_CONSUMER_SECRET = os.environ.get("MPESA_CONSUMER_SECRET", "").strip()
 MPESA_SHORTCODE = os.environ.get("MPESA_SHORTCODE", "").strip()
 MPESA_PASSKEY = os.environ.get("MPESA_PASSKEY", "").strip()
 MPESA_CALLBACK_URL = os.environ.get("MPESA_CALLBACK_URL", "").strip()
+RETENTION_WEBHOOK_SECRET = os.environ.get("RETENTION_WEBHOOK_SECRET", "").strip()
+RETENTION_WEBHOOK_URL = os.environ.get("RETENTION_WEBHOOK_URL", "").strip()
 MPESA_TRANSACTION_TYPE = os.environ.get(
     "MPESA_TRANSACTION_TYPE", "CustomerPayBillOnline"
 ).strip()
@@ -174,9 +187,17 @@ if MPESA_TRANSACTION_TYPE not in {
         "MPESA_TRANSACTION_TYPE must be CustomerPayBillOnline or CustomerBuyGoodsOnline."
     )
 if not DEBUG and not DEMO_MODE:
-    if MPESA_ENVIRONMENT != "production":
+    if DJANGO_ENVIRONMENT not in {"staging", "production"}:
         raise ImproperlyConfigured(
-            "MPESA_ENVIRONMENT must be 'production' before enabling production service."
+            "Set DJANGO_ENVIRONMENT to 'staging' or 'production' for a hosted service."
+        )
+    expected_mpesa_environment = (
+        "sandbox" if DJANGO_ENVIRONMENT == "staging" else "production"
+    )
+    if MPESA_ENVIRONMENT != expected_mpesa_environment:
+        raise ImproperlyConfigured(
+            f"MPESA_ENVIRONMENT must be '{expected_mpesa_environment}' for "
+            f"{DJANGO_ENVIRONMENT}."
         )
     missing_mpesa_settings = [
         name
@@ -191,14 +212,23 @@ if not DEBUG and not DEMO_MODE:
     ]
     if missing_mpesa_settings:
         raise ImproperlyConfigured(
-            "Production M-PESA configuration is incomplete: "
+            "Hosted M-PESA configuration is incomplete: "
             + ", ".join(missing_mpesa_settings)
             + "."
         )
     callback_url = urlparse(MPESA_CALLBACK_URL)
     if callback_url.scheme != "https" or not callback_url.netloc:
         raise ImproperlyConfigured(
-            "MPESA_CALLBACK_URL must be an absolute HTTPS URL in production."
+            "MPESA_CALLBACK_URL must be an absolute HTTPS URL for hosted deployments."
+        )
+    if len(RETENTION_WEBHOOK_SECRET) < 32:
+        raise ImproperlyConfigured(
+            "RETENTION_WEBHOOK_SECRET must be a generated secret of at least 32 characters."
+        )
+    retention_url = urlparse(RETENTION_WEBHOOK_URL)
+    if retention_url.scheme != "https" or not retention_url.netloc:
+        raise ImproperlyConfigured(
+            "RETENTION_WEBHOOK_URL must be an absolute HTTPS URL for hosted deployments."
         )
 
 SESSION_COOKIE_HTTPONLY = True
@@ -235,13 +265,25 @@ if not DEBUG and not DEMO_MODE and not ANTIVIRUS_ENABLED:
     raise ImproperlyConfigured("ANTIVIRUS_ENABLED must be true before accepting production uploads.")
 
 REDIS_URL = os.environ.get("REDIS_URL", "").strip()
+REDIS_HOST = os.environ.get("REDIS_HOST", "").strip()
+REDIS_PORT = os.environ.get("REDIS_PORT", "").strip()
 if not DEBUG and not DEMO_MODE and not REDIS_URL:
-    raise ImproperlyConfigured("REDIS_URL is required for production rate limiting.")
+    if not REDIS_HOST or not REDIS_PORT:
+        raise ImproperlyConfigured(
+            "REDIS_URL or both REDIS_HOST and REDIS_PORT are required for production rate limiting."
+        )
 if REDIS_URL:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": REDIS_URL,
+        }
+    }
+elif REDIS_HOST and REDIS_PORT:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/0",
         }
     }
 else:

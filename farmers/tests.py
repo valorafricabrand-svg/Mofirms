@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 from io import BytesIO, StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -14,6 +15,7 @@ from django.utils import timezone
 from PIL import Image, PngImagePlugin
 
 from .models import (
+    BusinessReadinessDraft,
     FarmerDocument,
     FarmerProfile,
     FinancialAnalysisDocument,
@@ -27,6 +29,11 @@ from .models import (
     ResearchResponse,
     ResearchStudy,
     ResearcherApplication,
+)
+from .readiness_drafting import (
+    build_ai_draft_context,
+    save_readiness_draft,
+    validate_ai_draft_output,
 )
 
 
@@ -693,6 +700,194 @@ class FinancialAnalysisRequestTests(TestCase):
         self.assertTrue(FinancialAnalysisRequest.objects.filter(pk=recent_request.pk).exists())
         self.assertFalse(FinancialAnalysisDocument.objects.filter(pk=expired_document.pk).exists())
         self.assertFalse(Path(expired_document_path).exists())
+
+
+class BusinessReadinessPilotTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.private_files = TemporaryDirectory()
+        self.addCleanup(self.private_files.cleanup)
+        settings_override = override_settings(
+            MEDIA_ROOT=self.private_files.name,
+            PRIVATE_UPLOAD_ROOT=self.private_files.name,
+            ANTIVIRUS_ENABLED=False,
+        )
+        settings_override.enable()
+        self.addCleanup(settings_override.disable)
+        self.data = {
+            "applicant_type": "business",
+            "contact_name": "Synthetic Readiness Contact",
+            "business_name": "Synthetic Readiness Farm",
+            "phone": "0700000000",
+            "preferred_contact": "phone",
+            "county": "Vihiga",
+            "sector": "Horticulture",
+            "business_goal": "Improve seasonal planning.",
+            "current_challenge": "Sales and costs are not tracked consistently.",
+            "average_monthly_sales": "50000",
+            "average_monthly_costs": "30000",
+            "financial_period": "January to March 2026",
+            "records_available": ["sales_records", "expense_records"],
+            "annual_revenue_band": "under_500k",
+            "seasonality_notes": "Sales rise during harvest.",
+            "privacy_consent": "on",
+            "documents-TOTAL_FORMS": "0",
+            "documents-INITIAL_FORMS": "0",
+            "documents-MIN_NUM_FORMS": "0",
+            "documents-MAX_NUM_FORMS": "20",
+        }
+
+    def test_pilot_intake_creates_a_staff_reviewable_request_without_published_price(self):
+        response = self.client.post(reverse("request_business_readiness"), self.data)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertRegex(
+            response.url,
+            r"^/portal/business-readiness/received/[A-F0-9]{8}/$",
+        )
+        readiness_request = FinancialAnalysisRequest.objects.get()
+        self.assertEqual(
+            readiness_request.request_type,
+            FinancialAnalysisRequest.RequestType.BUSINESS_READINESS,
+        )
+        self.assertEqual(readiness_request.services_requested, [
+            "business_plan",
+            "cash_flow",
+            "funding_readiness",
+        ])
+        self.assertEqual(readiness_request.average_monthly_sales, Decimal("50000"))
+        self.assertEqual(readiness_request.status, FinancialAnalysisRequest.ServiceStatus.PENDING)
+        self.assertFalse(BusinessReadinessDraft.objects.exists())
+
+        page = self.client.get(reverse("request_business_readiness"))
+        self.assertContains(page, "No price or delivery time is published")
+        self.assertContains(page, "no external AI service connected")
+
+    def test_monthly_cash_flow_inputs_must_be_paired(self):
+        response = self.client.post(
+            reverse("request_business_readiness"),
+            {**self.data, "average_monthly_costs": ""},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(FinancialAnalysisRequest.objects.exists())
+        self.assertContains(response, "Enter both monthly sales and monthly costs")
+
+    def test_staff_draft_uses_cited_inputs_and_fixed_arithmetic(self):
+        response = self.client.post(reverse("request_business_readiness"), self.data)
+        self.assertEqual(response.status_code, 302)
+        readiness_request = FinancialAnalysisRequest.objects.get()
+        staff_user = get_user_model().objects.create_user(
+            username="readiness-reviewer",
+            password="synthetic-test-password",
+            is_staff=True,
+        )
+
+        draft = save_readiness_draft(readiness_request, staff_user)
+
+        self.assertEqual(draft.generation_method, "rules-v1")
+        self.assertEqual(draft.review_status, BusinessReadinessDraft.ReviewStatus.DRAFT)
+        self.assertEqual(draft.generated_by, staff_user)
+        self.assertEqual(draft.cash_flow["estimated_monthly_difference"], "20,000.00")
+        self.assertEqual(draft.cash_flow["annualised_sales_arithmetic"], "600,000.00")
+        self.assertEqual(draft.cash_flow["annualised_costs_arithmetic"], "360,000.00")
+        citations = {item["id"]: item for item in draft.source_citations}
+        self.assertEqual(citations["business_goal"]["source_type"], "customer_input")
+        self.assertEqual(
+            citations["estimated_monthly_difference"]["formula"],
+            "average_monthly_sales - average_monthly_costs",
+        )
+        self.assertTrue(
+            any(
+                "annual_revenue_band" in gap["source_refs"]
+                for gap in draft.key_gaps
+            )
+        )
+        self.assertFalse(self.client.get(reverse("request_business_readiness")).wsgi_request.user.is_staff)
+
+    def test_staff_approved_draft_cannot_be_overwritten_by_regeneration(self):
+        response = self.client.post(reverse("request_business_readiness"), self.data)
+        self.assertEqual(response.status_code, 302)
+        readiness_request = FinancialAnalysisRequest.objects.get()
+        staff_user = get_user_model().objects.create_user(
+            username="readiness-approver",
+            password="synthetic-test-password",
+            is_staff=True,
+        )
+        draft = save_readiness_draft(readiness_request, staff_user)
+        draft.review_status = BusinessReadinessDraft.ReviewStatus.APPROVED
+        with self.assertRaises(ValidationError):
+            draft.save()
+        draft.review_notes = "Reviewed against the submitted information."
+        draft.save()
+
+        with self.assertRaises(ValidationError):
+            save_readiness_draft(readiness_request, staff_user)
+
+    def test_future_ai_context_minimizes_personal_data_and_validates_citations(self):
+        response = self.client.post(reverse("request_business_readiness"), self.data)
+        self.assertEqual(response.status_code, 302)
+        readiness_request = FinancialAnalysisRequest.objects.get()
+        context = build_ai_draft_context(readiness_request)
+        source_ids = {source["id"] for source in context["source_data"]}
+
+        self.assertNotIn("Synthetic Readiness Contact", str(context))
+        self.assertNotIn("0700000000", str(context))
+        self.assertEqual(context["approved_guidance"], [])
+        self.assertIn("calculated_values", context)
+        output = {
+            "business_summary": {
+                "text": "The stated challenge is record keeping.",
+                "source_refs": ["current_challenge"],
+            },
+            "key_gaps": [
+                {
+                    "text": "The challenge was reported by the customer.",
+                    "source_refs": ["current_challenge"],
+                }
+            ],
+            "next_steps": [
+                {
+                    "text": "Review the reported challenge with the customer.",
+                    "source_refs": ["current_challenge"],
+                }
+            ],
+            "citations": [
+                {
+                    "source_id": "current_challenge",
+                    "claim": "Customer-described challenge",
+                }
+            ],
+        }
+        self.assertEqual(validate_ai_draft_output(output, source_ids), output)
+        output["citations"][0]["source_id"] = "unprovided_guidance"
+        with self.assertRaises(ValidationError):
+            validate_ai_draft_output(output, source_ids)
+
+    def test_staff_can_review_internal_draft_in_admin(self):
+        response = self.client.post(reverse("request_business_readiness"), self.data)
+        self.assertEqual(response.status_code, 302)
+        readiness_request = FinancialAnalysisRequest.objects.get()
+        staff_user = get_user_model().objects.create_user(
+            username="readiness-admin",
+            password="synthetic-test-password",
+            is_staff=True,
+            is_superuser=True,
+        )
+        save_readiness_draft(readiness_request, staff_user)
+        self.client.force_login(staff_user)
+
+        response = self.client.get(
+            reverse(
+                "admin:farmers_financialanalysisrequest_change",
+                args=[readiness_request.pk],
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Draft — staff review required")
+        self.assertContains(response, "Annualised sales arithmetic")
+        self.assertContains(response, "rules-v1")
 
 
 class RiskAssessmentRequestTests(TestCase):
