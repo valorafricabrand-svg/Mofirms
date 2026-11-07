@@ -1453,6 +1453,11 @@ class ConsultationLeadTests(TestCase):
         self.assertContains(response, 'method="post"')
         self.assertContains(response, 'name="csrfmiddlewaretoken"')
         self.assertContains(response, "No email or SMS automation is configured")
+        self.assertRegex(
+            response.content.decode(),
+            r"/static/images/mofirms-company-logo\.[a-f0-9]+\.png",
+        )
+        self.assertContains(response, "Marks Organic Farms Concepts Limited")
 
     def test_demo_homepage_disables_lead_form_and_warns_visitors(self):
         with override_settings(DEMO_MODE=True):
