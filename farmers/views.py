@@ -1,12 +1,14 @@
 import hashlib
 import logging
+import uuid
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db import DatabaseError, IntegrityError, transaction
-from django.http import FileResponse, HttpResponse
+from django.http import FileResponse, HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.contrib.admin.views.decorators import staff_member_required
@@ -18,6 +20,7 @@ from .forms import (
     FarmerRegistrationForm,
     FinancialAnalysisDocumentFormSet,
     FinancialAnalysisRequestForm,
+    NewsletterSubscriptionForm,
     RiskAssessmentDocumentFormSet,
     RiskAssessmentRequestForm,
     ResearcherApplicationForm,
@@ -43,11 +46,20 @@ from .models import (
     ResearchResponse,
     ResearchStudy,
     ResearcherApplication,
+    NewsletterSubscription,
 )
 
 
 logger = logging.getLogger(__name__)
 MAX_REGISTRATION_UPLOAD_SIZE = MAX_DOCUMENT_SIZE * MAX_DOCUMENTS_PER_REGISTRATION
+
+
+def newsletter_signups_enabled():
+    return (
+        settings.DJANGO_ENVIRONMENT == "production"
+        and settings.NEWSLETTER_SIGNUPS_ENABLED
+        and not settings.DEMO_MODE
+    )
 
 
 @require_http_methods(["GET"])
@@ -57,7 +69,9 @@ def home(request):
         "index.html",
         {
             "consultation_form": ConsultationLeadForm(),
+            "newsletter_form": NewsletterSubscriptionForm(),
             "consultation_enabled": not settings.DEMO_MODE,
+            "newsletter_enabled": newsletter_signups_enabled(),
         },
     )
 
@@ -72,7 +86,9 @@ def submit_consultation_lead(request):
             "index.html",
             {
                 "consultation_form": form,
+                "newsletter_form": NewsletterSubscriptionForm(),
                 "consultation_enabled": not settings.DEMO_MODE,
+                "newsletter_enabled": newsletter_signups_enabled(),
             },
             status=429,
         )
@@ -93,10 +109,121 @@ def submit_consultation_lead(request):
         "index.html",
         {
             "consultation_form": form,
+            "newsletter_form": NewsletterSubscriptionForm(),
             "consultation_enabled": not settings.DEMO_MODE,
+            "newsletter_enabled": newsletter_signups_enabled(),
         },
         status=400,
     )
+
+
+@require_http_methods(["POST"])
+def subscribe_newsletter(request):
+    if not newsletter_signups_enabled():
+        return HttpResponseNotAllowed(
+            ["GET"],
+            "Newsletter signups are not currently available.",
+        )
+
+    form = NewsletterSubscriptionForm(request.POST)
+    if _rate_limit_reached(request, "newsletter"):
+        form.add_error(None, "Too many requests. Please try again later.")
+        return render(
+            request,
+            "index.html",
+            {
+                "consultation_form": ConsultationLeadForm(),
+                "newsletter_form": form,
+                "consultation_enabled": not settings.DEMO_MODE,
+                "newsletter_enabled": newsletter_signups_enabled(),
+            },
+            status=429,
+        )
+
+    if not form.is_valid():
+        return render(
+            request,
+            "index.html",
+            {
+                "consultation_form": ConsultationLeadForm(),
+                "newsletter_form": form,
+                "consultation_enabled": not settings.DEMO_MODE,
+                "newsletter_enabled": newsletter_signups_enabled(),
+            },
+            status=400,
+        )
+
+    email = form.cleaned_data["email"]
+    try:
+        subscription = NewsletterSubscription.objects.filter(email__iexact=email).first()
+        now = timezone.now()
+        if subscription is None:
+            subscription = NewsletterSubscription.objects.create(
+                email=email,
+                topics=form.cleaned_data["topics"],
+                consent_at=now,
+            )
+        else:
+            resubscribing = subscription.status == NewsletterSubscription.Status.UNSUBSCRIBED
+            subscription.topics = form.cleaned_data["topics"]
+            subscription.status = NewsletterSubscription.Status.ACTIVE
+            subscription.consent_at = now
+            subscription.unsubscribed_at = None
+            update_fields = ["topics", "status", "consent_at", "unsubscribed_at", "updated_at"]
+            if resubscribing:
+                subscription.unsubscribe_token = uuid.uuid4()
+                update_fields.append("unsubscribe_token")
+            subscription.save(update_fields=update_fields)
+    except DatabaseError:
+        logger.exception("Could not save MoFirms newsletter subscription.")
+        form.add_error(None, "We couldn’t save your subscription. Please try again later.")
+        return render(
+            request,
+            "index.html",
+            {
+                "consultation_form": ConsultationLeadForm(),
+                "newsletter_form": form,
+                "consultation_enabled": not settings.DEMO_MODE,
+                "newsletter_enabled": newsletter_signups_enabled(),
+            },
+            status=503,
+        )
+
+    response = render(
+        request,
+        "farmers/newsletter_status.html",
+        {
+            "mode": "subscribed",
+            "unsubscribe_url": reverse(
+                "unsubscribe_newsletter",
+                args=(subscription.unsubscribe_token,),
+            ),
+        },
+    )
+    response["Cache-Control"] = "no-store"
+    response["Referrer-Policy"] = "no-referrer"
+    return response
+
+
+@require_http_methods(["GET", "POST"])
+def unsubscribe_newsletter(request, token):
+    subscription = get_object_or_404(
+        NewsletterSubscription,
+        unsubscribe_token=token,
+        status=NewsletterSubscription.Status.ACTIVE,
+    )
+    if request.method == "POST":
+        subscription.status = NewsletterSubscription.Status.UNSUBSCRIBED
+        subscription.unsubscribed_at = timezone.now()
+        subscription.save(update_fields=("status", "unsubscribed_at", "updated_at"))
+        mode = "unsubscribed"
+    else:
+        mode = "confirm_unsubscribe"
+
+    response = render(request, "farmers/newsletter_status.html", {"mode": mode})
+    response["Cache-Control"] = "no-store"
+    response["Referrer-Policy"] = "no-referrer"
+    return response
 
 
 def consultation_lead_received(request, reference):

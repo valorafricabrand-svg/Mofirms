@@ -333,6 +333,34 @@
 </section>
 </main>
 
+<section class="newsletter-section" id="newsletter">
+  <div class="wrap newsletter-layout">
+    <div>
+      <p class="eyebrow">MoFirms updates</p>
+      <h2>News and practical insights for your next business decision</h2>
+      <p>Get selected updates on farming and agribusiness, entrepreneurship and business advisory, or business risk assessment.</p>
+      <p class="note">We only use your email for the topics you select. You can unsubscribe at any time. Newsletter emails are not currently sent automatically.</p>
+    </div>
+    <form class="card newsletter-form" method="post" action="{% url 'subscribe_newsletter' %}">
+      {% if not newsletter_enabled %}<p class="note" role="status">Newsletter signups aren’t open on this site yet. Please don’t submit personal details.</p>{% endif %}
+      <fieldset {% if not newsletter_enabled %}disabled{% endif %}>
+        {% csrf_token %}
+        {{ newsletter_form.website }}
+        {% if newsletter_form.non_field_errors %}<div class="err" role="alert">{{ newsletter_form.non_field_errors }}</div>{% endif %}
+        <label for="{{ newsletter_form.email.id_for_label }}">Email address</label>
+        {{ newsletter_form.email }}{{ newsletter_form.email.errors }}
+        <fieldset class="newsletter-topics">
+          <legend>{{ newsletter_form.topics.label }}</legend>
+          {{ newsletter_form.topics }}{{ newsletter_form.topics.errors }}
+        </fieldset>
+        <label class="chk" for="{{ newsletter_form.marketing_consent.id_for_label }}">{{ newsletter_form.marketing_consent }} {{ newsletter_form.marketing_consent.label }}</label>
+        {{ newsletter_form.marketing_consent.errors }}
+        <button class="btn" type="submit">Subscribe to updates</button>
+      </fieldset>
+    </form>
+  </div>
+</section>
+
 <footer class="site-footer">
   <div class="wrap">
     <div class="footer-main">
@@ -373,7 +401,7 @@
         <a href="mailto:mconceptslimited@gmail.com">Contact</a>
       </div>
     </div>
-    <div id="privacy" hidden class="footer-privacy">We collect the contact and enquiry details you submit so MoFirms staff can review and respond. Enquiry records are scheduled for deletion after two years without recorded contact. You may ask us to access, correct or delete your data by emailing <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a>. <i>Draft: MoFirms must approve this notice and retention period before accepting real enquiries.</i></div>
+    <div id="privacy" hidden class="footer-privacy">We use consultation details to review and respond to enquiries; enquiry records are scheduled for deletion after two years without recorded contact. If you subscribe, we store your email, selected topics, and consent date to manage the newsletter. We use that address only for the selected updates and retain your unsubscribe status to avoid contacting you again. Unsubscribe using the link shown after signup or in newsletter messages. You may ask us to access, correct or delete your data by emailing <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a>. Newsletter emails are not currently sent automatically. <i>Draft: MoFirms must approve this notice, newsletter operations, and retention rules before accepting real personal data.</i></div>
   </div>
 </footer>
 <script src="{% static 'js/app.js' %}?v=hero-slides-10-1"></script>

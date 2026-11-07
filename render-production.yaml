@@ -37,6 +37,8 @@ services:
         value: "False"
       - key: DEMO_MODE
         value: "False"
+      - key: NEWSLETTER_SIGNUPS_ENABLED
+        value: "False"
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DJANGO_ALLOWED_HOSTS

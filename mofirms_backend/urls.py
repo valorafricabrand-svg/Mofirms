@@ -12,12 +12,20 @@ from farmers.views import (
     download_financial_analysis_document,
     download_partner_document,
     download_risk_assessment_document,
+    subscribe_newsletter,
+    unsubscribe_newsletter,
 )
 from farmers.billing import pricing, public_checkout
 
 
 urlpatterns = [
     path("", home, name="home"),
+    path("newsletter/subscribe/", subscribe_newsletter, name="subscribe_newsletter"),
+    path(
+        "newsletter/unsubscribe/<uuid:token>/",
+        unsubscribe_newsletter,
+        name="unsubscribe_newsletter",
+    ),
     path("health/", health_check, name="health_check"),
     path(
         "internal/retention/purge/",

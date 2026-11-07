@@ -11,6 +11,8 @@ services:
         value: "False"
       - key: DEMO_MODE
         value: "True"
+      - key: NEWSLETTER_SIGNUPS_ENABLED
+        value: "False"
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DJANGO_TRUST_PROXY_SSL_HEADER

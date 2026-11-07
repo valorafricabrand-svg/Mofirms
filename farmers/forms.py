@@ -26,6 +26,7 @@ from .models import (
     FarmerProfile,
     FinancialAnalysisDocument,
     FinancialAnalysisRequest,
+    NewsletterSubscription,
     PartnerDocument,
     PartnerProfile,
     RiskAssessmentDocument,
@@ -1228,6 +1229,34 @@ class ConsultationLeadForm(forms.ModelForm):
             "category": forms.Select(attrs={"id": "cat"}),
             "message": forms.Textarea(attrs={"id": "msg", "rows": 3, "maxlength": 1200}),
         }
+
+    def clean_website(self):
+        website = self.cleaned_data["website"]
+        if website:
+            raise ValidationError("Unable to submit this request.")
+        return website
+
+
+class NewsletterSubscriptionForm(forms.Form):
+    email = forms.EmailField(
+        widget=forms.EmailInput(
+            attrs={"autocomplete": "email", "placeholder": "you@example.com"}
+        ),
+    )
+    topics = forms.MultipleChoiceField(
+        choices=NewsletterSubscription.Topic.choices,
+        required=True,
+        widget=forms.CheckboxSelectMultiple,
+        label="Choose the updates you want",
+    )
+    marketing_consent = forms.BooleanField(
+        required=True,
+        label="I agree to receive the MoFirms newsletter by email about the topics selected. I can unsubscribe at any time.",
+    )
+    website = forms.CharField(required=False, widget=forms.HiddenInput)
+
+    def clean_email(self):
+        return self.cleaned_data["email"].strip().lower()
 
     def clean_website(self):
         website = self.cleaned_data["website"]

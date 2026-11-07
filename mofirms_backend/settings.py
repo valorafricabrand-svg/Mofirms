@@ -8,6 +8,9 @@ from django.core.exceptions import ImproperlyConfigured
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in {"1", "true", "yes"}
 DEMO_MODE = os.environ.get("DEMO_MODE", "False").lower() in {"1", "true", "yes"}
+NEWSLETTER_SIGNUPS_ENABLED = (
+    os.environ.get("NEWSLETTER_SIGNUPS_ENABLED", "False").lower() in {"1", "true", "yes"}
+)
 DJANGO_ENVIRONMENT = os.environ.get("DJANGO_ENVIRONMENT", "development").strip().lower()
 if DJANGO_ENVIRONMENT not in {"development", "staging", "production"}:
     raise ImproperlyConfigured(
@@ -16,6 +19,12 @@ if DJANGO_ENVIRONMENT not in {"development", "staging", "production"}:
 if DJANGO_ENVIRONMENT in {"staging", "production"} and (DEBUG or DEMO_MODE):
     raise ImproperlyConfigured(
         "Staging and production require DJANGO_DEBUG=False and DEMO_MODE=False."
+    )
+if NEWSLETTER_SIGNUPS_ENABLED and (
+    DJANGO_ENVIRONMENT != "production" or DEMO_MODE
+):
+    raise ImproperlyConfigured(
+        "Newsletter signups can be enabled only on the non-demo production service."
     )
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 if not SECRET_KEY:

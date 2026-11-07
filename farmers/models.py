@@ -1681,3 +1681,34 @@ class ConsultationLead(models.Model):
             self.PreferredContact.WHATSAPP,
         } and not self.phone.strip():
             raise ValidationError({"phone": "A phone number is required for the selected contact method."})
+
+
+class NewsletterSubscription(models.Model):
+    class Topic(models.TextChoices):
+        FARMING = "farming", "Farming and agribusiness"
+        ENTREPRENEURSHIP = "entrepreneurship", "Entrepreneurship and business advisory"
+        RISK_ASSESSMENT = "risk_assessment", "Business risk assessment"
+
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Subscribed"
+        UNSUBSCRIBED = "unsubscribed", "Unsubscribed"
+
+    email = models.EmailField(unique=True)
+    topics = models.JSONField(default=list)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
+    consent_at = models.DateTimeField()
+    privacy_policy_version = models.CharField(max_length=24, default="2026-11-01")
+    unsubscribe_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    unsubscribed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.email
+
+    def save(self, *args, **kwargs):
+        self.email = self.email.strip().lower()
+        super().save(*args, **kwargs)

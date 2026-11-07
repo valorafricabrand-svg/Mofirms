@@ -123,6 +123,25 @@ footer{background:#10231a;color:#cfe3d6;padding:0;font-size:.9rem}footer a{color
 .footer-legal button,.footer-legal a{padding:0;border:0;background:none;color:#cfe3d6;font:inherit;font-size:.84rem;text-decoration:underline;text-underline-offset:4px;cursor:pointer}
 .footer-privacy{margin:0 0 20px;padding:14px 16px;border:1px solid rgba(207,227,214,.2);border-radius:8px;color:#b8c9bf;font-size:.85rem}
 .footer-privacy a{color:#fff}
+.newsletter-section{padding:52px 0;background:var(--sand)}
+.newsletter-layout{display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:center}
+.newsletter-layout h2{max-width:560px}
+.newsletter-form{padding:22px}
+.newsletter-form fieldset{min-width:0;margin:0;padding:0;border:0}
+.newsletter-form>fieldset>label:not(.chk){display:block;margin:0 0 5px;font-weight:650}
+.newsletter-form input[type=email]{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--bg);color:var(--ink)}
+.newsletter-topics{margin:16px 0 8px!important}
+.newsletter-topics legend{margin-bottom:5px;font-weight:650}
+.newsletter-topics ul{display:grid;gap:5px;margin:0;padding:0;list-style:none}
+.newsletter-topics li label,.newsletter-form .chk{display:flex;align-items:flex-start;gap:8px}
+.newsletter-topics input,.newsletter-form .chk input{flex:0 0 auto;margin-top:6px}
+.newsletter-form .chk{margin:12px 0}
+.newsletter-form .note,.newsletter-form .err{margin:8px 0}
+.newsletter-status{max-width:760px;padding-top:64px;padding-bottom:64px}
+.newsletter-status .site-logo{margin-bottom:38px}
+.newsletter-status h1{font-size:clamp(2rem,5vw,3rem)}
+.newsletter-status p{max-width:65ch}
+.newsletter-status form{margin:24px 0}
 .reveal{opacity:0;transform:translateY(18px);transition:.6s}.reveal.in{opacity:1;transform:none}
 .registration{max-width:900px}.registration .lead{max-width:760px;color:var(--mut)}
 .prototype-notice{margin:24px 0;padding:16px 20px;border:1px solid #d5bd79;border-left:5px solid #8a5a2b;border-radius:12px;background:var(--sand)}
@@ -181,7 +200,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .contact-form .chk{margin-top:10px}
 .contact-form .note,.contact-form .err,.contact-form .ok{margin:8px 0}
 .contact-form .btn{padding:9px 18px}
-@media(max-width:760px){.two{grid-template-columns:1fr}#burger{display:block}#menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--bg);padding:16px;border-bottom:1px solid var(--line)}#menu.open{display:flex}section{padding:44px 0}}
+@media(max-width:760px){.two,.newsletter-layout{grid-template-columns:1fr}#burger{display:block}#menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--bg);padding:16px;border-bottom:1px solid var(--line)}#menu.open{display:flex}section{padding:44px 0}}
 @media(min-width:761px) and (max-width:900px){#menu{gap:15px}}
 @media(min-width:761px) and (max-width:900px){.hero-carousel{min-height:0;aspect-ratio:auto}.carousel-stage{position:relative}.carousel-slide{position:relative;grid-template-columns:1fr;grid-template-rows:minmax(260px,38vw) auto}.carousel-photo{grid-row:1;min-height:260px}.carousel-copy{grid-row:2;max-width:none;padding:36px 32px 92px}.carousel-copy h1,.carousel-copy h2{font-size:clamp(2rem,4vw,2.7rem)}.carousel-controls{right:18px;bottom:20px}}
 @media(max-width:760px){.hero{padding:24px 0 22px}.hero-layout{gap:18px}.hero-carousel{min-height:0;aspect-ratio:auto;border-radius:20px}.carousel-stage{position:relative}.carousel-slide{position:relative;grid-template-columns:1fr;grid-template-rows:minmax(210px,42vw) auto}.carousel-photo{grid-row:1;min-height:210px}.carousel-copy{grid-row:2;max-width:none;padding:26px 22px 94px}.carousel-copy h1,.carousel-copy h2{font-size:clamp(1.9rem,8vw,2.6rem)}.carousel-copy>p:not(.carousel-kicker){font-size:1rem}.carousel-kicker{margin-bottom:13px}.hero .cta{gap:10px;margin-top:20px}.hero .cta .btn{padding:10px 15px;font-size:.92rem}.photo-caption{top:15px;left:16px}.carousel-controls{right:12px;bottom:16px;gap:6px}.carousel-arrow{width:38px;height:38px}.carousel-progress{width:40px}.stats{gap:14px;padding-top:14px}}

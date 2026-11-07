@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MoFirms newsletter</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="marketing-page">
+  <main class="wrap newsletter-status">
+    <a class="logo site-logo" href="/">
+      <img src="{% static 'images/mofirms-company-logo.png' %}" alt="MoFirms" width="195" height="65">
+      <span class="site-logo-name">Marks Organic Farms Concepts Limited</span>
+    </a>
+    {% if mode == "subscribed" %}
+      <h1>You’re subscribed to MoFirms updates</h1>
+      <p>Your email and selected topics have been saved. Newsletter emails are not currently sent automatically; we’ll only send updates for the topics you chose.</p>
+      <p><a href="{{ unsubscribe_url }}">Manage or unsubscribe from this subscription</a>.</p>
+    {% elif mode == "confirm_unsubscribe" %}
+      <h1>Unsubscribe from MoFirms updates?</h1>
+      <p>Confirm below to stop future newsletters to this address.</p>
+      <form method="post">
+        {% csrf_token %}
+        <button class="btn" type="submit">Confirm unsubscribe</button>
+      </form>
+    {% else %}
+      <h1>You’re unsubscribed</h1>
+      <p>This address will no longer receive MoFirms newsletter updates.</p>
+    {% endif %}
+    <p><a href="/">Return to MoFirms</a></p>
+  </main>
+</body>
+</html>

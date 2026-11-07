@@ -15,6 +15,7 @@ from .models import (
     BetaEnrollment,
     BetaInvite,
     MpesaPayment,
+    NewsletterSubscription,
     PartnerDocument,
     PartnerProfile,
     RiskAssessmentDocument,
@@ -26,6 +27,50 @@ from .models import (
     ServicePlan,
 )
 from .readiness_drafting import save_readiness_draft
+
+
+@admin.register(NewsletterSubscription)
+class NewsletterSubscriptionAdmin(admin.ModelAdmin):
+    list_display = ("email", "status", "topics_display", "consent_at", "created_at")
+    list_filter = ("status", "consent_at", "created_at")
+    search_fields = ("email",)
+    readonly_fields = (
+        "unsubscribe_token",
+        "consent_at",
+        "privacy_policy_version",
+        "unsubscribed_at",
+        "created_at",
+        "updated_at",
+    )
+    fields = (
+        "email",
+        "topics",
+        "status",
+        "unsubscribe_token",
+        "consent_at",
+        "privacy_policy_version",
+        "unsubscribed_at",
+        "created_at",
+        "updated_at",
+    )
+    actions = ("unsubscribe_selected",)
+
+    @admin.display(description="Topics")
+    def topics_display(self, obj):
+        labels = dict(NewsletterSubscription.Topic.choices)
+        return ", ".join(labels.get(topic, topic) for topic in obj.topics)
+
+    @admin.action(description="Unsubscribe selected addresses")
+    def unsubscribe_selected(self, request, queryset):
+        now = timezone.now()
+        updated = queryset.filter(
+            status=NewsletterSubscription.Status.ACTIVE
+        ).update(
+            status=NewsletterSubscription.Status.UNSUBSCRIBED,
+            unsubscribed_at=now,
+            updated_at=now,
+        )
+        self.message_user(request, f"Unsubscribed {updated} address(es).")
 
 
 @admin.register(ConsultationLead)

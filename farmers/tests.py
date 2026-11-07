@@ -22,6 +22,7 @@ from .models import (
     FarmerProfile,
     FinancialAnalysisDocument,
     FinancialAnalysisRequest,
+    NewsletterSubscription,
     PartnerDocument,
     PartnerProfile,
     RiskAssessmentDocument,
@@ -1580,3 +1581,180 @@ class ConsultationLeadTests(TestCase):
         call_command("purge_retained_data", "--execute", stdout=output)
         self.assertFalse(ConsultationLead.objects.filter(pk=old_lead.pk).exists())
         self.assertTrue(ConsultationLead.objects.filter(pk=recent_lead.pk).exists())
+
+
+@override_settings(
+    DJANGO_ENVIRONMENT="production",
+    NEWSLETTER_SIGNUPS_ENABLED=True,
+)
+class NewsletterSubscriptionTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.url = reverse("subscribe_newsletter")
+        self.valid_data = {
+            "email": "Amina@example.com",
+            "topics": [
+                NewsletterSubscription.Topic.FARMING,
+                NewsletterSubscription.Topic.RISK_ASSESSMENT,
+            ],
+            "marketing_consent": "on",
+            "website": "",
+        }
+
+    def test_homepage_renders_topic_choices_and_demo_disables_signup(self):
+        response = self.client.get(reverse("home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "News and practical insights")
+        self.assertContains(response, "Farming and agribusiness")
+        self.assertContains(response, "Entrepreneurship and business advisory")
+        self.assertContains(response, "Business risk assessment")
+
+        with override_settings(DEMO_MODE=True):
+            demo_response = self.client.get(reverse("home"))
+        self.assertContains(demo_response, "Newsletter signups aren’t open on this site yet")
+        self.assertContains(demo_response, '<fieldset disabled>')
+
+    def test_signup_requires_explicit_consent_and_selected_topics(self):
+        missing_consent = self.client.post(
+            self.url,
+            {key: value for key, value in self.valid_data.items() if key != "marketing_consent"},
+        )
+        self.assertEqual(missing_consent.status_code, 400)
+        self.assertEqual(NewsletterSubscription.objects.count(), 0)
+
+        missing_topics = self.client.post(
+            self.url,
+            {**self.valid_data, "topics": ""},
+        )
+        self.assertEqual(missing_topics.status_code, 400)
+        self.assertEqual(NewsletterSubscription.objects.count(), 0)
+
+    def test_signup_saves_normalized_email_topics_and_unsubscribe_link(self):
+        response = self.client.post(self.url, self.valid_data)
+
+        self.assertEqual(response.status_code, 200)
+        subscription = NewsletterSubscription.objects.get()
+        self.assertEqual(subscription.email, "amina@example.com")
+        self.assertEqual(
+            subscription.topics,
+            [
+                NewsletterSubscription.Topic.FARMING,
+                NewsletterSubscription.Topic.RISK_ASSESSMENT,
+            ],
+        )
+        self.assertEqual(subscription.status, NewsletterSubscription.Status.ACTIVE)
+        self.assertIsNotNone(subscription.consent_at)
+        self.assertIn(
+            reverse("unsubscribe_newsletter", args=(subscription.unsubscribe_token,)),
+            response.content.decode(),
+        )
+        self.assertEqual(response["Cache-Control"], "no-store")
+        self.assertEqual(response["Referrer-Policy"], "no-referrer")
+
+    def test_resubscription_requires_consent_and_rotates_old_unsubscribe_link(self):
+        self.client.post(self.url, self.valid_data)
+        subscription = NewsletterSubscription.objects.get()
+        old_token = subscription.unsubscribe_token
+        subscription.status = NewsletterSubscription.Status.UNSUBSCRIBED
+        subscription.unsubscribed_at = timezone.now()
+        subscription.save()
+
+        response = self.client.post(
+            self.url,
+            {
+                **self.valid_data,
+                "topics": [NewsletterSubscription.Topic.ENTREPRENEURSHIP],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.status, NewsletterSubscription.Status.ACTIVE)
+        self.assertIsNone(subscription.unsubscribed_at)
+        self.assertNotEqual(subscription.unsubscribe_token, old_token)
+        self.assertEqual(subscription.topics, [NewsletterSubscription.Topic.ENTREPRENEURSHIP])
+
+    def test_unsubscribe_requires_post_confirmation(self):
+        self.client.post(self.url, self.valid_data)
+        subscription = NewsletterSubscription.objects.get()
+        unsubscribe_url = reverse(
+            "unsubscribe_newsletter",
+            args=(subscription.unsubscribe_token,),
+        )
+
+        confirmation = self.client.get(unsubscribe_url)
+        self.assertEqual(confirmation.status_code, 200)
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.status, NewsletterSubscription.Status.ACTIVE)
+
+        result = self.client.post(unsubscribe_url)
+        self.assertEqual(result.status_code, 200)
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.status, NewsletterSubscription.Status.UNSUBSCRIBED)
+        self.assertIsNotNone(subscription.unsubscribed_at)
+
+        stale_link = self.client.get(unsubscribe_url)
+        self.assertEqual(stale_link.status_code, 404)
+
+    def test_demo_mode_rejects_submissions(self):
+        with override_settings(DEMO_MODE=True):
+            response = self.client.post(self.url, self.valid_data)
+
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(NewsletterSubscription.objects.count(), 0)
+
+    def test_signups_are_closed_until_explicitly_enabled(self):
+        with override_settings(NEWSLETTER_SIGNUPS_ENABLED=False):
+            page = self.client.get(reverse("home"))
+            response = self.client.post(self.url, self.valid_data)
+
+        self.assertContains(page, "Newsletter signups aren’t open on this site yet")
+        self.assertEqual(response.status_code, 405)
+
+        with override_settings(DJANGO_ENVIRONMENT="staging"):
+            staging_response = self.client.post(self.url, self.valid_data)
+        self.assertEqual(staging_response.status_code, 405)
+        self.assertEqual(NewsletterSubscription.objects.count(), 0)
+
+    def test_honeypot_and_rate_limit_block_automated_signups(self):
+        honeypot = self.client.post(
+            self.url,
+            {**self.valid_data, "website": "automated submission"},
+        )
+        self.assertEqual(honeypot.status_code, 400)
+        self.assertEqual(NewsletterSubscription.objects.count(), 0)
+        cache.clear()
+
+        for index in range(5):
+            self.client.post(
+                self.url,
+                {**self.valid_data, "email": f"reader{index}@example.com"},
+            )
+        limited = self.client.post(
+            self.url,
+            {**self.valid_data, "email": "last@example.com"},
+        )
+        self.assertEqual(limited.status_code, 429)
+        self.assertEqual(NewsletterSubscription.objects.count(), 5)
+
+    def test_staff_can_review_subscribers_in_admin(self):
+        self.client.post(self.url, self.valid_data)
+        staff_user = get_user_model().objects.create_user(
+            username="newsletter-reviewer",
+            password="newsletter-test-password",
+            is_staff=True,
+        )
+        staff_user.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label="farmers",
+                codename="view_newslettersubscription",
+            )
+        )
+        self.client.force_login(staff_user)
+
+        response = self.client.get(
+            reverse("admin:farmers_newslettersubscription_changelist")
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "amina@example.com")
