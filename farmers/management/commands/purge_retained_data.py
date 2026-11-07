@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from farmers.models import (
+    ConsultationLead,
     FarmerDocument,
     FarmerProfile,
     FinancialAnalysisDocument,
@@ -23,7 +24,7 @@ from farmers.models import (
 class Command(BaseCommand):
     help = (
         "Preview or delete evidence and research data older than 365 days, plus farmer, "
-        "partner, financial, or researcher records inactive for 730 days."
+        "partner, financial, consultation, or researcher records inactive for 730 days."
     )
 
     def add_arguments(self, parser):
@@ -59,6 +60,9 @@ class Command(BaseCommand):
         expired_risk_requests = RiskAssessmentRequest.objects.filter(
             last_contact_at__lt=now - timedelta(days=730)
         )
+        expired_consultation_leads = ConsultationLead.objects.filter(
+            last_contact_at__lt=now - timedelta(days=730)
+        )
         expired_researchers = ResearcherApplication.objects.filter(
             last_contact_at__lt=now - timedelta(days=730)
         )
@@ -88,6 +92,7 @@ class Command(BaseCommand):
             + expired_risk_requests.count()
             + expired_researchers.count()
         )
+        consultation_lead_count = expired_consultation_leads.count()
         response_count = expired_research_responses.count()
         invitation_count = expired_research_invitations.count()
         study_count = expired_research_studies.count()
@@ -96,7 +101,8 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.WARNING(
                     f"Dry run: {document_count} document(s) and "
-                    f"{profile_count} profile/request(s), {study_count} research study/studies, "
+                    f"{profile_count} profile/request(s), {consultation_lead_count} "
+                    f"consultation enquiry/enquiries, {study_count} research study/studies, "
                     f"{response_count} research response(s), and {invitation_count} "
                     f"invitation(s) are eligible "
                     "for deletion. "
@@ -137,6 +143,7 @@ class Command(BaseCommand):
         for risk_request in expired_risk_requests.iterator():
             risk_request.delete()
             deleted_profiles += 1
+        deleted_consultation_leads, _ = expired_consultation_leads.delete()
         for researcher in expired_researchers.select_related("user").iterator():
             researcher.user.delete()
             deleted_profiles += 1
@@ -145,6 +152,7 @@ class Command(BaseCommand):
             self.style.SUCCESS(
                 f"Deleted {deleted_documents} expired farmer/partner/financial document(s) and "
                 f"{deleted_profiles} expired farmer/partner/financial/research record(s), "
+                f"{deleted_consultation_leads} expired consultation enquiry/enquiries, "
                 f"{deleted_research_studies} research study record(s), "
                 f"{deleted_research_responses} research response record(s), and "
                 f"{deleted_research_invitations} invitation record(s)."

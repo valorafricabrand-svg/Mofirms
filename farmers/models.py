@@ -1613,3 +1613,71 @@ class MpesaPayment(models.Model):
         super().clean()
         if self.amount != self.plan.price:
             raise ValidationError({"amount": "The payment amount must match the selected plan price."})
+
+
+class ConsultationLead(models.Model):
+    class PreferredContact(models.TextChoices):
+        EMAIL = "email", "Email"
+        PHONE = "phone", "Phone"
+        WHATSAPP = "whatsapp", "WhatsApp"
+
+    class Category(models.TextChoices):
+        AGRIBUSINESS = "agribusiness", "Agribusiness advice"
+        BUSINESS_INTELLIGENCE = "business_intelligence", "Business intelligence"
+        TRAINING = "training", "Training"
+        PRODUCTS = "products", "Products"
+        PROJECT = "project", "Project collaboration"
+        SMART_HASIBU = "smart_hasibu", "SmartHasibu waitlist"
+        OTHER = "other", "Other"
+
+    class Status(models.TextChoices):
+        NEW = "new", "New"
+        REVIEWING = "reviewing", "Under review"
+        CONTACTED = "contacted", "Contacted"
+        QUALIFIED = "qualified", "Qualified opportunity"
+        CLOSED = "closed", "Closed"
+        SPAM = "spam", "Spam"
+
+    reference = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    full_name = models.CharField(max_length=160)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=32, blank=True)
+    preferred_contact = models.CharField(max_length=12, choices=PreferredContact.choices)
+    organisation_or_county = models.CharField(max_length=180, blank=True)
+    category = models.CharField(max_length=32, choices=Category.choices)
+    message = models.CharField(max_length=1200)
+    privacy_consent_at = models.DateTimeField()
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.NEW)
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_consultation_leads",
+    )
+    internal_notes = models.TextField(blank=True)
+    last_contact_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "consultation lead"
+        verbose_name_plural = "consultation leads"
+
+    def __str__(self):
+        return f"{self.public_reference} — {self.full_name}"
+
+    @property
+    def public_reference(self):
+        return str(self.reference).split("-")[0].upper()
+
+    def clean(self):
+        super().clean()
+        if self.preferred_contact == self.PreferredContact.EMAIL and not self.email.strip():
+            raise ValidationError({"email": "An email is required for the selected contact method."})
+        if self.preferred_contact in {
+            self.PreferredContact.PHONE,
+            self.PreferredContact.WHATSAPP,
+        } and not self.phone.strip():
+            raise ValidationError({"phone": "A phone number is required for the selected contact method."})

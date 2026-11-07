@@ -5,6 +5,12 @@ from . import views
 
 
 urlpatterns = [
+    path("consultation/", views.submit_consultation_lead, name="consultation_lead"),
+    path(
+        "consultation/received/<str:reference>/",
+        views.consultation_lead_received,
+        name="consultation_lead_received",
+    ),
     path("beta/<uuid:token>/", billing.redeem_beta_invite, name="redeem_beta_invite"),
     path("beta/access/<uuid:token>/", billing.beta_enrollment, name="beta_enrollment"),
     path("beta/checkout/<uuid:token>/", billing.beta_checkout, name="beta_checkout"),

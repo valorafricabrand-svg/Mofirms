@@ -16,6 +16,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from .models import (
     ACTIVITY_CHOICES,
     COUNTIES,
+    ConsultationLead,
     PARTNER_DELIVERY_CHOICES,
     PARTNER_OFFER_CHOICES,
     PARTNER_ROLE_CHOICES,
@@ -1196,6 +1197,43 @@ ResearchQuestionFormSet = formset_factory(
     validate_max=True,
     absolute_max=12,
 )
+
+
+class ConsultationLeadForm(forms.ModelForm):
+    privacy_consent = forms.BooleanField(
+        required=True,
+        label="I agree that MoFirms may use these details to respond to my consultation request.",
+    )
+    website = forms.CharField(required=False, widget=forms.HiddenInput)
+
+    class Meta:
+        model = ConsultationLead
+        fields = (
+            "full_name",
+            "preferred_contact",
+            "email",
+            "phone",
+            "organisation_or_county",
+            "category",
+            "message",
+        )
+        widgets = {
+            "full_name": forms.TextInput(attrs={"id": "name", "autocomplete": "name"}),
+            "preferred_contact": forms.Select(attrs={"id": "how"}),
+            "email": forms.EmailInput(attrs={"id": "email", "autocomplete": "email"}),
+            "phone": forms.TextInput(
+                attrs={"id": "phone", "type": "tel", "autocomplete": "tel"}
+            ),
+            "organisation_or_county": forms.TextInput(attrs={"id": "org"}),
+            "category": forms.Select(attrs={"id": "cat"}),
+            "message": forms.Textarea(attrs={"id": "msg", "rows": 3, "maxlength": 1200}),
+        }
+
+    def clean_website(self):
+        website = self.cleaned_data["website"]
+        if website:
+            raise ValidationError("Unable to submit this request.")
+        return website
 
 
 class ResearchResponseForm(forms.Form):

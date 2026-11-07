@@ -13,6 +13,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 
 from .forms import (
     BusinessReadinessForm,
+    ConsultationLeadForm,
     FarmerDocumentFormSet,
     FarmerRegistrationForm,
     FinancialAnalysisDocumentFormSet,
@@ -47,6 +48,63 @@ from .models import (
 
 logger = logging.getLogger(__name__)
 MAX_REGISTRATION_UPLOAD_SIZE = MAX_DOCUMENT_SIZE * MAX_DOCUMENTS_PER_REGISTRATION
+
+
+@require_http_methods(["GET"])
+def home(request):
+    return render(
+        request,
+        "index.html",
+        {
+            "consultation_form": ConsultationLeadForm(),
+            "consultation_enabled": not settings.DEMO_MODE,
+        },
+    )
+
+
+@require_http_methods(["POST"])
+def submit_consultation_lead(request):
+    form = ConsultationLeadForm(request.POST)
+    if _rate_limit_reached(request, "consultation"):
+        form.add_error(None, "Too many requests. Please try again later.")
+        return render(
+            request,
+            "index.html",
+            {
+                "consultation_form": form,
+                "consultation_enabled": not settings.DEMO_MODE,
+            },
+            status=429,
+        )
+
+    if form.is_valid():
+        lead = form.save(commit=False)
+        now = timezone.now()
+        lead.privacy_consent_at = now
+        lead.last_contact_at = now
+        lead.save()
+        return redirect(
+            "consultation_lead_received",
+            reference=lead.public_reference,
+        )
+
+    return render(
+        request,
+        "index.html",
+        {
+            "consultation_form": form,
+            "consultation_enabled": not settings.DEMO_MODE,
+        },
+        status=400,
+    )
+
+
+def consultation_lead_received(request, reference):
+    return render(
+        request,
+        "farmers/consultation_lead_success.html",
+        {"reference": reference},
+    )
 
 
 def _client_rate_key(request, portal):

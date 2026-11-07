@@ -244,8 +244,7 @@ portalViewport.addEventListener("scroll",()=>{
 reducedMotion.addEventListener("change",()=>{if(reducedMotion.matches)portalsPaused=true;updatePortalsMotion()});
 updatePortalsMotion();
 requestAnimationFrame(animatePortals);
-$("#cat").innerHTML=CATS.map(c=>`<option>${c}</option>`).join("");
-document.querySelectorAll("[data-cat]").forEach(a=>a.addEventListener("click",()=>$("#cat").value=a.dataset.cat));
+document.querySelectorAll("[data-cat]").forEach(a=>a.addEventListener("click",()=>{const option=[...$("#cat").options].find(item=>item.textContent===a.dataset.cat);if(option)$("#cat").value=option.value}));
 /* change calculator */
 const calc=()=>{const c=(+$("#paid").value||0)-(+$("#amt").value||0);$("#chg").textContent=c<0?"Customer owes KSh "+(-c).toLocaleString():"Change: KSh "+c.toLocaleString()};
 $("#amt").oninput=$("#paid").oninput=calc;
@@ -256,12 +255,6 @@ let qi=0,gaps=[];const qz=$("#quiz");
 function ask(){if(qi>=Q.length){const sc=Q.length-gaps.length;qz.innerHTML=`<h3>${sc} of ${Q.length} in place</h3><div class="bar2"><i style="width:${sc/Q.length*100}%"></i></div>${gaps.length?"<ul>"+gaps.map(g=>`<li>${TIPS[g]}</li>`).join("")+"</ul>":"<p>You’re well prepared. We can help you grow further.</p>"}<p class="note">An indication only, not an assessment.</p><a class="btn sm" href="#contact">Talk to us</a> <button class="opt" id="rs">Restart</button>`;$("#rs").onclick=()=>{qi=0;gaps=[];ask()};return}
 qz.innerHTML=`<p class="note">Question ${qi+1} of ${Q.length}</p><h3>${Q[qi][0]}</h3><button class="opt" data-a="1">Yes</button> <button class="opt" data-a="0">Not yet</button>`;
 qz.querySelectorAll("button").forEach(b=>b.onclick=()=>{if(b.dataset.a=="0")gaps.push(Q[qi][1]);qi++;ask()})}ask();
-/* enquiry form: validates, then opens the visitor's email app (static-site friendly) */
-$("#form").onsubmit=e=>{e.preventDefault();const n=$("#name").value.trim(),w=$("#who").value.trim(),m=$("#msg").value.trim();
-if(!n||!w||!m){$("#err").textContent="Please fill in your name, contact and message.";return}
-if($("#how").value=="Email"&&!/^\S+@\S+\.\S+$/.test(w)){$("#err").textContent="Please enter a valid email address.";return}
-$("#err").textContent="";const body=`Name: ${n}\nContact (${$("#how").value}): ${w}\nOrganisation/county: ${$("#org").value}\nUpdates OK: ${$("#mk").checked?"Yes":"No"}\n\n${m}`;
-location.href=`mailto:mconceptslimited@gmail.com?subject=${encodeURIComponent("Website enquiry: "+$("#cat").value)}&body=${encodeURIComponent(body)}`;$("#ok").hidden=false};
 /* scroll reveal */
 const io=new IntersectionObserver(es=>es.forEach(x=>x.isIntersecting&&x.target.classList.add("in")),{threshold:.1});
 document.querySelectorAll("section:not(.hero):not(.hero-carousel) .card,.steps li,section:not(.hero):not(.hero-carousel) h2").forEach(n=>{n.classList.add("reveal");io.observe(n)});

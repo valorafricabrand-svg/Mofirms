@@ -5,6 +5,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -16,6 +17,7 @@ from PIL import Image, PngImagePlugin
 
 from .models import (
     BusinessReadinessDraft,
+    ConsultationLead,
     FarmerDocument,
     FarmerProfile,
     FinancialAnalysisDocument,
@@ -1426,3 +1428,147 @@ class ResearchPortalTests(TestCase):
             "1 invitation record(s)",
             output.getvalue(),
         )
+
+
+class ConsultationLeadTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.url = reverse("consultation_lead")
+        self.valid_data = {
+            "full_name": "Amina Farmer",
+            "preferred_contact": "email",
+            "email": "amina@example.com",
+            "phone": "",
+            "organisation_or_county": "Vihiga",
+            "category": ConsultationLead.Category.AGRIBUSINESS,
+            "message": "I would like to discuss farm planning.",
+            "privacy_consent": "on",
+            "website": "",
+        }
+
+    def test_homepage_renders_database_backed_consultation_form(self):
+        response = self.client.get(reverse("home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'method="post"')
+        self.assertContains(response, 'name="csrfmiddlewaretoken"')
+        self.assertContains(response, "No email or SMS automation is configured")
+
+    def test_demo_homepage_disables_lead_form_and_warns_visitors(self):
+        with override_settings(DEMO_MODE=True):
+            response = self.client.get(reverse("home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "currently a read-only demo")
+        self.assertContains(response, "<fieldset disabled>")
+
+    def test_valid_enquiry_is_saved_for_staff_follow_up(self):
+        response = self.client.post(self.url, self.valid_data)
+
+        self.assertEqual(response.status_code, 302)
+        lead = ConsultationLead.objects.get()
+        self.assertEqual(lead.full_name, "Amina Farmer")
+        self.assertEqual(lead.status, ConsultationLead.Status.NEW)
+        self.assertEqual(lead.category, ConsultationLead.Category.AGRIBUSINESS)
+        self.assertIsNotNone(lead.privacy_consent_at)
+        self.assertRegex(response.url, rf"^/portal/consultation/received/{lead.public_reference}/$")
+
+        received = self.client.get(response.url)
+        self.assertEqual(received.status_code, 200)
+        self.assertContains(received, lead.public_reference)
+
+    def test_phone_contact_requires_a_phone_number(self):
+        response = self.client.post(
+            self.url,
+            {**self.valid_data, "preferred_contact": "phone", "email": ""},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(ConsultationLead.objects.count(), 0)
+        self.assertContains(response, "A phone number is required", status_code=400)
+
+    def test_email_contact_requires_a_valid_email(self):
+        response = self.client.post(
+            self.url,
+            {**self.valid_data, "email": "not-an-email"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(ConsultationLead.objects.count(), 0)
+        self.assertContains(response, "Enter a valid email address", status_code=400)
+
+    def test_privacy_consent_and_honeypot_are_enforced(self):
+        missing_consent = self.client.post(
+            self.url,
+            {key: value for key, value in self.valid_data.items() if key != "privacy_consent"},
+        )
+        self.assertEqual(missing_consent.status_code, 400)
+        self.assertEqual(ConsultationLead.objects.count(), 0)
+
+        honeypot = self.client.post(
+            self.url,
+            {**self.valid_data, "website": "automated submission"},
+        )
+        self.assertEqual(honeypot.status_code, 400)
+        self.assertEqual(ConsultationLead.objects.count(), 0)
+
+    def test_demo_mode_keeps_enquiry_submission_disabled(self):
+        with override_settings(DEMO_MODE=True):
+            response = self.client.post(self.url, self.valid_data)
+
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(ConsultationLead.objects.count(), 0)
+
+    def test_staff_can_review_new_enquiries_in_admin(self):
+        self.client.post(self.url, self.valid_data)
+        staff_user = get_user_model().objects.create_user(
+            username="consultation-reviewer",
+            password="test-password-for-local-suite",
+            is_staff=True,
+        )
+        staff_user.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label="farmers",
+                codename="view_consultationlead",
+            )
+        )
+        self.client.force_login(staff_user)
+
+        response = self.client.get(reverse("admin:farmers_consultationlead_changelist"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Amina Farmer")
+
+    def test_rate_limit_blocks_sixth_enquiry(self):
+        for _ in range(5):
+            self.client.post(self.url, self.valid_data)
+
+        response = self.client.post(self.url, self.valid_data)
+
+        self.assertEqual(response.status_code, 429)
+        self.assertEqual(ConsultationLead.objects.count(), 5)
+
+    def test_retention_command_deletes_only_leads_inactive_for_two_years(self):
+        lead_data = {
+            key: value
+            for key, value in self.valid_data.items()
+            if key not in {"privacy_consent", "website"}
+        }
+        old_lead = ConsultationLead.objects.create(
+            **lead_data,
+            privacy_consent_at=timezone.now(),
+            last_contact_at=timezone.now() - timedelta(days=731),
+        )
+        recent_lead = ConsultationLead.objects.create(
+            **{**lead_data, "full_name": "Recent Farmer"},
+            privacy_consent_at=timezone.now(),
+            last_contact_at=timezone.now(),
+        )
+        output = StringIO()
+
+        call_command("purge_retained_data", stdout=output)
+        self.assertIn("1 consultation enquiry/enquiries", output.getvalue())
+
+        call_command("purge_retained_data", "--execute", stdout=output)
+        self.assertFalse(ConsultationLead.objects.filter(pk=old_lead.pk).exists())
+        self.assertTrue(ConsultationLead.objects.filter(pk=recent_lead.pk).exists())

@@ -167,6 +167,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .contact-section>div{max-width:380px}
 .contact-section h2{font-size:1.7rem}
 .contact-form{padding:18px}
+.contact-form fieldset{border:0;padding:0;margin:0;min-width:0}
 .contact-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px}
 .contact-fields>div{min-width:0}
 .contact-fields .contact-wide{grid-column:1/-1}

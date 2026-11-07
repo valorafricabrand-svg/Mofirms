@@ -305,20 +305,26 @@
   <div><h2>Request a consultation</h2>
   <p>Tell us briefly what you need. Please don’t include ID numbers, tax PINs, land records or detailed financial information here.</p>
   <p><b>Email:</b> <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a></p></div>
-  <form class="card contact-form" id="form" novalidate>
+  <form class="card contact-form" id="form" method="post" action="{% url 'consultation_lead' %}">
+    {% if not consultation_enabled %}<p class="note" role="status">This live site is currently a read-only demo. Please don’t submit personal details. Contact <a href="mailto:mconceptslimited@gmail.com">MoFirms by email</a> instead.</p>{% endif %}
+    <fieldset {% if not consultation_enabled %}disabled{% endif %}>
+    {% csrf_token %}
+    {{ consultation_form.website }}
+    {% if consultation_form.non_field_errors %}<div class="err" role="alert">{{ consultation_form.non_field_errors }}</div>{% endif %}
     <div class="contact-fields">
-      <div><label for="name">Name *</label><input id="name" required autocomplete="name"></div>
-      <div><label for="how">Preferred contact</label><select id="how"><option>Email</option><option>Phone</option><option>WhatsApp</option></select></div>
-      <div><label for="who">Email or phone *</label><input id="who" required></div>
-      <div><label for="org">Organisation / county (optional)</label><input id="org"></div>
-      <div class="contact-wide"><label for="cat">Enquiry category</label><select id="cat"></select></div>
-      <div class="contact-wide"><label for="msg">Message *</label><textarea id="msg" rows="3" required></textarea></div>
+      <div><label for="name">Name *</label>{{ consultation_form.full_name }}{{ consultation_form.full_name.errors }}</div>
+      <div><label for="how">Preferred contact *</label>{{ consultation_form.preferred_contact }}{{ consultation_form.preferred_contact.errors }}</div>
+      <div><label for="email">Email</label>{{ consultation_form.email }}{{ consultation_form.email.errors }}</div>
+      <div><label for="phone">Phone or WhatsApp</label>{{ consultation_form.phone }}{{ consultation_form.phone.errors }}</div>
+      <div><label for="org">Organisation / county (optional)</label>{{ consultation_form.organisation_or_county }}{{ consultation_form.organisation_or_county.errors }}</div>
+      <div><label for="cat">Enquiry category *</label>{{ consultation_form.category }}{{ consultation_form.category.errors }}</div>
+      <div class="contact-wide"><label for="msg">Message *</label>{{ consultation_form.message }}{{ consultation_form.message.errors }}</div>
     </div>
-    <label class="chk"><input type="checkbox" id="mk"> I’d also like occasional updates from MoFirms (optional).</label>
-    <p class="note">We use these details only to respond to your enquiry. See the privacy notice below.</p>
-    <p id="err" class="err" role="alert"></p>
+    <label class="chk" for="id_privacy_consent">{{ consultation_form.privacy_consent }} {{ consultation_form.privacy_consent.label }}</label>
+    {{ consultation_form.privacy_consent.errors }}
+    <p class="note">Use this form for a short enquiry only. Don’t include ID numbers, tax PINs, bank details, passwords, or sensitive financial records. No email or SMS automation is configured; a staff member will review requests and follow up manually. See the privacy notice below.</p>
     <button class="btn" type="submit">Send enquiry</button>
-    <p id="ok" class="ok" role="status" hidden>Thank you. Your email app should open with your enquiry ready to send. If it doesn’t, write to the address shown.</p>
+    </fieldset>
   </form>
 </section>
 </main>
@@ -363,7 +369,7 @@
         <a href="mailto:mconceptslimited@gmail.com">Contact</a>
       </div>
     </div>
-    <div id="privacy" hidden class="footer-privacy">We collect only the details you submit in the enquiry form, to respond to you. Marketing messages are sent only if you tick the optional box. You may ask us to access, correct or delete your data by emailing <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a>. <i>Draft: to be confirmed against company records before launch.</i></div>
+    <div id="privacy" hidden class="footer-privacy">We collect the contact and enquiry details you submit so MoFirms staff can review and respond. Enquiry records are scheduled for deletion after two years without recorded contact. You may ask us to access, correct or delete your data by emailing <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a>. <i>Draft: MoFirms must approve this notice and retention period before accepting real enquiries.</i></div>
   </div>
 </footer>
 <script src="{% static 'js/app.js' %}?v=hero-slides-10-1"></script>

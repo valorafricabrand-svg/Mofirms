@@ -7,6 +7,7 @@ from django.urls import reverse
 
 from .models import (
     BusinessReadinessDraft,
+    ConsultationLead,
     FarmerDocument,
     FarmerProfile,
     FinancialAnalysisDocument,
@@ -25,6 +26,80 @@ from .models import (
     ServicePlan,
 )
 from .readiness_drafting import save_readiness_draft
+
+
+@admin.register(ConsultationLead)
+class ConsultationLeadAdmin(admin.ModelAdmin):
+    list_display = (
+        "public_reference",
+        "full_name",
+        "category",
+        "status",
+        "assigned_to",
+        "created_at",
+    )
+    list_filter = ("status", "category", "preferred_contact", "created_at")
+    search_fields = (
+        "full_name",
+        "email",
+        "phone",
+        "organisation_or_county",
+        "reference",
+    )
+    readonly_fields = (
+        "reference",
+        "privacy_consent_at",
+        "created_at",
+        "updated_at",
+    )
+    list_select_related = ("assigned_to",)
+    date_hierarchy = "created_at"
+    actions = ("mark_contacted_today",)
+    fieldsets = (
+        (
+            "Lead follow-up",
+            {"fields": ("reference", "status", "assigned_to", "internal_notes")},
+        ),
+        (
+            "Enquiry and contact",
+            {
+                "fields": (
+                    "full_name",
+                    "email",
+                    "phone",
+                    "preferred_contact",
+                    "organisation_or_county",
+                    "category",
+                    "message",
+                )
+            },
+        ),
+        (
+            "Consent and retention",
+            {
+                "fields": (
+                    "privacy_consent_at",
+                    "last_contact_at",
+                    "created_at",
+                    "updated_at",
+                )
+            },
+        ),
+    )
+
+    @admin.display(description="Reference")
+    def public_reference(self, obj):
+        return obj.public_reference
+
+    @admin.action(description="Record that contact occurred today")
+    def mark_contacted_today(self, request, queryset):
+        updated = queryset.update(last_contact_at=timezone.now())
+        self.message_user(request, f"Updated the last-contact date for {updated} enquiry/enquiries.")
+
+    def save_model(self, request, obj, form, change):
+        if change and "status" in form.changed_data and obj.status == ConsultationLead.Status.CONTACTED:
+            obj.last_contact_at = timezone.now()
+        super().save_model(request, obj, form, change)
 
 
 class BetaInviteAdminForm(forms.ModelForm):
