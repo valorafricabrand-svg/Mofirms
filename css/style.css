@@ -167,9 +167,9 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .contact-section{grid-template-columns:.8fr 1.2fr;gap:28px;padding-top:48px;padding-bottom:48px}
 .contact-section>div{max-width:380px}
 .contact-section h2{font-size:1.7rem}
-.company-identity{max-width:300px;margin-top:24px}
-.company-identity img{display:block;width:100%;height:auto}
-.company-identity p{margin:8px 0 0;color:#000;font-weight:800}
+.company-identity{display:flex;align-items:center;gap:12px;max-width:100%;margin-top:24px}
+.company-identity img{display:block;flex:0 1 35%;width:35%;max-width:165px;height:auto}
+.company-identity p{flex:1;min-width:0;margin:0;color:#000;font-size:clamp(.55rem,2.5vw,.9rem);font-weight:800;line-height:1.2;white-space:nowrap}
 .contact-form{padding:18px}
 .contact-form fieldset{border:0;padding:0;margin:0;min-width:0}
 .contact-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px}
@@ -196,6 +196,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:760px){.document-row{grid-template-columns:1fr 1fr}.document-row>div:nth-child(3){grid-column:1/-1}}
 @media(max-width:760px){.footer-main{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 20px;padding-top:36px;padding-bottom:28px}.footer-brand{grid-column:1/-1}.footer-brand p,.footer-contact p{max-width:360px}.footer-bottom{align-items:flex-start;flex-direction:column;gap:12px}}
 @media(max-width:560px){.form-grid{grid-template-columns:1fr}.registration-form{padding:18px}.inline-fields{grid-template-columns:1fr 115px}.document-row{grid-template-columns:1fr}.document-row>div:nth-child(3){grid-column:auto}.portal-section .steps{grid-template-columns:1fr}.contact-form{padding:16px}.contact-fields{grid-template-columns:1fr}.contact-fields .contact-wide{grid-column:auto}.stats{grid-template-columns:1fr;gap:10px}.stats li{display:flex;align-items:baseline;gap:12px}.stats b{flex:0 0 118px;margin:0}}
+@media(max-width:400px){.company-identity{gap:8px}.company-identity img{flex-basis:30%;width:30%}}
 @media(max-width:420px){.footer-main{grid-template-columns:1fr;gap:22px}.footer-brand{grid-column:auto}.footer-bottom p{line-height:1.55}.footer-legal{gap:16px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}.reveal{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.carousel-arrow{transform:none}.carousel-slide.is-active{animation:none}}
