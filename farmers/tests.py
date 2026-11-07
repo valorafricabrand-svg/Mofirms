@@ -1450,6 +1450,8 @@ class ConsultationLeadTests(TestCase):
         response = self.client.get(reverse("home"))
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="logo site-logo"')
+        self.assertContains(response, 'alt="MoFirms" width="150" height="50"')
         self.assertContains(response, 'method="post"')
         self.assertContains(response, 'name="csrfmiddlewaretoken"')
         self.assertContains(response, "No email or SMS automation is configured")
