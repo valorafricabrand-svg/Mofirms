@@ -26,8 +26,24 @@ const CATS=["Agribusiness advice","Business intelligence","Training","Products",
 const $=s=>document.querySelector(s),el=(h)=>{const d=document.createElement("div");d.innerHTML=h.trim();return d.firstChild};
 const reducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)");
 $("#yr").textContent=new Date().getFullYear();
-$("#burger").onclick=e=>{const o=$("#menu").classList.toggle("open");e.target.setAttribute("aria-expanded",o)};
-$("#menu").onclick=()=>$("#menu").classList.remove("open");
+const menu=$("#menu"),burger=$("#burger");
+function closeMenu(restoreFocus=false){
+  menu.classList.remove("open");
+  burger.setAttribute("aria-expanded","false");
+  burger.setAttribute("aria-label","Open menu");
+  burger.textContent="☰";
+  if(restoreFocus)burger.focus();
+}
+burger.onclick=()=>{
+  const open=!menu.classList.contains("open");
+  menu.classList.toggle("open",open);
+  burger.setAttribute("aria-expanded",String(open));
+  burger.setAttribute("aria-label",open?"Close menu":"Open menu");
+  burger.textContent=open?"×":"☰";
+};
+menu.addEventListener("click",event=>{if(event.target.closest("a"))closeMenu()});
+document.addEventListener("keydown",event=>{if(event.key==="Escape"&&menu.classList.contains("open"))closeMenu(true)});
+window.addEventListener("resize",()=>{if(window.innerWidth>760)closeMenu()});
 $("#pv").onclick=()=>{const notice=$("#privacy");notice.hidden=!notice.hidden;$("#pv").setAttribute("aria-expanded",String(!notice.hidden))};
 /* agriculture story carousel */
 const carousel=$("#agriCarousel");
@@ -40,15 +56,23 @@ if(carousel){
   const progressFill=$("#carouselProgress");
   const toggle=$("#carouselToggle");
   let currentSlide=0;
-  let carouselPaused=reducedMotion.matches;
+  let carouselPaused=true;
   let carouselEngaged=false;
-  let lastCarouselChange=Date.now();
+  let carouselTimer;
   totalDisplay.textContent=String(slides.length).padStart(2,"0");
   progress.setAttribute("aria-valuemax",String(slides.length));
   function updateCarouselToggle(){
     toggle.disabled=reducedMotion.matches;
     toggle.textContent=carouselPaused?"▶":"Ⅱ";
-    toggle.setAttribute("aria-label",reducedMotion.matches?"Automatic slide rotation is disabled by your reduced motion setting":carouselPaused?"Resume automatic slide rotation":"Pause automatic slide rotation");
+    toggle.setAttribute("aria-label",reducedMotion.matches?"Automatic slide rotation is disabled by your reduced motion setting":carouselPaused?"Start automatic slide rotation":"Pause automatic slide rotation");
+  }
+  function scheduleCarouselAdvance(){
+    window.clearTimeout(carouselTimer);
+    if(carouselPaused||carouselEngaged||document.hidden||reducedMotion.matches)return;
+    carouselTimer=window.setTimeout(()=>{
+      showSlide(currentSlide+1);
+      scheduleCarouselAdvance();
+    },7000);
   }
   function showSlide(index,announce=false){
     currentSlide=(index+slides.length)%slides.length;
@@ -61,16 +85,16 @@ if(carousel){
     currentDisplay.textContent=String(currentSlide+1).padStart(2,"0");
     progress.setAttribute("aria-valuenow",String(currentSlide+1));
     progressFill.style.width=`${((currentSlide+1)/slides.length)*100}%`;
-    lastCarouselChange=Date.now();
     if(announce)announcement.textContent=`Slide ${currentSlide+1} of ${slides.length}: ${slides[currentSlide].querySelector("h1,h2").textContent}`;
+    scheduleCarouselAdvance();
   }
   function setCarouselEngaged(engaged){
-    carouselEngaged=engaged;
-    lastCarouselChange=Date.now();
+    carouselEngaged=engaged||carousel.matches(":hover")||carousel.contains(document.activeElement);
+    scheduleCarouselAdvance();
   }
   $("#carouselPrevious").onclick=()=>showSlide(currentSlide-1,true);
   $("#carouselNext").onclick=()=>showSlide(currentSlide+1,true);
-  toggle.onclick=()=>{carouselPaused=!carouselPaused;updateCarouselToggle();lastCarouselChange=Date.now()};
+  toggle.onclick=()=>{carouselPaused=!carouselPaused;updateCarouselToggle();scheduleCarouselAdvance()};
   carousel.addEventListener("pointerenter",()=>setCarouselEngaged(true));
   carousel.addEventListener("pointerleave",()=>setCarouselEngaged(false));
   carousel.addEventListener("focusin",()=>setCarouselEngaged(true));
@@ -98,12 +122,9 @@ if(carousel){
   reducedMotion.addEventListener("change",()=>{
     if(reducedMotion.matches)carouselPaused=true;
     updateCarouselToggle();
+    scheduleCarouselAdvance();
   });
-  window.setInterval(()=>{
-    if(!carouselPaused&&!carouselEngaged&&!document.hidden&&Date.now()-lastCarouselChange>=7000){
-      showSlide(currentSlide+1);
-    }
-  },500);
+  document.addEventListener("visibilitychange",scheduleCarouselAdvance);
   updateCarouselToggle();
   showSlide(0);
 }
@@ -113,137 +134,29 @@ function show(k){const p=PATHS[k];$("#pathOut").innerHTML=`<h3>${p[0]}</h3><p>${
 /* services */
 let flt="all";const F=$("#filters");
 [["all","All"],...Object.entries(STATUS)].forEach(([k,v])=>{const b=el(`<button type="button" class="${k=="all"?"on":""}" aria-pressed="${k=="all"}">${v}</button>`);b.onclick=()=>{flt=k;F.querySelectorAll("button").forEach(x=>{x.classList.remove("on");x.setAttribute("aria-pressed","false")});b.classList.add("on");b.setAttribute("aria-pressed","true");draw()};F.append(b)});
-const serviceViewport=$("#servicesViewport"),serviceSet=$("#serviceSet"),serviceSetCopy=$("#serviceSetCopy"),servicesMotion=$("#servicesMotion"),servicesAnnouncement=$("#servicesAnnouncement");
-let servicesPaused=reducedMotion.matches,servicesEngaged=false,lastServicesFrame=0;
+const serviceViewport=$("#servicesViewport"),serviceSet=$("#serviceSet");
 function draw(){
   const visibleServices=SERVICES.filter(s=>flt=="all"||s.s==flt);
   const cards=visibleServices.map(s=>`<article class="service-card"><span class="tag ${s.s}">${STATUS[s.s]}</span><h3>${s.t}</h3><p>${s.d}</p><a href="#contact">Enquire →</a></article>`).join("");
   serviceSet.innerHTML=cards;
-  serviceSetCopy.innerHTML=cards;
-  serviceSetCopy.inert=true;
-  serviceSetCopy.setAttribute("aria-hidden","true");
   serviceViewport.scrollLeft=0;
 }
-function updateServicesMotion(){
-  servicesMotion.disabled=reducedMotion.matches;
-  servicesMotion.textContent=reducedMotion.matches?"Motion reduced":servicesPaused?"Resume motion":"Pause motion";
-  servicesMotion.setAttribute("aria-label",reducedMotion.matches?"Automatic motion is disabled by your reduced motion setting":servicesPaused?"Resume moving service banners":"Pause moving service banners");
-}
-function animateServices(timestamp){
-  if(lastServicesFrame&& !servicesPaused&&!servicesEngaged&&!document.hidden){
-    const elapsed=Math.min(timestamp-lastServicesFrame,50);
-    const loopPoint=serviceSet.offsetWidth+parseFloat(getComputedStyle($("#serviceTrack")).gap||"0");
-    if(loopPoint>0){
-      serviceViewport.scrollLeft+=elapsed*.035;
-      if(serviceViewport.scrollLeft>=loopPoint)serviceViewport.scrollLeft-=loopPoint;
-    }
-  }
-  lastServicesFrame=timestamp;
-  requestAnimationFrame(animateServices);
-}
-F.querySelectorAll("button").forEach(button=>button.setAttribute("aria-pressed",String(button.classList.contains("on"))));
-servicesMotion.onclick=()=>{servicesPaused=!servicesPaused;updateServicesMotion()};
 $("#servicesPrevious").onclick=()=>serviceViewport.scrollBy({left:-serviceViewport.clientWidth*.8,behavior:reducedMotion.matches?"auto":"smooth"});
 $("#servicesNext").onclick=()=>serviceViewport.scrollBy({left:serviceViewport.clientWidth*.8,behavior:reducedMotion.matches?"auto":"smooth"});
-serviceViewport.addEventListener("pointerenter",()=>servicesEngaged=true);
-serviceViewport.addEventListener("pointerleave",()=>servicesEngaged=false);
-serviceViewport.addEventListener("focusin",()=>servicesEngaged=true);
-serviceViewport.addEventListener("focusout",event=>{if(!serviceViewport.contains(event.relatedTarget))servicesEngaged=false});
-serviceViewport.addEventListener("scroll",()=>{
-  if(!serviceSet.offsetWidth)return;
-  const card=serviceSet.querySelector(".service-card");
-  const index=Math.floor(serviceViewport.scrollLeft/(card.offsetWidth+16))%serviceSet.children.length;
-  servicesAnnouncement.textContent=`Service ${index+1} of ${serviceSet.children.length}: ${card ? serviceSet.children[index].querySelector("h3").textContent : ""}`;
-},{passive:true});
-reducedMotion.addEventListener("change",()=>{if(reducedMotion.matches)servicesPaused=true;updateServicesMotion()});
 draw();
-updateServicesMotion();
-requestAnimationFrame(animateServices);
 $("#projGrid").innerHTML=PROJECTS.map(p=>`<article class="card project-card"><span class="tag concept">Concept</span><h3>${p.t}</h3><p><b>Owner:</b> ${p.o}</p><p><b>MoFirms’ role:</b> ${p.r}</p><a class="project-link" href="#contact" data-cat="Project collaboration">Discuss a similar project <span aria-hidden="true">→</span></a></article>`).join("");
 const clusterCards=VOFA_CLUSTERS.map(cluster=>`<article class="card project-card cluster-card"><span class="tag concept">Proposed · not approved or funded</span><h4>${cluster.t}</h4><ul aria-label="Activities under consideration">${cluster.activities.map(activity=>`<li>${activity}</li>`).join("")}</ul><a class="project-link" href="#contact" data-cat="Project collaboration">Discuss a similar project <span aria-hidden="true">→</span></a></article>`).join("");
-const clusterViewport=$("#clustersViewport"),clusterSet=$("#clusterGrid"),clusterSetCopy=$("#clusterGridCopy"),clustersMotion=$("#clustersMotion"),clustersAnnouncement=$("#clustersAnnouncement");
+const clusterViewport=$("#clustersViewport"),clusterSet=$("#clusterGrid");
 clusterSet.innerHTML=clusterCards;
-clusterSetCopy.innerHTML=clusterCards;
-clusterSetCopy.inert=true;
-clusterSetCopy.setAttribute("aria-hidden","true");
-let clustersPaused=reducedMotion.matches,clustersEngaged=false,lastClustersFrame=0;
-function updateClustersMotion(){
-  clustersMotion.disabled=reducedMotion.matches;
-  clustersMotion.textContent=reducedMotion.matches?"Motion reduced":clustersPaused?"Resume motion":"Pause motion";
-  clustersMotion.setAttribute("aria-label",reducedMotion.matches?"Automatic motion is disabled by your reduced motion setting":clustersPaused?"Resume moving project cluster banners":"Pause moving project cluster banners");
-}
-function animateClusters(timestamp){
-  if(lastClustersFrame&&!clustersPaused&&!clustersEngaged&&!document.hidden){
-    const elapsed=Math.min(timestamp-lastClustersFrame,50);
-    const loopPoint=clusterSet.offsetWidth+parseFloat(getComputedStyle($("#clusterTrack")).gap||"0");
-    if(loopPoint>0){
-      clusterViewport.scrollLeft+=elapsed*.035;
-      if(clusterViewport.scrollLeft>=loopPoint)clusterViewport.scrollLeft-=loopPoint;
-    }
-  }
-  lastClustersFrame=timestamp;
-  requestAnimationFrame(animateClusters);
-}
-clustersMotion.onclick=()=>{clustersPaused=!clustersPaused;updateClustersMotion()};
 $("#clustersPrevious").onclick=()=>clusterViewport.scrollBy({left:-clusterViewport.clientWidth*.8,behavior:reducedMotion.matches?"auto":"smooth"});
 $("#clustersNext").onclick=()=>clusterViewport.scrollBy({left:clusterViewport.clientWidth*.8,behavior:reducedMotion.matches?"auto":"smooth"});
-clusterViewport.addEventListener("pointerenter",()=>clustersEngaged=true);
-clusterViewport.addEventListener("pointerleave",()=>clustersEngaged=false);
-clusterViewport.addEventListener("focusin",()=>clustersEngaged=true);
-clusterViewport.addEventListener("focusout",event=>{if(!clusterViewport.contains(event.relatedTarget))clustersEngaged=false});
-clusterViewport.addEventListener("scroll",()=>{
-  if(!clusterSet.offsetWidth)return;
-  const firstCard=clusterSet.querySelector(".cluster-card");
-  if(!firstCard)return;
-  const index=Math.floor(clusterViewport.scrollLeft/(firstCard.offsetWidth+18))%clusterSet.children.length;
-  clustersAnnouncement.textContent=`Cluster ${index+1} of ${clusterSet.children.length}: ${clusterSet.children[index].querySelector("h4").textContent}`;
-},{passive:true});
-reducedMotion.addEventListener("change",()=>{if(reducedMotion.matches)clustersPaused=true;updateClustersMotion()});
-updateClustersMotion();
-requestAnimationFrame(animateClusters);
 $("#feat").innerHTML=FEATS.map(f=>`<li>${f}</li>`).join("");
 const PORTAL_ACTIONS=["Register as a farmer","Register as a partner","Request financial analysis","Request an assessment","Apply as a researcher"];
 const portalCards=PORTALS.map((p,i)=>`<li><h3>${p[0]}</h3><p>${p[1]}</p><a class="btn sm" href="${p[2]}">${PORTAL_ACTIONS[i]}</a></li>`).join("");
-const portalViewport=$("#portalsViewport"),portalSet=$("#portals"),portalSetCopy=$("#portalsCopy"),portalsMotion=$("#portalsMotion"),portalsAnnouncement=$("#portalsAnnouncement");
+const portalViewport=$("#portalsViewport"),portalSet=$("#portals");
 portalSet.innerHTML=portalCards;
-portalSetCopy.innerHTML=portalCards;
-portalSetCopy.inert=true;
-portalSetCopy.setAttribute("aria-hidden","true");
-let portalsPaused=reducedMotion.matches,portalsEngaged=false,lastPortalsFrame=0;
-function updatePortalsMotion(){
-  portalsMotion.disabled=reducedMotion.matches;
-  portalsMotion.textContent=reducedMotion.matches?"Motion reduced":portalsPaused?"Resume motion":"Pause motion";
-  portalsMotion.setAttribute("aria-label",reducedMotion.matches?"Automatic motion is disabled by your reduced motion setting":portalsPaused?"Resume moving customer portal banners":"Pause moving customer portal banners");
-}
-function animatePortals(timestamp){
-  if(lastPortalsFrame&&!portalsPaused&&!portalsEngaged&&!document.hidden){
-    const elapsed=Math.min(timestamp-lastPortalsFrame,50);
-    const loopPoint=portalSet.offsetWidth+parseFloat(getComputedStyle($("#portalTrack")).gap||"0");
-    if(loopPoint>0){
-      portalViewport.scrollLeft+=elapsed*.035;
-      if(portalViewport.scrollLeft>=loopPoint)portalViewport.scrollLeft-=loopPoint;
-    }
-  }
-  lastPortalsFrame=timestamp;
-  requestAnimationFrame(animatePortals);
-}
-portalsMotion.onclick=()=>{portalsPaused=!portalsPaused;updatePortalsMotion()};
 $("#portalsPrevious").onclick=()=>portalViewport.scrollBy({left:-portalViewport.clientWidth*.8,behavior:reducedMotion.matches?"auto":"smooth"});
 $("#portalsNext").onclick=()=>portalViewport.scrollBy({left:portalViewport.clientWidth*.8,behavior:reducedMotion.matches?"auto":"smooth"});
-portalViewport.addEventListener("pointerenter",()=>portalsEngaged=true);
-portalViewport.addEventListener("pointerleave",()=>portalsEngaged=false);
-portalViewport.addEventListener("focusin",()=>portalsEngaged=true);
-portalViewport.addEventListener("focusout",event=>{if(!portalViewport.contains(event.relatedTarget))portalsEngaged=false});
-portalViewport.addEventListener("scroll",()=>{
-  if(!portalSet.offsetWidth)return;
-  const firstCard=portalSet.querySelector("li");
-  if(!firstCard)return;
-  const index=Math.floor(portalViewport.scrollLeft/(firstCard.offsetWidth+14))%portalSet.children.length;
-  portalsAnnouncement.textContent=`Portal ${index+1} of ${portalSet.children.length}: ${portalSet.children[index].querySelector("h3").textContent}`;
-},{passive:true});
-reducedMotion.addEventListener("change",()=>{if(reducedMotion.matches)portalsPaused=true;updatePortalsMotion()});
-updatePortalsMotion();
-requestAnimationFrame(animatePortals);
 document.querySelectorAll("[data-cat]").forEach(a=>a.addEventListener("click",()=>{const option=[...$("#cat").options].find(item=>item.textContent===a.dataset.cat);if(option)$("#cat").value=option.value}));
 /* change calculator */
 const calc=()=>{const c=(+$("#paid").value||0)-(+$("#amt").value||0);$("#chg").textContent=c<0?"Customer owes KSh "+(-c).toLocaleString():"Change: KSh "+c.toLocaleString()};
@@ -255,6 +168,3 @@ let qi=0,gaps=[];const qz=$("#quiz");
 function ask(){if(qi>=Q.length){const sc=Q.length-gaps.length;qz.innerHTML=`<h3>${sc} of ${Q.length} in place</h3><div class="bar2"><i style="width:${sc/Q.length*100}%"></i></div>${gaps.length?"<ul>"+gaps.map(g=>`<li>${TIPS[g]}</li>`).join("")+"</ul>":"<p>You’re well prepared. We can help you grow further.</p>"}<p class="note">An indication only, not an assessment.</p><a class="btn sm" href="#contact">Talk to us</a> <button class="opt" id="rs">Restart</button>`;$("#rs").onclick=()=>{qi=0;gaps=[];ask()};return}
 qz.innerHTML=`<p class="note">Question ${qi+1} of ${Q.length}</p><h3>${Q[qi][0]}</h3><button class="opt" data-a="1">Yes</button> <button class="opt" data-a="0">Not yet</button>`;
 qz.querySelectorAll("button").forEach(b=>b.onclick=()=>{if(b.dataset.a=="0")gaps.push(Q[qi][1]);qi++;ask()})}ask();
-/* scroll reveal */
-const io=new IntersectionObserver(es=>es.forEach(x=>x.isIntersecting&&x.target.classList.add("in")),{threshold:.1});
-document.querySelectorAll("section:not(.hero):not(.hero-carousel) .card,.steps li,section:not(.hero):not(.hero-carousel) h2").forEach(n=>{n.classList.add("reveal");io.observe(n)});

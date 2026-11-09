@@ -9,13 +9,15 @@
 <meta property="og:title" content="MoFirms | Agribusiness &amp; Enterprise Advisory">
 <meta property="og:description" content="Practical advice for sustainable farms and growing enterprises.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
-<link rel="stylesheet" href="{% static 'css/style.css' %}?v=hero-slides-10-1">
+<link rel="preload" as="image" href="{% static 'images/climate-smart-farming.webp' %}" imagesrcset="{% static 'images/climate-smart-farming-480.webp' %} 480w, {% static 'images/climate-smart-farming.webp' %} 736w" imagesizes="(min-width: 901px) 540px, calc(100vw - 40px)" fetchpriority="high">
+<link rel="stylesheet" href="{% static 'css/style.css' %}?v=ux-performance-2026-11">
+<script src="{% static 'js/app.js' %}?v=ux-performance-2026-11" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="nav"><div class="wrap bar">
   <a class="logo site-logo" href="#top"><img src="{% static 'images/mofirms-company-logo.png' %}" alt="MoFirms" width="195" height="65"><span class="site-logo-name">Marks Organic Farms Concepts Limited</span></a>
-  <button id="burger" aria-label="Menu" aria-expanded="false">☰</button>
+  <button id="burger" type="button" aria-label="Open menu" aria-controls="menu" aria-expanded="false">☰</button>
   <nav id="menu" aria-label="Main">
     <a href="#services">Services</a><a href="#smarthasibu">SmartHasibu</a><a href="#projects">Projects</a>
     <a href="#products">Products</a><a href="#about">About</a><a href="/pricing/">Pricing</a><a class="btn sm" href="#contact">Request a consultation</a>
@@ -29,7 +31,10 @@
       <div class="carousel-stage">
         <article class="carousel-slide is-active" data-slide="0" role="group" aria-roledescription="slide" aria-label="1 of 10: About MoFirms">
           <div class="carousel-photo">
-            <img src="{% static 'images/climate-smart-farming.jpg' %}" alt="Farmer tending irrigated vegetable crops on a green, climate-smart farm" width="736" height="736" fetchpriority="high">
+            <picture>
+              <source srcset="{% static 'images/climate-smart-farming-480.webp' %} 480w, {% static 'images/climate-smart-farming.webp' %} 736w" sizes="(min-width: 901px) 540px, calc(100vw - 40px)" type="image/webp">
+              <img src="{% static 'images/climate-smart-farming.jpg' %}" alt="Farmer tending irrigated vegetable crops on a green, climate-smart farm" width="736" height="736" fetchpriority="high" decoding="async">
+            </picture>
             <span class="photo-caption">AGRIBUSINESS &amp; ENTERPRISE ADVISORY · KENYA</span>
           </div>
           <div class="carousel-copy">
@@ -41,7 +46,7 @@
         </article>
         <article class="carousel-slide" data-slide="1" role="group" aria-roledescription="slide" aria-label="2 of 10: Farmer services" hidden>
           <div class="carousel-photo">
-            <img src="{% static 'images/productive-farmland.jpg' %}" alt="Farmers tending productive crop rows across a broad agricultural landscape" width="735" height="490" loading="eager">
+            <img src="{% static 'images/productive-farmland.jpg' %}" alt="Farmers tending productive crop rows across a broad agricultural landscape" width="735" height="490" loading="lazy" decoding="async">
             <span class="photo-caption">PRACTICAL SUPPORT FOR FARMERS</span>
           </div>
           <div class="carousel-copy">
@@ -152,7 +157,7 @@
         <button type="button" class="carousel-arrow" id="carouselPrevious" aria-label="Previous hero slide">←</button>
         <span class="carousel-position"><span id="carouselCurrent">01</span><span aria-hidden="true"> / </span><span id="carouselTotal">10</span></span>
         <span class="carousel-progress" role="progressbar" aria-label="Hero slide position" aria-valuemin="1" aria-valuemax="10" aria-valuenow="1"><span id="carouselProgress"></span></span>
-        <button type="button" class="carousel-arrow carousel-toggle" id="carouselToggle" aria-label="Pause automatic slide rotation">Ⅱ</button>
+        <button type="button" class="carousel-arrow carousel-toggle" id="carouselToggle" aria-label="Start automatic slide rotation">▶</button>
         <button type="button" class="carousel-arrow" id="carouselNext" aria-label="Next hero slide">→</button>
       </div>
       <p class="visually-hidden" id="carouselAnnouncement" aria-live="polite" aria-atomic="true"></p>
@@ -169,19 +174,14 @@
   <h2>Services</h2>
   <p class="sub">Every service carries an honest status label. Advice supports applications and decisions; it does not guarantee funding or returns.</p>
   <div class="filters" id="filters" aria-label="Filter services"></div>
-  <div class="service-controls" role="group" aria-label="Service banner controls">
+  <div class="service-controls" role="group" aria-label="Service controls">
     <button class="service-arrow" id="servicesPrevious" type="button" aria-label="Show previous services">←</button>
     <button class="service-arrow" id="servicesNext" type="button" aria-label="Show next services">→</button>
-    <button class="service-motion" id="servicesMotion" type="button">Pause motion</button>
   </div>
-  <div class="service-viewport" id="servicesViewport" role="region" aria-label="MoFirms services, moving from right to left" tabindex="0">
-    <div class="service-track" id="serviceTrack">
-      <div class="service-set" id="serviceSet"></div>
-      <div class="service-set" id="serviceSetCopy" aria-hidden="true" inert></div>
-    </div>
+  <div class="service-viewport" id="servicesViewport" role="region" aria-label="MoFirms services" tabindex="0">
+    <div class="service-set" id="serviceSet"></div>
   </div>
-  <p class="service-hint">Browse every service with the arrows or scroll horizontally. Pause the banners at any time.</p>
-  <p class="visually-hidden" id="servicesAnnouncement" aria-live="polite" aria-atomic="true"></p>
+  <p class="service-hint">Use the arrows, swipe or scroll horizontally to explore every service.</p>
 </div></section>
 
 <section class="wrap monetization-landing" aria-labelledby="monetization-title">
@@ -243,19 +243,14 @@
     <h3>Project clusters under consideration</h3>
     <p class="sub">VOFA reports written proposals and illustrative financial models for these ideas. None is yet an approved or funded project. Activities under consideration are shown on each card.</p>
   </div>
-  <div class="cluster-controls" role="group" aria-label="Project cluster banner controls">
+  <div class="cluster-controls" role="group" aria-label="Project cluster controls">
     <button class="cluster-arrow" id="clustersPrevious" type="button" aria-label="Show previous project clusters">←</button>
     <button class="cluster-arrow" id="clustersNext" type="button" aria-label="Show next project clusters">→</button>
-    <button class="cluster-motion" id="clustersMotion" type="button">Pause motion</button>
   </div>
-  <div class="cluster-viewport" id="clustersViewport" role="region" aria-label="Proposed VOFA project clusters, moving from right to left" tabindex="0">
-    <div class="cluster-track" id="clusterTrack">
-      <div class="cluster-set" id="clusterGrid"></div>
-      <div class="cluster-set" id="clusterGridCopy" aria-hidden="true" inert></div>
-    </div>
+  <div class="cluster-viewport" id="clustersViewport" role="region" aria-label="Proposed VOFA project clusters" tabindex="0">
+    <div class="cluster-set" id="clusterGrid"></div>
   </div>
-  <p class="cluster-hint">Use the arrows or scroll to browse every proposed cluster. Pause the banners at any time.</p>
-  <p class="visually-hidden" id="clustersAnnouncement" aria-live="polite" aria-atomic="true"></p>
+  <p class="cluster-hint">Use the arrows, swipe or scroll to browse every proposed cluster.</p>
   <section class="project-readiness" aria-labelledby="project-readiness-title">
     <h3 id="project-readiness-title">What needs to happen before a cluster can proceed</h3>
     <ol class="concept-steps">
@@ -290,19 +285,14 @@
 
 <section class="alt portal-section" id="customer-portals"><div class="wrap"><h2>Customer portals</h2>
   <p class="sub">Portals A and B support farmer, supplier, buyer, and service-provider registration. Portals C and D accept specialist financial-analysis and risk-and-opportunity assessment requests; staff review the scope and quote before work begins. The Farmer Business Readiness Pack is a proposed private pilot request; staff review every request and any internal draft before work is agreed. Portal E is a separate, manually vetted research service; respondent participation is voluntary and researchers see aggregate results only. These services remain in local development and are not open for real personal, financial, or research data until secure production hosting and the privacy notice are approved.</p>
-  <div class="portal-controls" role="group" aria-label="Customer portal banner controls">
+  <div class="portal-controls" role="group" aria-label="Customer portal controls">
     <button class="portal-arrow" id="portalsPrevious" type="button" aria-label="Show previous portals">←</button>
     <button class="portal-arrow" id="portalsNext" type="button" aria-label="Show next portals">→</button>
-    <button class="portal-motion" id="portalsMotion" type="button">Pause motion</button>
   </div>
-  <div class="portal-viewport" id="portalsViewport" role="region" aria-label="Customer portals, moving from right to left" tabindex="0">
-    <div class="portal-track" id="portalTrack">
-      <ol class="portal-set steps" id="portals"></ol>
-      <ol class="portal-set steps" id="portalsCopy" aria-hidden="true" inert></ol>
-    </div>
+  <div class="portal-viewport" id="portalsViewport" role="region" aria-label="Customer portals" tabindex="0">
+    <ol class="portal-set steps" id="portals"></ol>
   </div>
-  <p class="portal-hint">Use the arrows or scroll to explore all five portals. Pause the banners at any time.</p>
-  <p class="visually-hidden" id="portalsAnnouncement" aria-live="polite" aria-atomic="true"></p>
+  <p class="portal-hint">Use the arrows, swipe or scroll to explore all five portals.</p>
 </div></section>
 
 <section id="contact" class="wrap two contact-section">
@@ -404,5 +394,4 @@
     <div id="privacy" hidden class="footer-privacy">We use consultation details to review and respond to enquiries; enquiry records are scheduled for deletion after two years without recorded contact. If you subscribe, we store your email, selected topics, and consent date to manage the newsletter. We use that address only for the selected updates and retain your unsubscribe status to avoid contacting you again. Unsubscribe using the link shown after signup or in newsletter messages. You may ask us to access, correct or delete your data by emailing <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a>. Newsletter emails are not currently sent automatically. <i>Draft: MoFirms must approve this notice, newsletter operations, and retention rules before accepting real personal data.</i></div>
   </div>
 </footer>
-<script src="{% static 'js/app.js' %}?v=hero-slides-10-1"></script>
 </body></html>
