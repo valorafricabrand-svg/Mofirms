@@ -16,7 +16,13 @@ urlpatterns = [
     path("beta/checkout/<uuid:token>/", billing.beta_checkout, name="beta_checkout"),
     path("beta/payment-status/<uuid:token>/", billing.payment_status, name="payment_status"),
     path("payments/mpesa/callback/", billing.mpesa_callback, name="mpesa_callback"),
+    path("webhooks/whatsapp/", billing.whatsapp_webhook, name="whatsapp_webhook"),
     path("register/", views.register_farmer, name="register_farmer"),
+    path(
+        "register/<uuid:reference>/details/",
+        views.register_farmer_details,
+        name="register_farmer_details",
+    ),
     path("registered/<str:reference>/", views.registration_success, name="registration_success"),
     path("partners/register/", views.register_partner, name="register_partner"),
     path(

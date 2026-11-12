@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Share your location | MoFirms</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav"><div class="wrap bar">
+  <a class="logo" href="/"><span>Mo</span>Firms</a>
+  <a class="btn sm" href="/">Back to MoFirms</a>
+</div></header>
+<main id="main">
+<section class="wrap registration">
+  <p class="eyebrow">Portal A · Farmer onboarding · Step 2 of 2</p>
+  <h1>Share your farm's location</h1>
+  <div class="card">
+    <p>Thanks — we have your contact details. Before you tell us about your farming activities, open WhatsApp and share your current location as a pin with MoFirms:</p>
+    <p style="font-size:1.3em;font-weight:700"><a href="https://wa.me/{{ mofirms_whatsapp_number }}">{{ mofirms_whatsapp_number }}</a></p>
+    <ol>
+      <li>Open a chat with the number above.</li>
+      <li>Tap the attachment icon and choose "Location".</li>
+      <li>Share your current location (not a search result) as a pin.</li>
+    </ol>
+    <p>We match the pin to this registration using the phone number you message from. Once it arrives, come back and refresh this page to continue — it only takes a moment.</p>
+    <a class="btn" href="{% url 'register_farmer_details' reference=profile.reference %}">I've shared it — continue</a>
+    <p class="form-hint"><a href="{% url 'register_farmer_details' reference=profile.reference %}?skip=1">Continue without sharing a location</a> — you can still register; we'll just show every farming activity instead of narrowing it down.</p>
+  </div>
+</section>
+</main>
+<footer><div class="wrap">
+  <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
+</div></footer>
+</body>
+</html>

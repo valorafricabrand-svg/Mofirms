@@ -15,7 +15,9 @@ const maxDocuments = documentRows ? Number(documentRows.dataset.max) : 0;
 const documentPrefix = documentRows?.dataset.prefix;
 
 function updateGroupFields() {
-  if (!groupFields) return;
+  // No registration_type radios on this page (e.g. registration step 2, where
+  // the server already rendered groupFields correctly) — leave it as is.
+  if (!groupFields || registrationType.length === 0) return;
   const isGroup = document.querySelector('input[name="registration_type"]:checked')?.value === "group";
   groupFields.hidden = !isGroup;
   groupFields.disabled = !isGroup;
