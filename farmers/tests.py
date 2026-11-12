@@ -312,6 +312,107 @@ class FarmerRegistrationTests(TestCase):
         self.assertFalse(Path(expired_path).exists())
 
 
+class FarmerAccountTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.url = reverse("register_farmer")
+        self.individual_data = {
+            "registration_type": "individual",
+            "full_name": "Account Farmer",
+            "phone": "0712345678",
+            "preferred_contact": "phone",
+            "county": "Vihiga",
+            "privacy_consent": "on",
+            "documents-TOTAL_FORMS": "0",
+            "documents-INITIAL_FORMS": "0",
+            "documents-MIN_NUM_FORMS": "0",
+            "documents-MAX_NUM_FORMS": "20",
+        }
+
+    def test_registration_without_account_checkbox_creates_no_user(self):
+        response = self.client.post(self.url, self.individual_data)
+
+        self.assertEqual(response.status_code, 302)
+        profile = FarmerProfile.objects.get()
+        self.assertIsNone(profile.user)
+
+    def test_registration_with_account_creates_user_and_signs_in(self):
+        data = {
+            **self.individual_data,
+            "email": "account.farmer@example.com",
+            "create_account": "on",
+            "password1": "a-strong-unique-pass1",
+            "password2": "a-strong-unique-pass1",
+        }
+
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("farmer_dashboard"))
+        profile = FarmerProfile.objects.get()
+        self.assertIsNotNone(profile.user)
+        self.assertEqual(profile.user.email, "account.farmer@example.com")
+        self.assertTrue(profile.user.check_password("a-strong-unique-pass1"))
+
+        dashboard_response = self.client.get(reverse("farmer_dashboard"))
+        self.assertEqual(dashboard_response.status_code, 200)
+        self.assertContains(dashboard_response, "Account Farmer")
+
+    def test_account_creation_requires_matching_passwords(self):
+        data = {
+            **self.individual_data,
+            "email": "mismatch@example.com",
+            "create_account": "on",
+            "password1": "a-strong-unique-pass1",
+            "password2": "a-different-pass2",
+        }
+
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(FarmerProfile.objects.count(), 0)
+        self.assertContains(response, "The passwords do not match.")
+
+    def test_account_creation_requires_email(self):
+        data = {
+            **self.individual_data,
+            "create_account": "on",
+            "password1": "a-strong-unique-pass1",
+            "password2": "a-strong-unique-pass1",
+        }
+
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(FarmerProfile.objects.count(), 0)
+        self.assertContains(response, "Enter an email address to create an account.")
+
+    def test_dashboard_requires_login(self):
+        response = self.client.get(reverse("farmer_dashboard"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("farmer_login"), response.url)
+
+    def test_login_with_created_account(self):
+        data = {
+            **self.individual_data,
+            "email": "signin.farmer@example.com",
+            "create_account": "on",
+            "password1": "a-strong-unique-pass1",
+            "password2": "a-strong-unique-pass1",
+        }
+        self.client.post(self.url, data)
+        self.client.logout()
+
+        response = self.client.post(
+            reverse("farmer_login"),
+            {"username": "signin.farmer@example.com", "password": "a-strong-unique-pass1"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("farmer_dashboard"))
+
+
 class PartnerRegistrationTests(TestCase):
     def setUp(self):
         cache.clear()

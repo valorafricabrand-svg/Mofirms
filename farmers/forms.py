@@ -113,6 +113,23 @@ class FarmerRegistrationForm(forms.ModelForm):
         required=False,
         label="I am authorised to submit information for this group and have informed its members.",
     )
+    create_account = forms.BooleanField(
+        required=False,
+        label="Create an account so I can sign in later and check my registration status.",
+    )
+    password1 = forms.CharField(
+        label="Password",
+        required=False,
+        strip=False,
+        widget=forms.PasswordInput,
+        help_text="Only needed if you tick \"Create an account\" above.",
+    )
+    password2 = forms.CharField(
+        label="Confirm password",
+        required=False,
+        strip=False,
+        widget=forms.PasswordInput,
+    )
 
     class Meta:
         model = FarmerProfile
@@ -244,6 +261,27 @@ class FarmerRegistrationForm(forms.ModelForm):
 
         if cleaned_data.get("farm_size") and not cleaned_data.get("farm_size_unit"):
             self.add_error("farm_size_unit", "Choose acres or hectares.")
+
+        if cleaned_data.get("create_account"):
+            email = cleaned_data.get("email", "").strip().lower()
+            password1 = cleaned_data.get("password1")
+            password2 = cleaned_data.get("password2")
+            if not email:
+                self.add_error("email", "Enter an email address to create an account.")
+            elif get_user_model().objects.filter(email__iexact=email).exists():
+                self.add_error("email", "An account already uses this email address.")
+            if not password1:
+                self.add_error("password1", "Choose a password for your account.")
+            if not password2:
+                self.add_error("password2", "Confirm your chosen password.")
+            if password1 and password2 and password1 != password2:
+                self.add_error("password2", "The passwords do not match.")
+            if password1 and email:
+                candidate = get_user_model()(username=email, email=email)
+                try:
+                    validate_password(password1, candidate)
+                except ValidationError as error:
+                    self.add_error("password1", error)
 
         if cleaned_data.get("website"):
             raise ValidationError("The registration could not be submitted. Please try again.")

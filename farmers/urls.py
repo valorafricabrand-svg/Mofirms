@@ -18,6 +18,9 @@ urlpatterns = [
     path("payments/mpesa/callback/", billing.mpesa_callback, name="mpesa_callback"),
     path("register/", views.register_farmer, name="register_farmer"),
     path("registered/<str:reference>/", views.registration_success, name="registration_success"),
+    path("login/", views.farmer_login, name="farmer_login"),
+    path("logout/", views.farmer_logout, name="farmer_logout"),
+    path("dashboard/", views.farmer_dashboard, name="farmer_dashboard"),
     path("partners/register/", views.register_partner, name="register_partner"),
     path(
         "partners/registered/<str:reference>/",
