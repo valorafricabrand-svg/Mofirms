@@ -11,6 +11,7 @@ from django.core.files.base import ContentFile
 from django.forms import formset_factory
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.utils import timezone
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from .models import (
@@ -45,7 +46,78 @@ MAX_DOCUMENTS_PER_REGISTRATION = 20
 Image.MAX_IMAGE_PIXELS = 20_000_000
 
 
-class FarmerRegistrationForm(forms.ModelForm):
+class FarmerStartForm(forms.ModelForm):
+    """Step 1 of farmer registration: identity, contact, and consent only.
+    Enough to create a draft FarmerProfile that a WhatsApp location ping can
+    later be matched against by phone number, before the rest of the form
+    (which depends on that location) is shown."""
+
+    privacy_consent = forms.BooleanField(
+        required=True,
+        label="I agree that MoFirms may use these details to review this registration and contact me about it.",
+    )
+    research_invite_consent = forms.BooleanField(
+        required=False,
+        label=(
+            "Optional: I consent to MoFirms contacting me about research surveys. "
+            "This does not enroll me or disclose my contact details to researchers. "
+            "For a group, each respondent must separately choose to participate."
+        ),
+    )
+    website = forms.CharField(required=False, widget=forms.HiddenInput)
+
+    class Meta:
+        model = FarmerProfile
+        fields = [
+            "registration_type",
+            "privacy_consent",
+            "website",
+            "full_name",
+            "phone",
+            "email",
+            "preferred_contact",
+            "preferred_language",
+        ]
+        widgets = {"registration_type": forms.RadioSelect}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["registration_type"].choices = FarmerProfile.RegistrationType.choices
+        self.fields["phone"].required = True
+        self.fields["preferred_language"].label = "Preferred language"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        preferred_contact = cleaned_data.get("preferred_contact")
+        if preferred_contact == FarmerProfile.ContactPreference.EMAIL:
+            if not cleaned_data.get("email"):
+                self.add_error("email", "Enter an email address if you prefer email contact.")
+        elif preferred_contact in {
+            FarmerProfile.ContactPreference.PHONE,
+            FarmerProfile.ContactPreference.WHATSAPP,
+        } and not cleaned_data.get("phone"):
+            self.add_error("phone", "Enter a phone number for your preferred contact method.")
+
+        if cleaned_data.get("website"):
+            raise ValidationError("The registration could not be submitted. Please try again.")
+        return cleaned_data
+
+    def save(self, commit=True):
+        profile = super().save(commit=False)
+        profile.privacy_consent_at = timezone.now()
+        if self.cleaned_data.get("research_invite_consent"):
+            profile.research_invite_consent_at = timezone.now()
+        if commit:
+            profile.save()
+        return profile
+
+
+class FarmerDetailsForm(forms.ModelForm):
+    """Step 2 of farmer registration: everything that follows once the farmer
+    has had a chance to share their WhatsApp location pin. `activity_choices`
+    lets the view narrow the "what do you farm" options to what's plausible
+    for the farmer's matched location, falling back to the full list."""
+
     activities = forms.MultipleChoiceField(
         choices=ACTIVITY_CHOICES,
         required=False,
@@ -96,19 +168,6 @@ class FarmerRegistrationForm(forms.ModelForm):
         widget=forms.CheckboxSelectMultiple,
         label="What support would be most useful?",
     )
-    privacy_consent = forms.BooleanField(
-        required=True,
-        label="I agree that MoFirms may use these details to review this registration and contact me about it.",
-    )
-    research_invite_consent = forms.BooleanField(
-        required=False,
-        label=(
-            "Optional: I consent to MoFirms contacting me about research surveys. "
-            "This does not enroll me or disclose my contact details to researchers. "
-            "For a group, each respondent must separately choose to participate."
-        ),
-    )
-    website = forms.CharField(required=False, widget=forms.HiddenInput)
     group_authorization_confirmed = forms.BooleanField(
         required=False,
         label="I am authorised to submit information for this group and have informed its members.",
@@ -117,15 +176,7 @@ class FarmerRegistrationForm(forms.ModelForm):
     class Meta:
         model = FarmerProfile
         fields = [
-            "registration_type",
-            "privacy_consent",
             "group_authorization_confirmed",
-            "website",
-            "full_name",
-            "phone",
-            "email",
-            "preferred_contact",
-            "preferred_language",
             "group_name",
             "group_type",
             "group_registration_status",
@@ -151,7 +202,6 @@ class FarmerRegistrationForm(forms.ModelForm):
             "additional_notes",
         ]
         widgets = {
-            "registration_type": forms.RadioSelect,
             "production_summary": forms.Textarea(attrs={"rows": 3}),
             "goals": forms.Textarea(attrs={"rows": 3}),
             "additional_notes": forms.Textarea(attrs={"rows": 3}),
@@ -172,9 +222,10 @@ class FarmerRegistrationForm(forms.ModelForm):
             "additional_notes": "Do not include ID numbers, PINs, account numbers, or passwords.",
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, activity_choices=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["registration_type"].choices = FarmerProfile.RegistrationType.choices
+        if activity_choices:
+            self.fields["activities"].choices = activity_choices
         self.fields["group_type"].required = False
         self.fields["group_registration_status"].required = False
         self.fields["group_name"].label = "Group or association name *"
@@ -184,14 +235,13 @@ class FarmerRegistrationForm(forms.ModelForm):
             for choice in FarmerProfile.RegistrationStatus.choices
             if choice[0] != FarmerProfile.RegistrationStatus.NOT_APPLICABLE
         ]
-        self.fields["preferred_language"].label = "Preferred language"
         self.fields["farm_size_unit"].required = False
         if not self.is_bound:
             self.initial["group_registration_status"] = ""
 
     def clean(self):
         cleaned_data = super().clean()
-        registration_type = cleaned_data.get("registration_type")
+        registration_type = self.instance.registration_type
         if registration_type == FarmerProfile.RegistrationType.GROUP:
             for field in ("group_name", "group_type"):
                 if not cleaned_data.get(field):
@@ -205,7 +255,7 @@ class FarmerRegistrationForm(forms.ModelForm):
                 cleaned_data["group_registration_status"] = (
                     FarmerProfile.RegistrationStatus.PREFER_NOT
                 )
-        elif registration_type == FarmerProfile.RegistrationType.INDIVIDUAL:
+        else:
             cleaned_data["group_name"] = ""
             cleaned_data["group_type"] = ""
             cleaned_data["group_registration_number"] = ""
@@ -225,21 +275,8 @@ class FarmerRegistrationForm(forms.ModelForm):
             else FarmerProfile.EvidenceStatus.NOT_APPLICABLE
         )
 
-        preferred_contact = cleaned_data.get("preferred_contact")
-        if preferred_contact == FarmerProfile.ContactPreference.EMAIL:
-            if not cleaned_data.get("email"):
-                self.add_error("email", "Enter an email address if you prefer email contact.")
-        elif preferred_contact in {
-            FarmerProfile.ContactPreference.PHONE,
-            FarmerProfile.ContactPreference.WHATSAPP,
-        } and not cleaned_data.get("phone"):
-            self.add_error("phone", "Enter a phone number for your preferred contact method.")
-
         if cleaned_data.get("farm_size") and not cleaned_data.get("farm_size_unit"):
             self.add_error("farm_size_unit", "Choose acres or hectares.")
-
-        if cleaned_data.get("website"):
-            raise ValidationError("The registration could not be submitted. Please try again.")
         return cleaned_data
 
     def save(self, commit=True):
@@ -254,6 +291,7 @@ class FarmerRegistrationForm(forms.ModelForm):
         ]
         if profile.registration_type == FarmerProfile.RegistrationType.GROUP:
             profile.group_review_status = FarmerProfile.EvidenceStatus.PENDING
+        profile.registration_completed_at = timezone.now()
         if commit:
             profile.save()
         return profile

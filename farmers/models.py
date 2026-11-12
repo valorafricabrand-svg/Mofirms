@@ -270,6 +270,11 @@ class FarmerProfile(models.Model):
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     last_contact_at = models.DateTimeField(default=timezone.now)
+    registration_completed_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Set once step 2 of registration is submitted. Blank means this is "
+                  "still a draft awaiting the farmer's WhatsApp location pin.",
+    )
 
     class Meta:
         ordering = ["-created_at"]
@@ -285,17 +290,23 @@ class FarmerProfile(models.Model):
 
     def clean(self):
         super().clean()
-        if self.registration_type == self.RegistrationType.GROUP:
-            if self.group_review_status == self.EvidenceStatus.NOT_APPLICABLE:
-                raise ValidationError(
-                    {"group_review_status": "Group registrations require a group review status."}
-                )
-            if not self.group_authorization_confirmed:
-                raise ValidationError(
-                    {"group_authorization_confirmed": "Group representative authorisation must be confirmed."}
-                )
-        elif self.group_review_status != self.EvidenceStatus.NOT_APPLICABLE:
-            self.group_review_status = self.EvidenceStatus.NOT_APPLICABLE
+        # Group fields are collected in step 2 of registration; a step-1-only
+        # draft (registration_completed_at still blank) hasn't supplied them
+        # yet, so this invariant only applies once registration is complete.
+        # (FarmerDetailsForm.clean() enforces the equivalent check at the form
+        # level for step 2, before this ever runs with completed data.)
+        if self.registration_completed_at is not None:
+            if self.registration_type == self.RegistrationType.GROUP:
+                if self.group_review_status == self.EvidenceStatus.NOT_APPLICABLE:
+                    raise ValidationError(
+                        {"group_review_status": "Group registrations require a group review status."}
+                    )
+                if not self.group_authorization_confirmed:
+                    raise ValidationError(
+                        {"group_authorization_confirmed": "Group representative authorisation must be confirmed."}
+                    )
+            elif self.group_review_status != self.EvidenceStatus.NOT_APPLICABLE:
+                self.group_review_status = self.EvidenceStatus.NOT_APPLICABLE
         if self.verification_status == self.VerificationStatus.VERIFIED and not self.verification_notes.strip():
             raise ValidationError(
                 {"verification_notes": "Add the basis and scope before marking the registration verified."}

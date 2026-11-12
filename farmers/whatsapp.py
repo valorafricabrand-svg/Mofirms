@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from .geo_zones import nearest_county
 from .mpesa import MpesaError, normalize_phone_number
 from .models import FarmerProfile, WhatsAppLocationPing
 
@@ -65,7 +66,17 @@ def record_location_ping(wa_message_id, from_number, latitude, longitude):
 
     matched_profile = None
     if normalized_sender:
-        for profile in FarmerProfile.objects.exclude(phone="").order_by("-created_at"):
+        # Prefer a draft awaiting step 2 (the common case: the farmer just
+        # submitted step 1 and is sharing their pin now); fall back to any
+        # profile with a matching phone number otherwise.
+        candidates = list(
+            FarmerProfile.objects.exclude(phone="")
+            .filter(registration_completed_at__isnull=True)
+            .order_by("-created_at")
+        ) or list(
+            FarmerProfile.objects.exclude(phone="").order_by("-created_at")
+        )
+        for profile in candidates:
             try:
                 if normalize_phone_number(profile.phone) == normalized_sender:
                     matched_profile = profile
@@ -89,7 +100,10 @@ def record_location_ping(wa_message_id, from_number, latitude, longitude):
         matched_profile.farm_latitude = latitude
         matched_profile.farm_longitude = longitude
         matched_profile.location_shared_at = timezone.now()
+        matched_profile.county = nearest_county(float(latitude), float(longitude)) or ""
         matched_profile.save(
-            update_fields=["farm_latitude", "farm_longitude", "location_shared_at"]
+            update_fields=[
+                "farm_latitude", "farm_longitude", "location_shared_at", "county",
+            ]
         )
     return ping

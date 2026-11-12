@@ -59,26 +59,36 @@ class FarmerRegistrationTests(TestCase):
         )
         self.settings_override.enable()
         self.addCleanup(self.settings_override.disable)
-        self.url = reverse("register_farmer")
-        self.individual_data = {
+        self.start_url = reverse("register_farmer")
+        self.step1_data = {
             "registration_type": "individual",
             "full_name": "Sample Farmer",
             "phone": "0712345678",
             "preferred_contact": "phone",
-            "county": "Vihiga",
             "privacy_consent": "on",
+        }
+        self.document_management_data = {
             "documents-TOTAL_FORMS": "0",
             "documents-INITIAL_FORMS": "0",
             "documents-MIN_NUM_FORMS": "0",
             "documents-MAX_NUM_FORMS": "20",
         }
 
+    def complete_step1(self, **overrides):
+        data = {**self.step1_data, **overrides}
+        response = self.client.post(self.start_url, data)
+        self.assertEqual(response.status_code, 302, response.content)
+        profile = FarmerProfile.objects.latest("created_at")
+        return profile, response.url
+
     def test_individual_registration_is_saved_for_manual_review(self):
-        response = self.client.post(self.url, self.individual_data)
+        profile, details_url = self.complete_step1()
+
+        response = self.client.post(details_url, self.document_management_data)
 
         self.assertEqual(response.status_code, 302)
         self.assertRegex(response.url, r"^/portal/registered/[A-F0-9]{8}/$")
-        profile = FarmerProfile.objects.get()
+        profile.refresh_from_db()
         self.assertEqual(profile.full_name, "Sample Farmer")
         self.assertEqual(profile.verification_status, FarmerProfile.VerificationStatus.PENDING)
         self.assertEqual(profile.identity_review_status, FarmerProfile.EvidenceStatus.PENDING)
@@ -86,35 +96,31 @@ class FarmerRegistrationTests(TestCase):
         self.assertEqual(profile.group_review_status, FarmerProfile.EvidenceStatus.NOT_APPLICABLE)
         self.assertIsNotNone(profile.privacy_consent_at)
         self.assertIsNone(profile.research_invite_consent_at)
+        self.assertIsNotNone(profile.registration_completed_at)
 
     def test_registration_succeeds_without_county_or_location(self):
-        data = {k: v for k, v in self.individual_data.items() if k != "county"}
+        profile, details_url = self.complete_step1()
 
-        response = self.client.post(self.url, data)
+        response = self.client.post(details_url, self.document_management_data)
 
         self.assertEqual(response.status_code, 302)
-        profile = FarmerProfile.objects.get()
+        profile.refresh_from_db()
         self.assertEqual(profile.county, "")
 
     def test_farmer_can_separately_opt_in_to_research_invitations(self):
-        response = self.client.post(
-            self.url,
-            {**self.individual_data, "research_invite_consent": "on"},
-        )
+        profile, _ = self.complete_step1(research_invite_consent="on")
 
-        self.assertEqual(response.status_code, 302)
-        self.assertIsNotNone(FarmerProfile.objects.get().research_invite_consent_at)
+        self.assertIsNotNone(profile.research_invite_consent_at)
 
     def test_group_requires_details_and_authorisation(self):
-        data = {
-            **self.individual_data,
-            "registration_type": "group",
-            "group_name": "Sample Growers",
-        }
-        response = self.client.post(self.url, data)
+        profile, details_url = self.complete_step1(registration_type="group")
+        data = {**self.document_management_data, "group_name": "Sample Growers"}
+
+        response = self.client.post(details_url, data)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(FarmerProfile.objects.count(), 0)
+        profile.refresh_from_db()
+        self.assertIsNone(profile.registration_completed_at)
         self.assertContains(response, "This field is required for a group registration.")
         self.assertContains(response, "Confirm that you are authorised to register this group.")
 
@@ -126,84 +132,116 @@ class FarmerRegistrationTests(TestCase):
                 "group_registration_number": "FG-123",
             }
         )
-        response = self.client.post(self.url, data)
+        response = self.client.post(details_url, data)
 
         self.assertEqual(response.status_code, 302)
-        profile = FarmerProfile.objects.get()
+        profile.refresh_from_db()
         self.assertEqual(profile.group_review_status, FarmerProfile.EvidenceStatus.PENDING)
         self.assertTrue(profile.group_authorization_confirmed)
 
     def test_document_upload_requires_explicit_consent_and_is_private(self):
+        profile, details_url = self.complete_step1()
         metadata = PngImagePlugin.PngInfo()
         metadata.add_text("Comment", "synthetic-private-metadata")
         upload = png_upload(metadata=metadata)
         data = {
-            **self.individual_data,
+            **self.document_management_data,
             "documents-TOTAL_FORMS": "1",
-            "documents-INITIAL_FORMS": "0",
-            "documents-MIN_NUM_FORMS": "0",
-            "documents-MAX_NUM_FORMS": "20",
             "documents-0-document_type": "identity",
             "documents-0-description": "Synthetic identity test",
             "documents-0-file": upload,
         }
 
-        response = self.client.post(self.url, data)
+        response = self.client.post(details_url, data)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(FarmerProfile.objects.count(), 0)
+        profile.refresh_from_db()
+        self.assertIsNone(profile.registration_completed_at)
         self.assertContains(response, "Please agree to the one-year document retention notice")
 
         upload = png_upload(metadata=metadata)
         data["documents-0-file"] = upload
         data["document_consent"] = "on"
-        response = self.client.post(self.url, data)
+        response = self.client.post(details_url, data)
 
         self.assertEqual(response.status_code, 302)
-        profile = FarmerProfile.objects.get()
         document = FarmerDocument.objects.get(profile=profile)
         self.assertEqual(document.document_type, FarmerDocument.DocumentType.IDENTITY)
+        profile.refresh_from_db()
         self.assertIsNotNone(profile.document_consent_at)
         with document.file.open("rb") as stored:
             self.assertNotIn(b"synthetic-private-metadata", stored.read())
         self.assertEqual(self.client.get(document.file.url).status_code, 404)
 
     def test_upload_rejects_mismatched_file_content(self):
+        profile, details_url = self.complete_step1()
         fake_image = SimpleUploadedFile(
             "proof.png", b"%PDF-1.7 fake pdf", content_type="image/png"
         )
         data = {
-            **self.individual_data,
+            **self.document_management_data,
             "documents-TOTAL_FORMS": "1",
-            "documents-INITIAL_FORMS": "0",
-            "documents-MIN_NUM_FORMS": "0",
-            "documents-MAX_NUM_FORMS": "20",
             "documents-0-document_type": "identity",
             "documents-0-description": "",
             "documents-0-file": fake_image,
             "document_consent": "on",
         }
 
-        response = self.client.post(self.url, data)
+        response = self.client.post(details_url, data)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(FarmerProfile.objects.count(), 0)
+        self.assertEqual(FarmerDocument.objects.count(), 0)
         self.assertContains(response, "file contents do not match")
 
     def test_registration_rejects_more_than_twenty_documents(self):
+        profile, details_url = self.complete_step1()
         data = {
-            **self.individual_data,
+            **self.document_management_data,
             "documents-TOTAL_FORMS": "21",
-            "documents-INITIAL_FORMS": "0",
-            "documents-MIN_NUM_FORMS": "0",
-            "documents-MAX_NUM_FORMS": "20",
         }
 
-        response = self.client.post(self.url, data)
+        response = self.client.post(details_url, data)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(FarmerProfile.objects.count(), 0)
+        profile.refresh_from_db()
+        self.assertIsNone(profile.registration_completed_at)
         self.assertContains(response, "Please submit at most 20 forms.")
+
+    def test_step2_filters_activities_by_matched_county(self):
+        profile, details_url = self.complete_step1()
+        profile.county = "Marsabit"
+        profile.farm_latitude = Decimal("2.330000")
+        profile.farm_longitude = Decimal("37.980000")
+        profile.save(update_fields=["county", "farm_latitude", "farm_longitude"])
+
+        response = self.client.get(details_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Livestock")
+        self.assertNotContains(response, "Fisheries")
+        self.assertNotContains(response, "Crops")
+
+    @override_settings(MOFIRMS_WHATSAPP_NUMBER="254700000000")
+    def test_details_page_waits_for_location_when_whatsapp_configured(self):
+        profile, details_url = self.complete_step1()
+
+        response = self.client.get(details_url)
+        self.assertContains(response, "Share your farm's location")
+        self.assertNotContains(response, "Submit registration for review")
+
+        skip_response = self.client.get(details_url + "?skip=1")
+        self.assertContains(skip_response, "Submit registration for review")
+
+    @override_settings(MOFIRMS_WHATSAPP_NUMBER="254700000000")
+    def test_details_page_shows_full_form_once_location_matched(self):
+        profile, details_url = self.complete_step1()
+        profile.farm_latitude = Decimal("0.070000")
+        profile.farm_longitude = Decimal("34.720000")
+        profile.save(update_fields=["farm_latitude", "farm_longitude"])
+
+        response = self.client.get(details_url)
+
+        self.assertContains(response, "Submit registration for review")
 
     def test_verified_status_requires_a_recorded_basis(self):
         profile = FarmerProfile(
@@ -263,9 +301,9 @@ class FarmerRegistrationTests(TestCase):
 
     def test_rate_limit_blocks_sixth_registration_post(self):
         for _ in range(5):
-            self.client.post(self.url, self.individual_data)
+            self.client.post(self.start_url, self.step1_data)
 
-        response = self.client.post(self.url, self.individual_data)
+        response = self.client.post(self.start_url, self.step1_data)
 
         self.assertEqual(response.status_code, 429)
         self.assertEqual(FarmerProfile.objects.count(), 5)
