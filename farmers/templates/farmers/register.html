@@ -54,6 +54,16 @@
     </fieldset>
 
     <fieldset class="form-section">
+      <legend>Create an account (optional)</legend>
+      <p class="form-hint">Tick this if you want to sign in later to check your registration status. Leave it unticked to register without an account, as before.</p>
+      <div class="form-grid">
+        <div class="wide-field">{% include "farmers/field.html" with field=form.create_account %}</div>
+        <div>{% include "farmers/field.html" with field=form.password1 %}</div>
+        <div>{% include "farmers/field.html" with field=form.password2 %}</div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
       <legend>Privacy and consent</legend>
       <p>MoFirms uses the information on this form to assess your farming or organisation needs, review submitted evidence, and contact you about the registration. Access is restricted to authorised MoFirms staff.</p>
       <p>Farmer profile and assessment details are scheduled for deletion after two years without recorded contact. You may request access, correction, or deletion by contacting <a href="mailto:{{ mofirms_contact_email }}">{{ mofirms_contact_email }}</a>. This notice and retention schedule must be reviewed and approved by MoFirms before the portal accepts real registrations.</p>

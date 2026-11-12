@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My registration | MoFirms</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav"><div class="wrap bar">
+  <a class="logo" href="/"><span>Mo</span>Firms</a>
+  <span>{{ request.user.first_name|default:request.user.email }}</span>
+  <form method="post" action="{% url 'farmer_logout' %}">
+    {% csrf_token %}<button class="opt" type="submit">Sign out</button>
+  </form>
+</div></header>
+<main id="main">
+<section class="wrap registration">
+  <p class="eyebrow">Portal A · Farmer account</p>
+  <h1>My registration</h1>
+
+  {% if registration_incomplete %}
+    <aside class="notice notice-warning">
+      <h2>Registration not finished</h2>
+      <p>You created an account, but haven't told us about your farm yet. Finish that step to submit your registration for review.</p>
+      <a class="btn" href="{% url 'register_farmer_details' reference=profile.reference %}">Continue my registration</a>
+    </aside>
+    <article class="card form-section">
+      <h2>What we have so far</h2>
+      <p><strong>Name:</strong> {{ profile.full_name }}</p>
+    </article>
+  {% else %}
+    {% if profile.verification_status == "verified" %}
+      <aside class="notice">
+        <h2>Reviewed</h2>
+        <p>Your registration has been reviewed by MoFirms. A staff member will contact you about next steps.</p>
+      </aside>
+    {% elif profile.verification_status == "follow_up" %}
+      <aside class="notice notice-warning">
+        <h2>Follow-up needed</h2>
+        <p>MoFirms needs more information before completing your review.</p>
+        {% if profile.verification_notes %}<p>{{ profile.verification_notes }}</p>{% endif %}
+      </aside>
+    {% else %}
+      <aside class="notice notice-warning">
+        <h2>Under review</h2>
+        <p>Your registration is waiting for a MoFirms reviewer. This usually takes a few working days.</p>
+      </aside>
+    {% endif %}
+
+    <article class="card form-section">
+      <h2>Registration details</h2>
+      <p><strong>Reference:</strong> {{ profile.public_reference }}</p>
+      <p><strong>Name:</strong> {{ profile.full_name }}</p>
+      {% if profile.registration_type == "group" %}
+        <p><strong>Group or association:</strong> {{ profile.group_name }}</p>
+      {% endif %}
+      {% if profile.county %}<p><strong>Area:</strong> {{ profile.get_county_display }}</p>{% endif %}
+      <p><strong>Status:</strong> {{ profile.get_verification_status_display }}</p>
+      <p><strong>Submitted:</strong> {{ profile.created_at }}</p>
+    </article>
+
+    <article class="card form-section">
+      <h2>Supporting evidence</h2>
+      {% if documents %}
+        <ul>
+          {% for document in documents %}
+            <li>{{ document.get_document_type_display }} — {{ document.get_review_status_display }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No supporting documents uploaded.</p>
+      {% endif %}
+    </article>
+
+    <article class="card form-section">
+      <h2>Financial analysis and risk assessment</h2>
+      <p>Requests for Portal C (financial analysis) and Portal D (risk and opportunity assessment) aren't yet linked to your account. If you've made one of these requests, MoFirms staff will follow up using the contact details you provided.</p>
+    </article>
+  {% endif %}
+</section>
+</main>
+<footer><div class="wrap">
+  <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
+</div></footer>
+</body>
+</html>

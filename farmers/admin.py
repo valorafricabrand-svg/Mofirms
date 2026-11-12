@@ -203,6 +203,7 @@ class FarmerProfileAdmin(admin.ModelAdmin):
     )
     readonly_fields = (
         "reference",
+        "user",
         "created_at",
         "updated_at",
         "privacy_consent_at",
@@ -215,7 +216,7 @@ class FarmerProfileAdmin(admin.ModelAdmin):
         "whatsapp_location_map_link",
     )
     actions = ("mark_contacted_today",)
-    list_select_related = ("reviewed_by",)
+    list_select_related = ("reviewed_by", "user")
     date_hierarchy = "created_at"
 
     @admin.display(description="WhatsApp-shared location")
@@ -232,6 +233,7 @@ class FarmerProfileAdmin(admin.ModelAdmin):
         ("Registration and review", {
             "fields": (
                 "reference",
+                "user",
                 "registration_type",
                 "verification_status",
                 "identity_review_status",

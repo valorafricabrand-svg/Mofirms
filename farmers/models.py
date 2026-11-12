@@ -184,6 +184,14 @@ class FarmerProfile(models.Model):
         PREFER_NOT = "prefer_not", "Prefer not to say"
 
     reference = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="farmer_profile",
+        help_text="Optional account the registrant can use to sign in and check status.",
+    )
     registration_type = models.CharField(max_length=16, choices=RegistrationType.choices)
     full_name = models.CharField(max_length=160)
     phone = models.CharField(max_length=32, blank=True)

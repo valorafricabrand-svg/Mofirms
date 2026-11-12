@@ -24,6 +24,9 @@ urlpatterns = [
         name="register_farmer_details",
     ),
     path("registered/<str:reference>/", views.registration_success, name="registration_success"),
+    path("login/", views.farmer_login, name="farmer_login"),
+    path("logout/", views.farmer_logout, name="farmer_logout"),
+    path("dashboard/", views.farmer_dashboard, name="farmer_dashboard"),
     path("partners/register/", views.register_partner, name="register_partner"),
     path(
         "partners/registered/<str:reference>/",
