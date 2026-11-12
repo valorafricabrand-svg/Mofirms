@@ -107,6 +107,19 @@ class FarmerRegistrationTests(TestCase):
         profile.refresh_from_db()
         self.assertEqual(profile.county, "")
 
+    def test_step1_succeeds_without_a_phone_number_when_contact_is_email(self):
+        data = {
+            k: v for k, v in self.step1_data.items() if k != "phone"
+        }
+        data["preferred_contact"] = "email"
+        data["email"] = "no.phone.farmer@example.com"
+
+        response = self.client.post(self.start_url, data)
+
+        self.assertEqual(response.status_code, 302)
+        profile = FarmerProfile.objects.get()
+        self.assertEqual(profile.phone, "")
+
     def test_farmer_can_separately_opt_in_to_research_invitations(self):
         profile, _ = self.complete_step1(research_invite_consent="on")
 

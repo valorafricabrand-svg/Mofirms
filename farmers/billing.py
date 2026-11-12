@@ -408,7 +408,9 @@ def whatsapp_webhook(request):
 
     from .whatsapp import (
         extract_location_messages,
+        extract_text_messages,
         record_location_ping,
+        record_registration_code_message,
         verify_signature,
         webhook_configured,
     )
@@ -433,6 +435,12 @@ def whatsapp_webhook(request):
         payload = json.loads(request.body)
     except (UnicodeDecodeError, json.JSONDecodeError):
         return HttpResponse(status=400)
+
+    for wa_message_id, from_number, body in extract_text_messages(payload):
+        try:
+            record_registration_code_message(from_number, body)
+        except Exception:
+            logger.exception("Could not process WhatsApp text message %s.", wa_message_id)
 
     for wa_message_id, from_number, latitude, longitude in extract_location_messages(payload):
         try:

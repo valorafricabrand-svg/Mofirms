@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import re
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
@@ -8,6 +9,9 @@ from django.utils import timezone
 from .geo_zones import nearest_county
 from .mpesa import MpesaError, normalize_phone_number
 from .models import FarmerProfile, WhatsAppLocationPing
+
+
+REGISTRATION_CODE_PATTERN = re.compile(r"\b[0-9A-Fa-f]{8}\b")
 
 
 class WhatsAppWebhookError(Exception):
@@ -29,10 +33,8 @@ def verify_signature(raw_body, signature_header):
     return hmac.compare_digest(expected, provided)
 
 
-def extract_location_messages(payload):
-    """Yield (wa_message_id, from_number, latitude, longitude) for each location
-    message in a Meta WhatsApp Cloud API webhook payload. Malformed entries are
-    skipped rather than raising, since one bad message should not drop the rest."""
+def _iter_whatsapp_messages(payload):
+    """Yield each raw message dict from a Meta WhatsApp Cloud API webhook payload."""
     if not isinstance(payload, dict):
         return
     for entry in payload.get("entry", []) if isinstance(payload.get("entry"), list) else []:
@@ -41,18 +43,70 @@ def extract_location_messages(payload):
             value = change.get("value") if isinstance(change, dict) else None
             messages = value.get("messages") if isinstance(value, dict) else None
             for message in messages if isinstance(messages, list) else []:
-                if not isinstance(message, dict) or message.get("type") != "location":
-                    continue
-                location = message.get("location")
-                wa_message_id = message.get("id")
-                from_number = message.get("from")
-                if not isinstance(location, dict) or not wa_message_id or not from_number:
-                    continue
-                latitude = location.get("latitude")
-                longitude = location.get("longitude")
-                if not isinstance(latitude, (int, float)) or not isinstance(longitude, (int, float)):
-                    continue
-                yield wa_message_id, from_number, latitude, longitude
+                if isinstance(message, dict):
+                    yield message
+
+
+def extract_location_messages(payload):
+    """Yield (wa_message_id, from_number, latitude, longitude) for each location
+    message in a Meta WhatsApp Cloud API webhook payload. Malformed entries are
+    skipped rather than raising, since one bad message should not drop the rest."""
+    for message in _iter_whatsapp_messages(payload):
+        if message.get("type") != "location":
+            continue
+        location = message.get("location")
+        wa_message_id = message.get("id")
+        from_number = message.get("from")
+        if not isinstance(location, dict) or not wa_message_id or not from_number:
+            continue
+        latitude = location.get("latitude")
+        longitude = location.get("longitude")
+        if not isinstance(latitude, (int, float)) or not isinstance(longitude, (int, float)):
+            continue
+        yield wa_message_id, from_number, latitude, longitude
+
+
+def extract_text_messages(payload):
+    """Yield (wa_message_id, from_number, body) for each plain text message —
+    used to pick up a farmer's registration code, sent as an ordinary WhatsApp
+    message before (or after) they share their location pin."""
+    for message in _iter_whatsapp_messages(payload):
+        if message.get("type") != "text":
+            continue
+        wa_message_id = message.get("id")
+        from_number = message.get("from")
+        text = message.get("text")
+        body = text.get("body") if isinstance(text, dict) else None
+        if not wa_message_id or not from_number or not isinstance(body, str):
+            continue
+        yield wa_message_id, from_number, body
+
+
+def record_registration_code_message(from_number, body):
+    """A farmer must message MoFirms' WhatsApp number before we can receive
+    anything from them at all (Meta requires a user-initiated conversation).
+    Rather than also asking them to type their phone number into the web
+    form, we have them send their short registration code as that first
+    message, and learn their phone number from the message itself — then a
+    location pin shared moments later from the same number matches via the
+    phone number this sets, same as record_location_ping always has."""
+    match = REGISTRATION_CODE_PATTERN.search(body)
+    if not match:
+        return None
+    code = match.group(0).upper()
+    try:
+        normalized_sender = normalize_phone_number(from_number)
+    except MpesaError:
+        return None
+
+    for profile in FarmerProfile.objects.filter(registration_completed_at__isnull=True):
+        if profile.public_reference != code:
+            continue
+        if not profile.phone:
+            profile.phone = normalized_sender
+            profile.save(update_fields=["phone"])
+        return profile
+    return None
 
 
 def record_location_ping(wa_message_id, from_number, latitude, longitude):

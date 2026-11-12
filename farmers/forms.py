@@ -100,7 +100,6 @@ class FarmerStartForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["registration_type"].choices = FarmerProfile.RegistrationType.choices
-        self.fields["phone"].required = True
         self.fields["preferred_language"].label = "Preferred language"
 
     def clean(self):

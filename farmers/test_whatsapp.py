@@ -40,6 +40,23 @@ def location_payload(message_id, from_number, latitude=-0.0917, longitude=34.729
     }
 
 
+def text_payload(message_id, from_number, body):
+    return {
+        "entry": [{
+            "changes": [{
+                "value": {
+                    "messages": [{
+                        "id": message_id,
+                        "from": from_number,
+                        "type": "text",
+                        "text": {"body": body},
+                    }]
+                }
+            }]
+        }]
+    }
+
+
 @override_settings(WHATSAPP_APP_SECRET=APP_SECRET, WHATSAPP_VERIFY_TOKEN=VERIFY_TOKEN)
 class WhatsAppWebhookTests(TestCase):
     def setUp(self):
@@ -109,6 +126,70 @@ class WhatsAppWebhookTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(WhatsAppLocationPing.objects.count(), 1)
+
+
+@override_settings(WHATSAPP_APP_SECRET=APP_SECRET, WHATSAPP_VERIFY_TOKEN=VERIFY_TOKEN)
+class WhatsAppRegistrationCodeTests(TestCase):
+    def setUp(self):
+        self.url = reverse("whatsapp_webhook")
+        self.profile = FarmerProfile.objects.create(
+            registration_type=FarmerProfile.RegistrationType.INDIVIDUAL,
+            full_name="Code Farmer",
+            preferred_contact=FarmerProfile.ContactPreference.EMAIL,
+            email="code.farmer@example.com",
+            privacy_consent_at=timezone.now(),
+        )
+
+    def test_code_message_sets_phone_and_later_location_matches(self):
+        code = self.profile.public_reference
+        response = signed_post(
+            self.client, self.url,
+            text_payload("wamid.text.1", "254712340099", f"My MoFirms registration code is {code}"),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.phone, "254712340099")
+
+        response = signed_post(
+            self.client, self.url, location_payload("wamid.loc.1", "254712340099")
+        )
+        self.assertEqual(response.status_code, 200)
+        ping = WhatsAppLocationPing.objects.get()
+        self.assertEqual(ping.matched_profile, self.profile)
+
+    def test_text_message_with_unknown_code_is_ignored(self):
+        response = signed_post(
+            self.client, self.url,
+            text_payload("wamid.text.2", "254712340099", "My MoFirms registration code is DEADBEEF"),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.phone, "")
+
+    def test_text_message_without_a_code_is_ignored(self):
+        response = signed_post(
+            self.client, self.url,
+            text_payload("wamid.text.3", "254712340099", "Hello, is anyone there?"),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.phone, "")
+
+    def test_code_message_does_not_overwrite_an_existing_phone(self):
+        self.profile.phone = "254700111222"
+        self.profile.save(update_fields=["phone"])
+        code = self.profile.public_reference
+
+        response = signed_post(
+            self.client, self.url,
+            text_payload("wamid.text.4", "254799988877", f"code {code}"),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.phone, "254700111222")
 
 
 class WhatsAppWebhookNotConfiguredTests(TestCase):
