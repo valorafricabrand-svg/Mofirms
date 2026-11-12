@@ -170,6 +170,10 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "webmaster@localhost")
 MOFIRMS_CONTACT_EMAIL = os.environ.get(
     "MOFIRMS_CONTACT_EMAIL", "mconceptslimited@gmail.com"
 )
+# Shown on the farmer registration page so a registrant can share their farm's
+# location pin over WhatsApp. Left blank until MoFirms confirms a WhatsApp-enabled
+# number for public use; the instructions are hidden from the page until then.
+MOFIRMS_WHATSAPP_NUMBER = os.environ.get("MOFIRMS_WHATSAPP_NUMBER", "").strip()
 MPESA_ENVIRONMENT = os.environ.get("MPESA_ENVIRONMENT", "sandbox").strip().lower()
 if MPESA_ENVIRONMENT not in {"sandbox", "production"}:
     raise ImproperlyConfigured("MPESA_ENVIRONMENT must be 'sandbox' or 'production'.")
@@ -185,6 +189,13 @@ MPESA_PASSKEY = os.environ.get("MPESA_PASSKEY", "").strip()
 MPESA_CALLBACK_URL = os.environ.get("MPESA_CALLBACK_URL", "").strip()
 RETENTION_WEBHOOK_SECRET = os.environ.get("RETENTION_WEBHOOK_SECRET", "").strip()
 RETENTION_WEBHOOK_URL = os.environ.get("RETENTION_WEBHOOK_URL", "").strip()
+# Optional: receiving a farmer's shared WhatsApp location pin (Meta WhatsApp Cloud
+# API webhook). Not required for the site to run — the webhook itself returns 503
+# until these are configured, rather than failing the whole deployment.
+WHATSAPP_VERIFY_TOKEN = os.environ.get("WHATSAPP_VERIFY_TOKEN", "").strip()
+WHATSAPP_APP_SECRET = os.environ.get("WHATSAPP_APP_SECRET", "").strip()
+WHATSAPP_ACCESS_TOKEN = os.environ.get("WHATSAPP_ACCESS_TOKEN", "").strip()
+WHATSAPP_PHONE_NUMBER_ID = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "").strip()
 MPESA_TRANSACTION_TYPE = os.environ.get(
     "MPESA_TRANSACTION_TYPE", "CustomerPayBillOnline"
 ).strip()

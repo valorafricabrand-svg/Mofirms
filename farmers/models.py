@@ -206,6 +206,14 @@ class FarmerProfile(models.Model):
     sub_county = models.CharField(max_length=100, blank=True)
     ward = models.CharField(max_length=100, blank=True)
     local_area = models.CharField(max_length=120, blank=True)
+    farm_latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        help_text="Received from a WhatsApp location share; not entered on the web form.",
+    )
+    farm_longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+    )
+    location_shared_at = models.DateTimeField(null=True, blank=True)
 
     activities = models.JSONField(default=list, blank=True)
     main_products = models.CharField(max_length=300, blank=True)
@@ -348,6 +356,31 @@ class FarmerDocument(models.Model):
             raise ValidationError(
                 {"review_notes": "Record what evidence was reviewed before accepting this document."}
             )
+
+
+class WhatsAppLocationPing(models.Model):
+    """A raw location share received from Meta's WhatsApp webhook, matched to a
+    farmer registration by phone number where possible. Kept as an immutable log
+    even after matching, so staff can audit what was actually received."""
+
+    wa_message_id = models.CharField(max_length=128, unique=True)
+    phone_number = models.CharField(max_length=32)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    received_at = models.DateTimeField(default=timezone.now, editable=False)
+    matched_profile = models.ForeignKey(
+        FarmerProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="whatsapp_location_pings",
+    )
+
+    class Meta:
+        ordering = ["-received_at"]
+
+    def __str__(self):
+        return f"Location from {self.phone_number} at {self.received_at:%Y-%m-%d %H:%M}"
 
 
 class PartnerProfile(models.Model):

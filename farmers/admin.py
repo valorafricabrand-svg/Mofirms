@@ -25,6 +25,7 @@ from .models import (
     ResearchStudy,
     ResearcherApplication,
     ServicePlan,
+    WhatsAppLocationPing,
 )
 from .readiness_drafting import save_readiness_draft
 
@@ -210,10 +211,23 @@ class FarmerProfileAdmin(admin.ModelAdmin):
         "privacy_policy_version",
         "reviewed_by",
         "reviewed_at",
+        "location_shared_at",
+        "whatsapp_location_map_link",
     )
     actions = ("mark_contacted_today",)
     list_select_related = ("reviewed_by",)
     date_hierarchy = "created_at"
+
+    @admin.display(description="WhatsApp-shared location")
+    def whatsapp_location_map_link(self, obj):
+        if obj.farm_latitude is None or obj.farm_longitude is None:
+            return "No location shared via WhatsApp yet."
+        url = f"https://www.google.com/maps?q={obj.farm_latitude},{obj.farm_longitude}"
+        return format_html(
+            '<a href="{}" target="_blank" rel="noopener">{}, {}</a> (received {})',
+            url, obj.farm_latitude, obj.farm_longitude, obj.location_shared_at,
+        )
+
     fieldsets = (
         ("Registration and review", {
             "fields": (
@@ -254,6 +268,7 @@ class FarmerProfileAdmin(admin.ModelAdmin):
                 "sub_county",
                 "ward",
                 "local_area",
+                "whatsapp_location_map_link",
                 "activities",
                 "main_products",
                 "farm_size",
@@ -357,6 +372,25 @@ class FarmerDocumentAdmin(admin.ModelAdmin):
             obj.reviewed_by = request.user
             obj.reviewed_at = timezone.now()
         super().save_model(request, obj, form, change)
+
+
+@admin.register(WhatsAppLocationPing)
+class WhatsAppLocationPingAdmin(admin.ModelAdmin):
+    list_display = ("phone_number", "matched_profile", "latitude", "longitude", "received_at")
+    list_filter = ("received_at",)
+    search_fields = ("phone_number", "wa_message_id", "matched_profile__full_name")
+    readonly_fields = (
+        "wa_message_id",
+        "phone_number",
+        "latitude",
+        "longitude",
+        "received_at",
+        "matched_profile",
+    )
+    list_select_related = ("matched_profile",)
+
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(PartnerProfile)
