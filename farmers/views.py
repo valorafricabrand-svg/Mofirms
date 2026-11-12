@@ -3,14 +3,15 @@ import logging
 import uuid
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, login, logout
+from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import DatabaseError, IntegrityError, transaction
 from django.http import FileResponse, HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 from django.contrib.admin.views.decorators import staff_member_required
 
 from .forms import (
@@ -299,6 +300,7 @@ def register_farmer(request):
             documents_valid = False
 
         if is_valid and documents_valid:
+            new_account_user = None
             try:
                 with transaction.atomic():
                     profile = form.save(commit=False)
@@ -324,13 +326,29 @@ def register_farmer(request):
                         safe_file = sanitize_uploaded_image(uploaded)
                         document.file.save(safe_file.name, safe_file, save=False)
                         document.save()
-            except OSError:
+
+                    if form.cleaned_data.get("create_account"):
+                        user_model = get_user_model()
+                        email = form.cleaned_data["email"].strip().lower()
+                        new_account_user = user_model(
+                            username=email,
+                            email=email,
+                            first_name=profile.full_name[:150],
+                        )
+                        new_account_user.set_password(form.cleaned_data["password1"])
+                        new_account_user.save()
+                        profile.user = new_account_user
+                        profile.save(update_fields=["user"])
+            except (OSError, IntegrityError):
                 logger.exception("Could not store a farmer registration upload.")
                 form.add_error(
                     None,
                     "The registration could not be saved because a file could not be stored. Please try again.",
                 )
             else:
+                if new_account_user is not None:
+                    login(request, new_account_user)
+                    return redirect("farmer_dashboard")
                 return redirect(
                     "registration_success",
                     reference=profile.public_reference,
@@ -355,6 +373,46 @@ def registration_success(request, reference):
         request,
         "farmers/registration_success.html",
         {"reference": reference},
+    )
+
+
+@require_http_methods(["GET", "POST"])
+def farmer_login(request):
+    from django.contrib.auth.views import LoginView
+
+    if request.method == "POST" and _rate_limit_reached(request, "farmer-login"):
+        return render(
+            request,
+            "farmers/rate_limited.html",
+            {"retry_after": settings.PORTAL_RATE_PERIOD // 60},
+            status=429,
+        )
+    return LoginView.as_view(
+        template_name="farmers/farmer_login.html",
+        redirect_authenticated_user=True,
+        next_page=reverse_lazy("farmer_dashboard"),
+    )(request)
+
+
+@require_POST
+def farmer_logout(request):
+    logout(request)
+    return redirect("farmer_login")
+
+
+@login_required(login_url="farmer_login")
+def farmer_dashboard(request):
+    profile = FarmerProfile.objects.filter(user=request.user).first()
+    if profile is None:
+        return render(request, "farmers/farmer_no_registration.html", status=404)
+    documents = profile.documents.all()
+    return render(
+        request,
+        "farmers/farmer_dashboard.html",
+        {
+            "profile": profile,
+            "documents": documents,
+        },
     )
 
 

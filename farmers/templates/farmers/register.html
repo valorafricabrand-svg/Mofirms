@@ -72,6 +72,16 @@
     </fieldset>
 
     <fieldset class="form-section">
+      <legend>Create an account (optional)</legend>
+      <p class="form-hint">Tick this if you want to sign in later to check your registration status. Leave it unticked to submit without an account, as before.</p>
+      <div class="form-grid">
+        <div class="wide-field">{% include "farmers/field.html" with field=form.create_account %}</div>
+        <div>{% include "farmers/field.html" with field=form.password1 %}</div>
+        <div>{% include "farmers/field.html" with field=form.password2 %}</div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
       <legend>Where you farm</legend>
       <p class="form-hint">County is required. More specific local areas are optional; do not enter exact coordinates or plot details.</p>
       <div class="form-grid">
