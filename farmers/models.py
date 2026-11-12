@@ -184,6 +184,14 @@ class FarmerProfile(models.Model):
         PREFER_NOT = "prefer_not", "Prefer not to say"
 
     reference = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="farmer_profile",
+        help_text="Optional account the registrant can use to sign in and check status.",
+    )
     registration_type = models.CharField(max_length=16, choices=RegistrationType.choices)
     full_name = models.CharField(max_length=160)
     phone = models.CharField(max_length=32, blank=True)
@@ -202,10 +210,20 @@ class FarmerProfile(models.Model):
     representative_role = models.CharField(max_length=100, blank=True)
     group_authorization_confirmed = models.BooleanField(default=False)
 
-    county = models.CharField(max_length=32, choices=[(county, county) for county in COUNTIES])
+    county = models.CharField(
+        max_length=32, choices=[(county, county) for county in COUNTIES], blank=True,
+    )
     sub_county = models.CharField(max_length=100, blank=True)
     ward = models.CharField(max_length=100, blank=True)
     local_area = models.CharField(max_length=120, blank=True)
+    farm_latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        help_text="Received from a WhatsApp location share; not entered on the web form.",
+    )
+    farm_longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+    )
+    location_shared_at = models.DateTimeField(null=True, blank=True)
 
     activities = models.JSONField(default=list, blank=True)
     main_products = models.CharField(max_length=300, blank=True)
@@ -260,6 +278,11 @@ class FarmerProfile(models.Model):
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     last_contact_at = models.DateTimeField(default=timezone.now)
+    registration_completed_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Set once step 2 of registration is submitted. Blank means this is "
+                  "still a draft awaiting the farmer's WhatsApp location pin.",
+    )
 
     class Meta:
         ordering = ["-created_at"]
@@ -269,21 +292,29 @@ class FarmerProfile(models.Model):
     def __str__(self):
         if self.registration_type == self.RegistrationType.GROUP and self.group_name:
             return f"{self.group_name} ({self.full_name})"
-        return f"{self.full_name} ({self.get_county_display()})"
+        if self.county:
+            return f"{self.full_name} ({self.get_county_display()})"
+        return self.full_name
 
     def clean(self):
         super().clean()
-        if self.registration_type == self.RegistrationType.GROUP:
-            if self.group_review_status == self.EvidenceStatus.NOT_APPLICABLE:
-                raise ValidationError(
-                    {"group_review_status": "Group registrations require a group review status."}
-                )
-            if not self.group_authorization_confirmed:
-                raise ValidationError(
-                    {"group_authorization_confirmed": "Group representative authorisation must be confirmed."}
-                )
-        elif self.group_review_status != self.EvidenceStatus.NOT_APPLICABLE:
-            self.group_review_status = self.EvidenceStatus.NOT_APPLICABLE
+        # Group fields are collected in step 2 of registration; a step-1-only
+        # draft (registration_completed_at still blank) hasn't supplied them
+        # yet, so this invariant only applies once registration is complete.
+        # (FarmerDetailsForm.clean() enforces the equivalent check at the form
+        # level for step 2, before this ever runs with completed data.)
+        if self.registration_completed_at is not None:
+            if self.registration_type == self.RegistrationType.GROUP:
+                if self.group_review_status == self.EvidenceStatus.NOT_APPLICABLE:
+                    raise ValidationError(
+                        {"group_review_status": "Group registrations require a group review status."}
+                    )
+                if not self.group_authorization_confirmed:
+                    raise ValidationError(
+                        {"group_authorization_confirmed": "Group representative authorisation must be confirmed."}
+                    )
+            elif self.group_review_status != self.EvidenceStatus.NOT_APPLICABLE:
+                self.group_review_status = self.EvidenceStatus.NOT_APPLICABLE
         if self.verification_status == self.VerificationStatus.VERIFIED and not self.verification_notes.strip():
             raise ValidationError(
                 {"verification_notes": "Add the basis and scope before marking the registration verified."}
@@ -348,6 +379,31 @@ class FarmerDocument(models.Model):
             raise ValidationError(
                 {"review_notes": "Record what evidence was reviewed before accepting this document."}
             )
+
+
+class WhatsAppLocationPing(models.Model):
+    """A raw location share received from Meta's WhatsApp webhook, matched to a
+    farmer registration by phone number where possible. Kept as an immutable log
+    even after matching, so staff can audit what was actually received."""
+
+    wa_message_id = models.CharField(max_length=128, unique=True)
+    phone_number = models.CharField(max_length=32)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    received_at = models.DateTimeField(default=timezone.now, editable=False)
+    matched_profile = models.ForeignKey(
+        FarmerProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="whatsapp_location_pings",
+    )
+
+    class Meta:
+        ordering = ["-received_at"]
+
+    def __str__(self):
+        return f"Location from {self.phone_number} at {self.received_at:%Y-%m-%d %H:%M}"
 
 
 class PartnerProfile(models.Model):

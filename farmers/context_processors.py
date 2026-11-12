@@ -2,4 +2,7 @@ from django.conf import settings
 
 
 def portal_settings(request):
-    return {"mofirms_contact_email": settings.MOFIRMS_CONTACT_EMAIL}
+    return {
+        "mofirms_contact_email": settings.MOFIRMS_CONTACT_EMAIL,
+        "mofirms_whatsapp_number": settings.MOFIRMS_WHATSAPP_NUMBER,
+    }

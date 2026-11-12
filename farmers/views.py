@@ -3,21 +3,23 @@ import logging
 import uuid
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, login, logout
+from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import DatabaseError, IntegrityError, transaction
 from django.http import FileResponse, HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 from django.contrib.admin.views.decorators import staff_member_required
 
 from .forms import (
     BusinessReadinessForm,
     ConsultationLeadForm,
+    FarmerDetailsForm,
     FarmerDocumentFormSet,
-    FarmerRegistrationForm,
+    FarmerStartForm,
     FinancialAnalysisDocumentFormSet,
     FinancialAnalysisRequestForm,
     NewsletterSubscriptionForm,
@@ -33,7 +35,9 @@ from .forms import (
     PartnerRegistrationForm,
     sanitize_uploaded_image,
 )
+from .geo_zones import recommended_activities
 from .models import (
+    ACTIVITY_CHOICES,
     FarmerDocument,
     FarmerProfile,
     FinancialAnalysisDocument,
@@ -253,6 +257,10 @@ def _rate_limit_reached(request, portal):
 
 @require_http_methods(["GET", "POST"])
 def register_farmer(request):
+    """Step 1: identity, contact, and consent only. Creates a draft
+    FarmerProfile (registration_completed_at is still blank) so a WhatsApp
+    location ping shared right after can be matched by phone number before
+    step 2 (farm/business details) is shown."""
     if request.method == "POST" and _rate_limit_reached(request, "farmer"):
         return render(
             request,
@@ -261,13 +269,87 @@ def register_farmer(request):
             status=429,
         )
 
-    form = FarmerRegistrationForm(
+    form = FarmerStartForm(
         request.POST if request.method == "POST" else None,
         initial=(
             {"registration_type": FarmerProfile.RegistrationType.INDIVIDUAL}
             if request.method == "GET"
             else None
         ),
+    )
+    if request.method == "POST" and form.is_valid():
+        try:
+            with transaction.atomic():
+                profile = form.save(commit=False)
+                profile.last_contact_at = timezone.now()
+                profile.save()
+
+                if form.cleaned_data.get("create_account"):
+                    user_model = get_user_model()
+                    email = form.cleaned_data["email"].strip().lower()
+                    new_account_user = user_model(
+                        username=email,
+                        email=email,
+                        first_name=profile.full_name[:150],
+                    )
+                    new_account_user.set_password(form.cleaned_data["password1"])
+                    new_account_user.save()
+                    profile.user = new_account_user
+                    profile.save(update_fields=["user"])
+                else:
+                    new_account_user = None
+        except IntegrityError:
+            logger.exception("Could not create a farmer account at registration step 1.")
+            form.add_error(
+                None,
+                "The registration could not be saved. Please try again.",
+            )
+        else:
+            if new_account_user is not None:
+                login(request, new_account_user)
+            return redirect("register_farmer_details", reference=profile.reference)
+
+    return render(request, "farmers/register.html", {"form": form})
+
+
+def _draft_profile_or_404(reference):
+    return get_object_or_404(
+        FarmerProfile, reference=reference, registration_completed_at__isnull=True
+    )
+
+
+@require_http_methods(["GET", "POST"])
+def register_farmer_details(request, reference):
+    """Step 2: group/farm/business details, shown once the farmer has had a
+    chance to share their WhatsApp pin (or has chosen to skip that step)."""
+    profile = _draft_profile_or_404(reference)
+    location_known = profile.farm_latitude is not None and profile.farm_longitude is not None
+    waiting_for_location = (
+        request.method == "GET"
+        and settings.MOFIRMS_WHATSAPP_NUMBER
+        and not location_known
+        and request.GET.get("skip") != "1"
+    )
+    if waiting_for_location:
+        return render(request, "farmers/register_location_wait.html", {"profile": profile})
+
+    activity_choices = None
+    if profile.county:
+        allowed = set(recommended_activities(profile.county))
+        activity_choices = [choice for choice in ACTIVITY_CHOICES if choice[0] in allowed]
+
+    if request.method == "POST" and _rate_limit_reached(request, "farmer-details"):
+        return render(
+            request,
+            "farmers/rate_limited.html",
+            {"retry_after": settings.PORTAL_RATE_PERIOD // 60},
+            status=429,
+        )
+
+    form = FarmerDetailsForm(
+        request.POST if request.method == "POST" else None,
+        instance=profile,
+        activity_choices=activity_choices,
     )
     document_formset = FarmerDocumentFormSet(
         request.POST if request.method == "POST" else None,
@@ -301,15 +383,11 @@ def register_farmer(request):
         if is_valid and documents_valid:
             try:
                 with transaction.atomic():
-                    profile = form.save(commit=False)
-                    now = timezone.now()
-                    profile.privacy_consent_at = now
-                    profile.last_contact_at = now
-                    if form.cleaned_data["research_invite_consent"]:
-                        profile.research_invite_consent_at = now
+                    saved_profile = form.save(commit=False)
+                    saved_profile.last_contact_at = timezone.now()
                     if has_documents:
-                        profile.document_consent_at = now
-                    profile.save()
+                        saved_profile.document_consent_at = timezone.now()
+                    saved_profile.save()
 
                     for document_form in document_formset.forms:
                         cleaned = document_form.cleaned_data
@@ -317,7 +395,7 @@ def register_farmer(request):
                         if not uploaded:
                             continue
                         document = FarmerDocument(
-                            profile=profile,
+                            profile=saved_profile,
                             document_type=cleaned["document_type"],
                             description=cleaned["description"],
                         )
@@ -331,21 +409,25 @@ def register_farmer(request):
                     "The registration could not be saved because a file could not be stored. Please try again.",
                 )
             else:
+                if saved_profile.user_id:
+                    return redirect("farmer_dashboard")
                 return redirect(
                     "registration_success",
-                    reference=profile.public_reference,
+                    reference=saved_profile.public_reference,
                 )
 
     return render(
         request,
-        "farmers/register.html",
+        "farmers/register_details.html",
         {
+            "profile": profile,
             "form": form,
             "document_formset": document_formset,
             "max_documents": MAX_DOCUMENTS_PER_REGISTRATION,
             "max_file_size_mb": MAX_DOCUMENT_SIZE // (1024 * 1024),
             "max_total_size_mb": MAX_REGISTRATION_UPLOAD_SIZE // (1024 * 1024),
             "upload_errors": upload_errors,
+            "location_known": location_known,
         },
     )
 
@@ -355,6 +437,53 @@ def registration_success(request, reference):
         request,
         "farmers/registration_success.html",
         {"reference": reference},
+    )
+
+
+@require_http_methods(["GET", "POST"])
+def farmer_login(request):
+    from django.contrib.auth.views import LoginView
+
+    if request.method == "POST" and _rate_limit_reached(request, "farmer-login"):
+        return render(
+            request,
+            "farmers/rate_limited.html",
+            {"retry_after": settings.PORTAL_RATE_PERIOD // 60},
+            status=429,
+        )
+    return LoginView.as_view(
+        template_name="farmers/farmer_login.html",
+        redirect_authenticated_user=True,
+        next_page=reverse_lazy("farmer_dashboard"),
+    )(request)
+
+
+@require_POST
+def farmer_logout(request):
+    logout(request)
+    return redirect("farmer_login")
+
+
+@login_required(login_url="farmer_login")
+def farmer_dashboard(request):
+    profile = FarmerProfile.objects.filter(user=request.user).first()
+    if profile is None:
+        return render(request, "farmers/farmer_no_registration.html", status=404)
+    if profile.registration_completed_at is None:
+        return render(
+            request,
+            "farmers/farmer_dashboard.html",
+            {"profile": profile, "documents": [], "registration_incomplete": True},
+        )
+    documents = profile.documents.all()
+    return render(
+        request,
+        "farmers/farmer_dashboard.html",
+        {
+            "profile": profile,
+            "documents": documents,
+            "registration_incomplete": False,
+        },
     )
 
 

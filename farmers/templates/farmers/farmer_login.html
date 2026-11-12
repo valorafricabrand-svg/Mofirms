@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farmer sign in | MoFirms</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav"><div class="wrap bar">
+  <a class="logo" href="/"><span>Mo</span>Firms</a>
+  <a class="btn sm" href="/">Back to MoFirms</a>
+</div></header>
+<main id="main"><section class="wrap registration">
+  <div class="card registration-form">
+    <p class="eyebrow">Portal A · Farmer account</p>
+    <h1>Sign in</h1>
+    <p>Use the email address and password you set when you created an account during registration. If you registered without creating an account, there is nothing to sign in to yet.</p>
+    {% if form.errors %}<div class="err-box" role="alert">Sign-in failed. Check your email and password.</div>{% endif %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      {% include "farmers/field.html" with field=form.username %}
+      {% include "farmers/field.html" with field=form.password %}
+      <button class="btn" type="submit">Sign in</button>
+    </form>
+    <p><a href="{% url 'register_farmer' %}">Register as a farmer</a></p>
+  </div>
+</section></main>
+<footer><div class="wrap">
+  <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
+</div></footer>
+</body>
+</html>

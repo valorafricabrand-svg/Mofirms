@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Share your location | MoFirms</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav"><div class="wrap bar">
+  <a class="logo" href="/"><span>Mo</span>Firms</a>
+  <a class="btn sm" href="/">Back to MoFirms</a>
+</div></header>
+<main id="main">
+<section class="wrap registration">
+  <p class="eyebrow">Portal A · Farmer onboarding · Step 2 of 2</p>
+  <h1>Share your farm's location</h1>
+  {% with code_message="My MoFirms registration code is "|add:profile.public_reference %}
+  <div class="card">
+    <p>Thanks — we have your details. Before you tell us about your farming activities, open WhatsApp and send us your registration code, then share your location as a pin, both in the same chat:</p>
+    <p style="font-size:1.3em;font-weight:700">Your code: {{ profile.public_reference }}</p>
+    <ol>
+      <li>Tap the button below — it opens WhatsApp with your code already typed in. Just hit send.</li>
+      <li>In the same chat, tap the attachment icon and choose "Location".</li>
+      <li>Share your current location (not a search result) as a pin.</li>
+    </ol>
+    <p><a class="btn" href="https://wa.me/{{ mofirms_whatsapp_number }}?text={{ code_message|urlencode }}">Open WhatsApp and send my code</a></p>
+    <p class="form-hint">We recognise you from the WhatsApp number you message from — no need to have typed your phone number into this form.</p>
+    <p>Once both messages arrive, come back and refresh this page to continue — it only takes a moment.</p>
+    <a class="btn" href="{% url 'register_farmer_details' reference=profile.reference %}">I've sent it — continue</a>
+    <p class="form-hint"><a href="{% url 'register_farmer_details' reference=profile.reference %}?skip=1">Continue without sharing a location</a> — you can still register; we'll just show every farming activity instead of narrowing it down.</p>
+  </div>
+  {% endwith %}
+</section>
+</main>
+<footer><div class="wrap">
+  <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
+</div></footer>
+</body>
+</html>
