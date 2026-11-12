@@ -202,7 +202,9 @@ class FarmerProfile(models.Model):
     representative_role = models.CharField(max_length=100, blank=True)
     group_authorization_confirmed = models.BooleanField(default=False)
 
-    county = models.CharField(max_length=32, choices=[(county, county) for county in COUNTIES])
+    county = models.CharField(
+        max_length=32, choices=[(county, county) for county in COUNTIES], blank=True,
+    )
     sub_county = models.CharField(max_length=100, blank=True)
     ward = models.CharField(max_length=100, blank=True)
     local_area = models.CharField(max_length=120, blank=True)
@@ -277,7 +279,9 @@ class FarmerProfile(models.Model):
     def __str__(self):
         if self.registration_type == self.RegistrationType.GROUP and self.group_name:
             return f"{self.group_name} ({self.full_name})"
-        return f"{self.full_name} ({self.get_county_display()})"
+        if self.county:
+            return f"{self.full_name} ({self.get_county_display()})"
+        return self.full_name
 
     def clean(self):
         super().clean()

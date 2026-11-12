@@ -71,19 +71,12 @@
       </div>
     </fieldset>
 
-    <fieldset class="form-section">
-      <legend>Where you farm</legend>
-      <p class="form-hint">County is required. Sub-county, ward and local area are optional.</p>
-      <div class="form-grid">
-        <div>{% include "farmers/field.html" with field=form.county %}</div>
-        <div>{% include "farmers/field.html" with field=form.sub_county %}</div>
-        <div>{% include "farmers/field.html" with field=form.ward %}</div>
-        <div>{% include "farmers/field.html" with field=form.local_area %}</div>
-      </div>
-      {% if mofirms_whatsapp_number %}
-        <p class="form-hint">Want to share your farm's exact location? After submitting, open WhatsApp, start a chat with MoFirms at <a href="https://wa.me/{{ mofirms_whatsapp_number }}">{{ mofirms_whatsapp_number }}</a>, tap the attachment icon and share your current location as a pin. We'll match it to your registration using the phone number you message from.</p>
-      {% endif %}
-    </fieldset>
+    {% if mofirms_whatsapp_number %}
+      <fieldset class="form-section">
+        <legend>Where you farm</legend>
+        <p class="form-hint">After submitting, open WhatsApp, start a chat with MoFirms at <a href="https://wa.me/{{ mofirms_whatsapp_number }}">{{ mofirms_whatsapp_number }}</a>, tap the attachment icon and share your current location as a pin. We'll match it to your registration using the phone number you message from.</p>
+      </fieldset>
+    {% endif %}
 
     <fieldset class="form-section">
       <legend>Farm and production profile</legend>

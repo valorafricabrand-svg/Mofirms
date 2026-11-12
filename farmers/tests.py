@@ -87,6 +87,15 @@ class FarmerRegistrationTests(TestCase):
         self.assertIsNotNone(profile.privacy_consent_at)
         self.assertIsNone(profile.research_invite_consent_at)
 
+    def test_registration_succeeds_without_county_or_location(self):
+        data = {k: v for k, v in self.individual_data.items() if k != "county"}
+
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 302)
+        profile = FarmerProfile.objects.get()
+        self.assertEqual(profile.county, "")
+
     def test_farmer_can_separately_opt_in_to_research_invitations(self):
         response = self.client.post(
             self.url,

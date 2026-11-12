@@ -132,10 +132,6 @@ class FarmerRegistrationForm(forms.ModelForm):
             "group_registration_number",
             "group_member_count",
             "representative_role",
-            "county",
-            "sub_county",
-            "ward",
-            "local_area",
             "activities",
             "main_products",
             "farm_size",
@@ -179,9 +175,6 @@ class FarmerRegistrationForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["registration_type"].choices = FarmerProfile.RegistrationType.choices
-        self.fields["county"].choices = [("", "Select a county")] + [
-            (county, county) for county in COUNTIES
-        ]
         self.fields["group_type"].required = False
         self.fields["group_registration_status"].required = False
         self.fields["group_name"].label = "Group or association name *"
