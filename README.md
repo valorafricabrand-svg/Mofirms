@@ -89,9 +89,11 @@ Connect the GitHub repository to Render and deploy the Blueprint from `render.ya
 
 ### Staging before production
 
-Use the isolated `Mofirms Kenya` Render environment for staging; do not connect it to the live production database, Redis, upload disk, Daraja credentials, or `mofirm.co.ke` DNS. Configure the staging service with `DJANGO_ENVIRONMENT=staging`, `DJANGO_DEBUG=False`, `DEMO_MODE=False`, and `MPESA_ENVIRONMENT=sandbox`. Staging keeps hosted security requirements enabled (PostgreSQL, Redis, private persistent uploads, ClamAV, HTTPS callback URLs, and a generated retention secret) while rejecting production Daraja mode. Use only synthetic data and separate sandbox credentials. Set `MPESA_CALLBACK_URL` and `RETENTION_WEBHOOK_URL` to the staging service's HTTPS hostname.
+Use the isolated `Mofirms Kenya` Render environment for staging; do not connect it to the live production database, Redis, upload disk, Daraja credentials, or `mofirm.co.ke` DNS. The separate `render-staging.yaml` Blueprint uses `DJANGO_ENVIRONMENT=staging`, `DJANGO_DEBUG=False`, `DEMO_MODE=False`, and `MPESA_ENVIRONMENT=sandbox`. It keeps hosted security requirements enabled (PostgreSQL, Redis, private persistent uploads, ClamAV, HTTPS callback URLs, and a generated retention secret) while excluding the production domain and live Daraja mode.
 
-The production Blueprint is not a staging template: it selects production Daraja, attaches `mofirm.co.ke`, and creates paid resources. Do not sync it in the staging environment. Before creating any staging resources, review Render's combined price estimate against the USD 40/month cap; if staging plus production would exceed it, stop and approve a different plan before provisioning.
+Before syncing the staging Blueprint, review the combined Render estimate against the USD 40/month cap and stop if it exceeds the approved budget. Select the `Mofirms Kenya` environment, never `Production`. Supply sandbox credentials only through Render's prompted secret fields. After Render provides the staging service hostname, set `MPESA_CALLBACK_URL` and `RETENTION_WEBHOOK_URL` to HTTPS URLs on that hostname. Use synthetic data only; staging accepts writes and is publicly reachable at its Render URL.
+
+The production Blueprint is not a staging template: it selects production Daraja, attaches `mofirm.co.ke`, and creates paid resources. Do not sync it in the staging environment.
 
 ### Production Blueprint (separate from the demo)
 

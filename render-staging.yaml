@@ -1,0 +1,101 @@
+envVarGroups:
+  - name: mofirms-staging-retention
+    envVars:
+      - key: RETENTION_WEBHOOK_SECRET
+        generateValue: true
+      - key: RETENTION_WEBHOOK_URL
+        sync: false
+  - name: mofirms-staging-mpesa
+    envVars:
+      - key: MPESA_CONSUMER_KEY
+        sync: false
+      - key: MPESA_CONSUMER_SECRET
+        sync: false
+      - key: MPESA_SHORTCODE
+        sync: false
+      - key: MPESA_PASSKEY
+        sync: false
+      - key: MPESA_CALLBACK_URL
+        sync: false
+
+services:
+  - type: web
+    name: mofirms-staging
+    runtime: docker
+    branch: deploy/render-staging
+    autoDeployTrigger: "off"
+    region: frankfurt
+    plan: 1c-2g
+    numInstances: 1
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health/
+    preDeployCommand: python manage.py migrate --noinput
+    disk:
+      name: mofirms-staging-private-uploads
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DJANGO_ENVIRONMENT
+        value: staging
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DEMO_MODE
+        value: "False"
+      - key: NEWSLETTER_SIGNUPS_ENABLED
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_TRUST_PROXY_SSL_HEADER
+        value: "True"
+      - key: DJANGO_HSTS_SECONDS
+        value: "0"
+      - key: PRIVATE_UPLOAD_ROOT
+        value: /var/data/private_uploads
+      - key: ANTIVIRUS_ENABLED
+        value: "True"
+      - key: CLAMSCAN_COMMAND
+        value: clamscan
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mofirms-staging-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: mofirms-staging-redis
+          type: keyvalue
+          property: connectionString
+      - key: MPESA_ENVIRONMENT
+        value: sandbox
+      - key: MPESA_TRANSACTION_TYPE
+        value: CustomerPayBillOnline
+      - fromGroup: mofirms-staging-retention
+      - fromGroup: mofirms-staging-mpesa
+
+  - type: keyvalue
+    name: mofirms-staging-redis
+    region: frankfurt
+    plan: 256mb
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+    persistenceMode: journal-snapshot
+
+  - type: cron
+    name: mofirms-staging-retention-purge
+    runtime: python
+    branch: deploy/render-staging
+    autoDeployTrigger: "off"
+    region: frankfurt
+    plan: 0.5c-512mb
+    schedule: "0 1 * * *"
+    buildCommand: python -m py_compile mofirms_backend/retention_client.py
+    startCommand: python -m mofirms_backend.retention_client
+    envVars:
+      - fromGroup: mofirms-staging-retention
+
+databases:
+  - name: mofirms-staging-db
+    region: frankfurt
+    plan: 0.5c-1g
+    databaseName: mofirms_staging
+    user: mofirms_staging
+    ipAllowList: []
