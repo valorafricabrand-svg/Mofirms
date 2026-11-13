@@ -16,22 +16,15 @@
 
 <main id="main">
 <section class="wrap registration">
-  <p class="eyebrow">Portal A · Farmer onboarding</p>
+  <p class="eyebrow">Portal A · Farmer onboarding · Step 1 of 2</p>
   <h1>Farmer and group registration</h1>
-  <p class="lead">Tell MoFirms about your farming activities, the markets you serve, and the support that could help your farm or organisation grow. A MoFirms reviewer will assess your submission and follow up if needed.</p>
+  <p class="lead">Start with who you are and how to reach you. On the next step, we'll ask about your farming activities and business needs — and, if you share your location over WhatsApp, we'll only show the activities that are realistic for where you farm.</p>
 
   <aside class="notice notice-warning">
-    <h2>Before you begin</h2>
-    <ul>
-      <li>Provide information you are authorised to share. Group representatives should have permission to submit group information.</li>
-      <li>Identity and registration evidence is optional. Only upload documents relevant to the selected review, and do not upload bank statements, tax PIN records, passwords, or unrelated people's IDs.</li>
-      <li>Uploads are limited to {{ max_documents }} documents, {{ max_file_size_mb }} MB each and {{ max_total_size_mb }} MB total. Accepted types: PDF, JPG and PNG.</li>
-      <li>Uploaded evidence is scheduled for deletion after one year. Farmer profiles and assessments are scheduled for deletion after two years without recorded contact.</li>
-    </ul>
-    <p>This portal is running in local development. Do not enter real personal information or upload real identity documents until MoFirms has approved the privacy notice and deployed the service to secure production hosting.</p>
+    <p>This portal is running in local development. Do not enter real personal information until MoFirms has approved the privacy notice and deployed the service to secure production hosting.</p>
   </aside>
 
-  <form method="post" enctype="multipart/form-data" class="card registration-form" novalidate>
+  <form method="post" class="card registration-form" novalidate>
     {% csrf_token %}
     {{ form.website }}
     {% if form.non_field_errors %}<div class="err-box" role="alert">{{ form.non_field_errors }}</div>{% endif %}
@@ -45,19 +38,7 @@
         {% endfor %}
       </div>
       {% for error in form.registration_type.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-    </fieldset>
-
-    <fieldset id="groupFields" class="form-section">
-      <legend>Group or association details</legend>
-      <div class="form-grid">
-        <div>{% include "farmers/field.html" with field=form.group_name %}</div>
-        <div>{% include "farmers/field.html" with field=form.group_type %}</div>
-        <div>{% include "farmers/field.html" with field=form.group_registration_status %}</div>
-        <div>{% include "farmers/field.html" with field=form.group_registration_number %}</div>
-        <div>{% include "farmers/field.html" with field=form.group_member_count %}</div>
-        <div>{% include "farmers/field.html" with field=form.representative_role %}</div>
-        <div class="wide-field">{% include "farmers/field.html" with field=form.group_authorization_confirmed %}</div>
-      </div>
+      <p class="form-hint">If you're registering a group or association, you'll give its details on the next step.</p>
     </fieldset>
 
     <fieldset class="form-section">
@@ -69,77 +50,17 @@
         <div>{% include "farmers/field.html" with field=form.preferred_contact %}</div>
         <div>{% include "farmers/field.html" with field=form.preferred_language %}</div>
       </div>
+      <p class="form-hint">Phone is required only if you choose it (or WhatsApp) as your preferred contact method below. You don't need to give it just to share your location on the next step — we'll recognise you from the WhatsApp message itself.</p>
     </fieldset>
 
     <fieldset class="form-section">
       <legend>Create an account (optional)</legend>
-      <p class="form-hint">Tick this if you want to sign in later to check your registration status. Leave it unticked to submit without an account, as before.</p>
+      <p class="form-hint">Tick this if you want to sign in later to check your registration status. Leave it unticked to register without an account, as before.</p>
       <div class="form-grid">
         <div class="wide-field">{% include "farmers/field.html" with field=form.create_account %}</div>
         <div>{% include "farmers/field.html" with field=form.password1 %}</div>
         <div>{% include "farmers/field.html" with field=form.password2 %}</div>
       </div>
-    </fieldset>
-
-    <fieldset class="form-section">
-      <legend>Where you farm</legend>
-      <p class="form-hint">County is required. More specific local areas are optional; do not enter exact coordinates or plot details.</p>
-      <div class="form-grid">
-        <div>{% include "farmers/field.html" with field=form.county %}</div>
-        <div>{% include "farmers/field.html" with field=form.sub_county %}</div>
-        <div>{% include "farmers/field.html" with field=form.ward %}</div>
-        <div>{% include "farmers/field.html" with field=form.local_area %}</div>
-      </div>
-    </fieldset>
-
-    <fieldset class="form-section">
-      <legend>Farm and production profile</legend>
-      <p class="form-hint">Optional production details help MoFirms understand the scale and type of support that may fit. Estimates are fine.</p>
-      <div class="form-grid">
-        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.activities %}</div>
-        <div>{% include "farmers/field.html" with field=form.main_products %}</div>
-        <div>{% include "farmers/field.html" with field=form.farm_size %}</div>
-        <div>{% include "farmers/field.html" with field=form.farm_size_unit %}</div>
-        <div>{% include "farmers/field.html" with field=form.land_access %}</div>
-        <div>{% include "farmers/field.html" with field=form.years_farming %}</div>
-        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.water_sources %}</div>
-        <div class="wide-field">{% include "farmers/field.html" with field=form.production_summary %}</div>
-      </div>
-    </fieldset>
-
-    <fieldset class="form-section">
-      <legend>Business health and needs assessment</legend>
-      <p class="form-hint">Financial bands are optional estimates; do not enter bank account numbers, exact loan credentials, or passwords.</p>
-      <div class="form-grid">
-        <div>{% include "farmers/field.html" with field=form.sales_band %}</div>
-        <div>{% include "farmers/field.html" with field=form.operating_cost_band %}</div>
-        <div>{% include "farmers/field.html" with field=form.finance_need_band %}</div>
-        <div>{% include "farmers/field.html" with field=form.record_keeping %}</div>
-        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.sales_channels %}</div>
-        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.challenges %}</div>
-        <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.support_interests %}</div>
-        <div class="wide-field">{% include "farmers/field.html" with field=form.goals %}</div>
-        <div class="wide-field">{% include "farmers/field.html" with field=form.additional_notes %}</div>
-      </div>
-    </fieldset>
-
-    <fieldset class="form-section">
-      <legend>Optional supporting evidence</legend>
-      <p class="form-hint">Evidence helps a reviewer assess the relevant claim; submitting a file does not automatically verify identity, registration, or farm activity.</p>
-      {{ document_formset.management_form }}
-      {{ document_formset.non_form_errors }}
-      {% for error in upload_errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
-      <div id="documentRows" data-prefix="{{ document_formset.prefix }}" data-max="{{ max_documents }}">
-        {% for document_form in document_formset %}
-          {% include "farmers/document_row.html" with document_form=document_form %}
-        {% endfor %}
-      </div>
-      <template id="emptyDocumentRow">{% include "farmers/document_row.html" with document_form=document_formset.empty_form %}</template>
-      <button id="addDocument" class="opt" type="button">Add another document</button>
-      <p class="form-hint">Private files are only available to authorised MoFirms staff. Evidence is scheduled for deletion after one year, even if an assessment remains open.</p>
-      <label class="choice consent"><input type="checkbox" name="document_consent">
-        I consent to MoFirms reviewing any evidence I upload and deleting each file no later than one year after upload. I will not upload unrelated personal information.
-      </label>
     </fieldset>
 
     <fieldset class="form-section">
@@ -151,13 +72,12 @@
       {% include "farmers/field.html" with field=form.research_invite_consent %}
     </fieldset>
 
-    <button class="btn" type="submit">Submit registration for review</button>
+    <button class="btn" type="submit">Continue</button>
   </form>
 </section>
 </main>
 <footer><div class="wrap">
   <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
 </div></footer>
-<script src="/js/register.js"></script>
 </body>
 </html>

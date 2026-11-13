@@ -399,3 +399,53 @@ def mpesa_callback(request):
             status=409,
         )
     return JsonResponse({"ResultCode": 0, "ResultDesc": "Callback processed."})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def whatsapp_webhook(request):
+    from django.conf import settings
+
+    from .whatsapp import (
+        extract_location_messages,
+        extract_text_messages,
+        record_location_ping,
+        record_registration_code_message,
+        verify_signature,
+        webhook_configured,
+    )
+
+    if not webhook_configured():
+        return HttpResponse(status=503)
+
+    if request.method == "GET":
+        if (
+            request.GET.get("hub.mode") == "subscribe"
+            and request.GET.get("hub.verify_token") == settings.WHATSAPP_VERIFY_TOKEN
+        ):
+            return HttpResponse(request.GET.get("hub.challenge", ""), content_type="text/plain")
+        return HttpResponse(status=403)
+
+    if len(request.body) > 65536:
+        return HttpResponse(status=413)
+    if not verify_signature(request.body, request.META.get("HTTP_X_HUB_SIGNATURE_256", "")):
+        return HttpResponse(status=403)
+
+    try:
+        payload = json.loads(request.body)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return HttpResponse(status=400)
+
+    for wa_message_id, from_number, body in extract_text_messages(payload):
+        try:
+            record_registration_code_message(from_number, body)
+        except Exception:
+            logger.exception("Could not process WhatsApp text message %s.", wa_message_id)
+
+    for wa_message_id, from_number, latitude, longitude in extract_location_messages(payload):
+        try:
+            record_location_ping(wa_message_id, from_number, latitude, longitude)
+        except Exception:
+            logger.exception("Could not record WhatsApp location ping %s.", wa_message_id)
+
+    return HttpResponse(status=200)
