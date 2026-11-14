@@ -170,6 +170,7 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "webmaster@localhost")
 MOFIRMS_CONTACT_EMAIL = os.environ.get(
     "MOFIRMS_CONTACT_EMAIL", "mconceptslimited@gmail.com"
 )
+MPESA_ENABLED = os.environ.get("MPESA_ENABLED", "True").lower() in {"1", "true", "yes"}
 MPESA_ENVIRONMENT = os.environ.get("MPESA_ENVIRONMENT", "sandbox").strip().lower()
 if MPESA_ENVIRONMENT not in {"sandbox", "production"}:
     raise ImproperlyConfigured("MPESA_ENVIRONMENT must be 'sandbox' or 'production'.")
@@ -208,7 +209,7 @@ if not DEBUG and not DEMO_MODE:
             f"MPESA_ENVIRONMENT must be '{expected_mpesa_environment}' for "
             f"{DJANGO_ENVIRONMENT}."
         )
-    missing_mpesa_settings = [
+    missing_mpesa_settings = [] if not MPESA_ENABLED else [
         name
         for name, value in {
             "MPESA_CONSUMER_KEY": MPESA_CONSUMER_KEY,

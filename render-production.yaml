@@ -64,6 +64,10 @@ services:
           name: mofirms-production-redis
           type: keyvalue
           property: connectionString
+      # Payments stay off until live Daraja credentials are in mofirms-mpesa-secrets.
+      # Set to "True" (and fill the secrets) to enable M-PESA checkout.
+      - key: MPESA_ENABLED
+        value: "False"
       - key: MPESA_ENVIRONMENT
         value: production
       - key: MPESA_TRANSACTION_TYPE

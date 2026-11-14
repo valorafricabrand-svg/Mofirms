@@ -213,6 +213,37 @@ class PrivateBetaPaymentTests(TestCase):
         initiate.assert_called_once()
 
     @override_settings(
+        MPESA_ENABLED=False,
+        MPESA_CONSUMER_KEY="consumer-key",
+        MPESA_CONSUMER_SECRET="consumer-secret",
+        MPESA_SHORTCODE="123456",
+        MPESA_PASSKEY="passkey",
+        MPESA_CALLBACK_URL="https://example.test/portal/payments/mpesa/callback/",
+    )
+    @patch("farmers.billing.initiate_stk_push")
+    def test_checkout_refuses_payment_when_mpesa_disabled(self, initiate):
+        enrollment = self.approved_enrollment()
+        url = reverse("beta_checkout", args=[enrollment.access_token])
+
+        page = self.client.get(url)
+        self.assertContains(page, "M-PESA checkout is not enabled yet")
+        self.assertNotContains(page, "Send M-PESA payment prompt")
+
+        response = self.client.post(
+            url,
+            {
+                "plan": self.plan.pk,
+                "phone_number": "0712345678",
+                "payment_consent": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "M-PESA checkout is not enabled yet")
+        self.assertEqual(MpesaPayment.objects.count(), 0)
+        initiate.assert_not_called()
+
+    @override_settings(
         MPESA_CONSUMER_KEY="consumer-key",
         MPESA_CONSUMER_SECRET="consumer-secret",
         MPESA_SHORTCODE="123456",

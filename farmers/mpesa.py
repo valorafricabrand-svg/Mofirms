@@ -14,6 +14,8 @@ class MpesaError(Exception):
 
 
 def payments_available():
+    if not settings.MPESA_ENABLED:
+        return False
     return all(
         (
             settings.MPESA_CONSUMER_KEY,
@@ -43,6 +45,10 @@ def normalize_phone_number(phone_number):
 
 
 def _credentials():
+    if not settings.MPESA_ENABLED:
+        raise MpesaError(
+            "M-PESA checkout is not enabled yet. Contact MoFirms to confirm when payment setup is complete."
+        )
     required = {
         "MPESA_CONSUMER_KEY": settings.MPESA_CONSUMER_KEY,
         "MPESA_CONSUMER_SECRET": settings.MPESA_CONSUMER_SECRET,

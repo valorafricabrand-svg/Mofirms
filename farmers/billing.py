@@ -155,7 +155,12 @@ def beta_checkout(request, token):
         )
 
     form = PaymentForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
+    if request.method == "POST" and not payments_available():
+        form.add_error(
+            None,
+            "M-PESA checkout is not enabled yet. Contact MoFirms to confirm when payment setup is complete.",
+        )
+    elif request.method == "POST" and form.is_valid():
         plan = form.cleaned_data["plan"]
         phone_number = form.cleaned_data["phone_number"]
         try:
