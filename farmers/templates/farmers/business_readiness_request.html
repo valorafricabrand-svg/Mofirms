@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Farmer Business Readiness pilot | MoFirms</title>
 <meta name="description" content="Request a staff-reviewed Farmer Business Readiness pilot from MoFirms.">
-<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -99,6 +100,6 @@
 <footer><div class="wrap">
   <p>Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
 </div></footer>
-<script src="/js/register.js"></script>
+<script src="{% static 'js/register.js' %}"></script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Farmer registration | MoFirms</title>
 <meta name="description" content="Register a farmer or farmer group with MoFirms for onboarding and a needs assessment.">
-<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -28,7 +29,9 @@
       <li>Uploads are limited to {{ max_documents }} documents, {{ max_file_size_mb }} MB each and {{ max_total_size_mb }} MB total. Accepted types: PDF, JPG and PNG.</li>
       <li>Uploaded evidence is scheduled for deletion after one year. Farmer profiles and assessments are scheduled for deletion after two years without recorded contact.</li>
     </ul>
+    {% if not portal_is_production %}
     <p>This portal is running in local development. Do not enter real personal information or upload real identity documents until MoFirms has approved the privacy notice and deployed the service to secure production hosting.</p>
+    {% endif %}
   </aside>
 
   <form method="post" enctype="multipart/form-data" class="card registration-form" novalidate>
@@ -158,6 +161,6 @@
 <footer><div class="wrap">
   <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
 </div></footer>
-<script src="/js/register.js"></script>
+<script src="{% static 'js/register.js' %}"></script>
 </body>
 </html>

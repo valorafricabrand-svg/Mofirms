@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Financial analysis request | MoFirms</title>
 <meta name="description" content="Request specialist-reviewed financial analysis and business planning support from MoFirms.">
-<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -29,7 +30,9 @@
       <li>Only upload records relevant to the requested work. Files are optional, private, limited to {{ max_documents }} per request, {{ max_file_size_mb }} MB each and {{ max_total_size_mb }} MB total. Accepted types: PDF, JPG and PNG.</li>
       <li>Uploaded files are scheduled for deletion after one year; requests are scheduled for deletion after two years without recorded contact.</li>
     </ul>
+    {% if not portal_is_production %}
     <p>This service is running in local development. Use synthetic information only; do not enter real financial or personal information or upload real statements until MoFirms has approved the privacy notice and deployed the portal to secure production hosting.</p>
+    {% endif %}
   </aside>
 
   <form method="post" enctype="multipart/form-data" class="card registration-form" novalidate>
@@ -98,6 +101,6 @@
 <footer><div class="wrap">
   <p>Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
 </div></footer>
-<script src="/js/register.js"></script>
+<script src="{% static 'js/register.js' %}"></script>
 </body>
 </html>

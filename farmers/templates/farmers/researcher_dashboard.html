@@ -1,10 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Researcher dashboard | MoFirms Portal E</title>
-<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -133,6 +134,6 @@
   </form>
 </section>
 </main>
-<script src="/js/researcher.js"></script>
+<script src="{% static 'js/researcher.js' %}"></script>
 </body>
 </html>

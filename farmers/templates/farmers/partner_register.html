@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Supplier and buyer registration | MoFirms</title>
 <meta name="description" content="Register your agricultural supply, buying, or professional services business with MoFirms.">
-<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -29,7 +30,9 @@
       <li>Uploaded evidence is scheduled for deletion after one year. Partner profiles are scheduled for deletion after two years without recorded contact.</li>
       <li>Submitting a profile does not make your company, identity, licence, products, or services “verified.” MoFirms staff review claims and record the evidence and scope of each decision.</li>
     </ul>
+    {% if not portal_is_production %}
     <p>This service is running in local development. Do not enter real personal or company information, or upload real documents, until MoFirms has approved the privacy notice and deployed the portal to secure production hosting.</p>
+    {% endif %}
   </aside>
 
   <form method="post" enctype="multipart/form-data" class="card registration-form" novalidate>
@@ -176,6 +179,6 @@
 <footer><div class="wrap">
   <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
 </div></footer>
-<script src="/js/register.js"></script>
+<script src="{% static 'js/register.js' %}"></script>
 </body>
 </html>
