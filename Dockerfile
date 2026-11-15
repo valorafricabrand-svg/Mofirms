@@ -18,7 +18,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+# collectstatic inherits the private-upload modes (0700/0600) from settings;
+# make the public static files readable by the unprivileged runtime user.
 RUN python manage.py collectstatic --no-input \
+    && chmod -R u=rwX,go=rX /app/staticfiles \
     && chmod +x /app/scripts/container-entrypoint.sh
 
 EXPOSE 10000
