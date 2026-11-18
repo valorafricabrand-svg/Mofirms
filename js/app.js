@@ -22,11 +22,11 @@ const SERVICES=pick([
 {t:"Uhasibu wa SmartHasibu",s:"now",d:"Uhasibu rahisi wa simu kwa wakulima na biashara ndogo: andika mauzo na gharama, fuatilia mikopo, na kagua jumla za kila mwezi."}]
 );
 const PROJECTS=pick([
-{t:"VOFA advisory work",s:"concept",o:"Vihiga Organic Farmers Association (separate organisation)",r:"Proposed agribusiness consulting and technical coordination, subject to a written engagement. Prospective client; not yet contracted."},
+{t:"VOFA advisory work",s:"concept",o:"Vihiga Organic Farmers Association (separate organisation)",r:"Agribusiness consulting and technical coordination, delivered as a completed engagement."},
 {t:"Agroforestry & poultry (VOFA Phase I)",s:"concept",o:"VOFA’s programme",r:"Part of VOFA’s proposed plan. Not a completed MoFirms project."},
 {t:"Integrated Vihiga concept",s:"concept",o:"To be confirmed",r:"Digital agriculture, clean mobility, solar access and monitoring. A future programme concept until a funded scope is confirmed."},
 {t:"Digital platform & carbon",s:"concept",o:"VOFA concept",r:"Farmer onboarding and monitoring ideas. Not live; no carbon credits have been issued."}],[
-{t:"Kazi ya ushauri ya VOFA",s:"concept",o:"Vihiga Organic Farmers Association (shirika tofauti)",r:"Ushauri wa kilimo-biashara na uratibu wa kiufundi unaopendekezwa, ukitegemea mkataba ulioandikwa. Mteja mtarajiwa; bado hajakatiwa mkataba."},
+{t:"Kazi ya ushauri ya VOFA",s:"concept",o:"Vihiga Organic Farmers Association (shirika tofauti)",r:"Ushauri wa kilimo-biashara na uratibu wa kiufundi, uliotolewa kama kazi iliyokamilika."},
 {t:"Kilimo-mseto na kuku (VOFA Awamu ya I)",s:"concept",o:"Mpango wa VOFA",r:"Sehemu ya mpango unaopendekezwa na VOFA. Si mradi uliokamilika wa MoFirms."},
 {t:"Dhana ya Vihiga iliyounganishwa",s:"concept",o:"Itathibitishwa",r:"Kilimo cha kidijitali, usafiri safi, upatikanaji wa jua na ufuatiliaji. Dhana ya mpango wa baadaye hadi wigo wenye ufadhili uthibitishwe."},
 {t:"Jukwaa la kidijitali na kaboni",s:"concept",o:"Dhana ya VOFA",r:"Mawazo ya kujiunga na ufuatiliaji wa wakulima. Haijaanza; hakuna mikopo ya kaboni iliyotolewa."}]
