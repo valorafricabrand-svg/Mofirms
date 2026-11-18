@@ -268,3 +268,42 @@ font-size:.82rem;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
 .checkout-panel .checklist{padding-left:0}
 @media(max-width:760px){.pricing-hero,.onboarding-hero,.alt-box,.checkout-layout{grid-template-columns:1fr}.pricing-hero,.onboarding-hero,.checkout-layout{padding-top:48px}.checkout-panel{position:static}.summary-head{align-items:flex-start;flex-direction:column}}
 @media(max-width:560px){.pricing-hero,.onboarding-hero{padding-top:40px}.plan-card,.trust-box,.alt-box,.summary-box,.checkout-panel{padding:18px}.comparison-table{min-width:540px}}
+
+@media(max-width:760px){
+  .bar{gap:8px}
+  #burger{display:grid;min-width:44px;min-height:44px;place-items:center;padding:0}
+  #menu{max-height:calc(100vh - 64px);overflow-y:auto;overscroll-behavior:contain}
+  #menu a{display:flex;align-items:center;width:100%;min-height:44px;padding:8px 10px}
+  .bar>.btn.sm{display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;min-height:44px;padding:8px 10px;font-size:.88rem;white-space:nowrap}
+  .whatsapp-float{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px);padding:10px 14px;font-size:.9rem}
+}
+
+@media(min-width:761px) and (max-width:980px){
+  #burger{display:grid;min-width:44px;min-height:44px;place-items:center;padding:0}
+  #menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;align-items:stretch;gap:4px;max-height:calc(100vh - 64px);overflow-y:auto;overscroll-behavior:contain;padding:12px 20px;background:var(--bg);border-bottom:1px solid var(--line);box-shadow:0 12px 24px rgba(0,0,0,.12)}
+  #menu.open{display:flex}
+  #menu a{display:flex;align-items:center;width:100%;min-height:44px;padding:8px 10px}
+}
+
+@media(min-width:561px) and (max-width:900px){
+  .plan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media(max-width:560px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .plan-grid{grid-template-columns:minmax(0,1fr)}
+  .plan-card{min-width:0}
+}
+
+@media(max-width:420px){
+  .site-logo{width:clamp(118px,38vw,155px);flex:0 1 auto}
+  .site-logo img{width:100%}
+  .logo .site-logo-name{display:none}
+  .lang-switch{gap:4px;min-height:44px;padding:6px 8px;font-size:.8rem;white-space:nowrap}
+  .bar>.btn.sm{padding:7px 8px;font-size:.82rem}
+}
+
+@media(max-width:360px){
+  .bar{flex-wrap:wrap}
+  .bar>.btn.sm{flex:1 0 100%;text-align:center}
+}
