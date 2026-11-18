@@ -10,8 +10,8 @@
 <meta property="og:description" content="Practical advice for sustainable farms and growing enterprises.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
 <link rel="preload" as="image" href="{% static 'images/climate-smart-farming.webp' %}" imagesrcset="{% static 'images/climate-smart-farming-480.webp' %} 480w, {% static 'images/climate-smart-farming.webp' %} 736w" imagesizes="(min-width: 901px) 540px, calc(100vw - 40px)" fetchpriority="high">
-<link rel="stylesheet" href="{% static 'css/style.css' %}?v=smarthasibu-launch-2026-11">
-<script src="{% static 'js/app.js' %}?v=service-names-2026-11" defer></script>
+<link rel="stylesheet" href="{% static 'css/style.css' %}?v=online-services-grid-2026-11">
+<script src="{% static 'js/app.js' %}?v=online-services-grid-2026-11" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -19,7 +19,7 @@
   <a class="logo site-logo" href="#top"><img src="{% static 'images/mofirms-company-logo.png' %}" alt="MoFirms" width="195" height="65"><span class="site-logo-name">Marks Organic Farms Concepts Limited</span></a>
   <button id="burger" type="button" aria-label="Open menu" aria-controls="menu" aria-expanded="false">☰</button>
   <nav id="menu" aria-label="Main">
-    <a href="#services">Services</a><a href="#smarthasibu">SmartHasibu</a><a href="#projects">Projects</a>
+    <a href="#online-services">Online services</a><a href="#services">Services</a><a href="#smarthasibu">SmartHasibu</a><a href="#projects">Projects</a>
     <a href="#products">Products</a><a href="#about">About</a><a href="/pricing/">Pricing</a><a class="btn sm" href="#contact">Request a consultation</a>
   </nav>
 </div></header>
@@ -89,7 +89,7 @@
             <p class="carousel-kicker">FARMERS &amp; FARMER GROUPS</p>
             <h2>Practical support for the people behind every harvest.</h2>
             <p>Register as a farmer or group to share your needs with MoFirms for staff review. Registration does not guarantee funding, inputs or market access.</p>
-            <div class="cta"><a class="btn" href="/portal/register/">Register as a farmer</a><a class="btn ghost" href="#customer-portals">View customer portals</a></div>
+            <div class="cta"><a class="btn" href="/portal/register/">Register as a farmer</a><a class="btn ghost" href="#online-services">Explore online services</a></div>
           </div>
         </article>
         <article class="carousel-slide" data-slide="5" role="group" aria-roledescription="slide" aria-label="6 of 10: Connected farmland" hidden>
@@ -162,12 +162,27 @@
       </div>
       <p class="visually-hidden" id="carouselAnnouncement" aria-live="polite" aria-atomic="true"></p>
     </div>
-    <ul class="stats" aria-label="MoFirms at a glance"><li><b>Established 2019</b>Incorporated in Kenya</li><li><b>5 portals</b>Farmer, partner and research services</li><li><b>Private cashbook</b>SmartHasibu bookkeeping</li></ul>
+    <ul class="stats" aria-label="MoFirms at a glance"><li><b>Established 2019</b>Incorporated in Kenya</li><li><b>5 online services</b>Farmer, partner, advisory and research requests</li><li><b>Private cashbook</b>SmartHasibu bookkeeping</li></ul>
   </div>
 </section>
 
 <section id="path" class="wrap"><h2>Where do you fit?</h2><p class="sub">Choose who you are and we’ll point you to the most relevant support.</p>
   <div class="tabs" role="tablist" id="tabs"></div><div id="pathOut" class="card out" aria-live="polite"></div>
+</section>
+
+<section class="alt online-services" id="online-services" aria-labelledby="online-services-title">
+  <div class="wrap">
+    <div class="online-services-heading">
+      <div>
+        <p class="eyebrow">GET STARTED ONLINE</p>
+        <h2 id="online-services-title">Online services</h2>
+        <p class="sub">Choose a service to start a request. Our team reviews each submission and follows up on next steps.</p>
+      </div>
+      <span class="online-services-count">5 ways to get started</span>
+    </div>
+    <ol class="online-service-grid" id="onlineServices" aria-label="Choose an online service"></ol>
+    <p class="online-services-note"><strong>What to expect:</strong> Specialist work starts only after the scope and fee are agreed. A request is not approval, funding, or a guarantee of service. Research participation is separate and voluntary.</p>
+  </div>
 </section>
 
 <section id="services" class="alt"><div class="wrap">
@@ -282,18 +297,6 @@
   <div class="card"><h3>Mission</h3><p>To help farmers and enterprises make informed decisions, improve their business practices and develop commercially sound, environmentally responsible projects.</p>
   <h3>Vision</h3><p>Productive farms and resilient enterprises supported by dependable information, practical skills and access to markets.</p></div>
 </section>
-
-<section class="alt portal-section" id="customer-portals"><div class="wrap"><h2>Online services</h2>
-  <p class="sub">Register as a farmer, farmer group, supplier, buyer, or service provider. You can also request specialist financial analysis, business planning, or a risk-and-opportunity assessment. Staff review requests, agree on the scope, and provide a quote before work begins. The Farmer Business Readiness Pack is a proposed private pilot. Research services are separate, manually vetted, and voluntary; researchers see aggregate results only. These services remain in local development and are not open for real personal, financial, or research data until secure production hosting and the privacy notice are approved.</p>
-  <div class="portal-controls" role="group" aria-label="Online service controls">
-    <button class="portal-arrow" id="portalsPrevious" type="button" aria-label="Show previous services">←</button>
-    <button class="portal-arrow" id="portalsNext" type="button" aria-label="Show next services">→</button>
-  </div>
-  <div class="portal-viewport" id="portalsViewport" role="region" aria-label="MoFirms online services" tabindex="0">
-    <ol class="portal-set steps" id="portals"></ol>
-  </div>
-  <p class="portal-hint">Use the arrows, swipe, or scroll to explore all five services.</p>
-</div></section>
 
 <section id="contact" class="wrap two contact-section">
   <div><h2>Request a consultation</h2>
