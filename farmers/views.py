@@ -342,21 +342,29 @@ def ask_assistant(request):
         "https://generativelanguage.googleapis.com/v1beta/models/"
         f"{settings.GEMINI_MODEL}:generateContent?key={settings.GEMINI_API_KEY}"
     )
-    http_request = urllib.request.Request(
-        url, data=body, headers={"Content-Type": "application/json"}, method="POST"
-    )
     started = time.monotonic()
-    try:
-        with urllib.request.urlopen(http_request, timeout=45) as response:
-            data = json.loads(response.read().decode("utf-8"))
-    except (urllib.error.URLError, TimeoutError) as exc:
-        detail = exc.read().decode("utf-8", "ignore")[:500] if isinstance(exc, urllib.error.HTTPError) else str(exc)
-        elapsed = time.monotonic() - started
-        logger.warning(
-            "Gemini assistant request failed after %.1fs (%s): %s",
-            elapsed, type(exc).__name__, detail,
+    data = None
+    attempts = 3
+    for attempt in range(1, attempts + 1):
+        http_request = urllib.request.Request(
+            url, data=body, headers={"Content-Type": "application/json"}, method="POST"
         )
-        return JsonResponse({"error": translate("assistant.unavailable", lang)}, status=502)
+        try:
+            with urllib.request.urlopen(http_request, timeout=15) as response:
+                data = json.loads(response.read().decode("utf-8"))
+            break
+        except (urllib.error.URLError, TimeoutError) as exc:
+            detail = exc.read().decode("utf-8", "ignore")[:500] if isinstance(exc, urllib.error.HTTPError) else str(exc)
+            elapsed = time.monotonic() - started
+            logger.warning(
+                "Gemini assistant request failed on attempt %d after %.1fs (%s): %s",
+                attempt, elapsed, type(exc).__name__, detail,
+            )
+            is_overloaded = isinstance(exc, urllib.error.HTTPError) and exc.code in (429, 503)
+            if attempt < attempts and is_overloaded:
+                time.sleep(attempt)
+                continue
+            return JsonResponse({"error": translate("assistant.unavailable", lang)}, status=502)
     logger.info("Gemini assistant request succeeded after %.1fs", time.monotonic() - started)
 
     try:
