@@ -25,6 +25,7 @@ from .models import (
     ResearchStudy,
     ResearcherApplication,
     ServicePlan,
+    Testimonial,
 )
 from .readiness_drafting import save_readiness_draft
 
@@ -1482,3 +1483,21 @@ class MpesaPaymentAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(Testimonial)
+class TestimonialAdmin(admin.ModelAdmin):
+    list_display = ("author_name", "role", "active", "display_order", "updated_at")
+    list_filter = ("active",)
+    search_fields = ("author_name", "role", "quote")
+    list_editable = ("display_order", "active")
+    readonly_fields = ("created_at", "updated_at")
+    fields = (
+        "author_name",
+        "role",
+        "quote",
+        "active",
+        "display_order",
+        "created_at",
+        "updated_at",
+    )

@@ -306,6 +306,30 @@
   <a class="btn ghost" href="#contact" data-cat="Products">{% t 'home.products.enquire' %}</a>
 </div></section>
 
+{% if testimonials %}
+<section id="testimonials" class="wrap testimonials-section" aria-labelledby="testimonials-title">
+  <p class="eyebrow">{% t 'home.testimonials.eyebrow' %}</p>
+  <h2 id="testimonials-title">{% t 'home.testimonials.title' %}</h2>
+  <div class="testimonial-carousel" id="testimonialCarousel" role="region" aria-roledescription="carousel" aria-label="{% t 'home.testimonials.region_label' %}" tabindex="0">
+    <div class="testimonial-track" id="testimonialTrack">
+      {% for item in testimonials %}
+      <article class="testimonial-slide" role="group" aria-roledescription="slide" aria-label="{{ forloop.counter }} / {{ testimonials|length }}"{% if not forloop.first %} hidden{% endif %}>
+        <p class="testimonial-quote">&ldquo;{{ item.quote }}&rdquo;</p>
+        <p class="testimonial-author">{{ item.author_name }}<span>{{ item.role }}</span></p>
+      </article>
+      {% endfor %}
+    </div>
+    {% if testimonials|length > 1 %}
+    <div class="testimonial-dots" id="testimonialDots" role="tablist">
+      {% for item in testimonials %}
+      <button type="button" class="testimonial-dot{% if forloop.first %} is-active{% endif %}" role="tab" aria-label="{{ forloop.counter }} / {{ testimonials|length }}" data-index="{{ forloop.counter0 }}"></button>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
 <section id="contact" class="wrap two contact-section">
   <div><h2>{% t 'home.contact.title' %}</h2>
   <p>{% t 'home.contact.body' %}</p>

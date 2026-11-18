@@ -670,6 +670,11 @@ STRINGS = {
     },
     "home.products.enquire": {"en": "Enquire about availability", "sw": "Uliza kuhusu upatikanaji"},
 
+    # --- testimonials ---
+    "home.testimonials.eyebrow": {"en": "Client voices", "sw": "Sauti za wateja"},
+    "home.testimonials.title": {"en": "What our clients say", "sw": "Wateja wetu wanasema nini"},
+    "home.testimonials.region_label": {"en": "Client testimonials", "sw": "Maoni ya wateja"},
+
     # --- contact ---
     "home.contact.title": {"en": "Request a consultation", "sw": "Omba mashauriano"},
     "home.contact.body": {

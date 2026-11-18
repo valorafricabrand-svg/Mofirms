@@ -123,6 +123,22 @@ footer{background:#10231a;color:#cfe3d6;padding:0;font-size:.9rem}footer a{color
 .footer-legal button,.footer-legal a{padding:0;border:0;background:none;color:#cfe3d6;font:inherit;font-size:.84rem;text-decoration:underline;text-underline-offset:4px;cursor:pointer}
 .footer-privacy{margin:0 0 20px;padding:14px 16px;border:1px solid rgba(207,227,214,.2);border-radius:8px;color:#b8c9bf;font-size:.85rem}
 .footer-privacy a{color:#fff}
+.testimonials-section{padding:16px 0 44px;text-align:center}
+.testimonials-section .eyebrow{display:block}
+.testimonials-section h2{margin:6px 0 28px}
+.testimonial-carousel{position:relative;max-width:720px;margin:0 auto;outline:none}
+.testimonial-track{position:relative;min-height:170px}
+.testimonial-slide{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:32px 36px}
+.testimonial-quote{margin:0 0 16px;font-size:1.15rem;line-height:1.6;color:var(--ink)}
+.testimonial-author{margin:0;font-weight:700;color:var(--g2)}
+.testimonial-author span{display:block;margin-top:2px;font-weight:400;color:var(--mut);font-size:.88rem}
+.testimonial-dots{display:flex;justify-content:center;gap:8px;margin-top:18px}
+.testimonial-dot{width:9px;height:9px;padding:0;border:0;border-radius:50%;background:var(--line);cursor:pointer}
+.testimonial-dot.is-active{background:var(--g)}
+@media(max-width:760px){
+  .testimonial-slide{padding:24px 22px}
+  .testimonial-quote{font-size:1.02rem}
+}
 .newsletter-section{padding:52px 0;background:var(--sand)}
 .newsletter-layout{display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:center}
 .newsletter-layout h2{max-width:560px}

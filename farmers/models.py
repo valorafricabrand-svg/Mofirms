@@ -1720,3 +1720,19 @@ class NewsletterSubscription(models.Model):
     def save(self, *args, **kwargs):
         self.email = self.email.strip().lower()
         super().save(*args, **kwargs)
+
+
+class Testimonial(models.Model):
+    author_name = models.CharField(max_length=120)
+    role = models.CharField(max_length=160, help_text="e.g. 'Mushroom farmer, Valor Africa Limited'")
+    quote = models.TextField()
+    active = models.BooleanField(default=True)
+    display_order = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["display_order", "-created_at"]
+
+    def __str__(self):
+        return f"{self.author_name} — {self.role}"

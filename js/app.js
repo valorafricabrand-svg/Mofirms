@@ -173,6 +173,60 @@ if(carousel){
   updateCarouselToggle();
   showSlide(0);
 }
+/* testimonials carousel */
+const testimonialCarousel=$("#testimonialCarousel");
+if(testimonialCarousel){
+  const tSlides=[...testimonialCarousel.querySelectorAll(".testimonial-slide")];
+  const tDots=[...testimonialCarousel.querySelectorAll(".testimonial-dot")];
+  let tCurrent=0;
+  let tEngaged=false;
+  let tTimer;
+  function showTestimonial(index){
+    tCurrent=(index+tSlides.length)%tSlides.length;
+    tSlides.forEach((slide,i)=>{
+      slide.hidden=i!==tCurrent;
+    });
+    tDots.forEach((dot,i)=>dot.classList.toggle("is-active",i===tCurrent));
+    scheduleTestimonialAdvance();
+  }
+  function scheduleTestimonialAdvance(){
+    window.clearTimeout(tTimer);
+    if(tSlides.length<2||tEngaged||document.hidden||reducedMotion.matches)return;
+    tTimer=window.setTimeout(()=>showTestimonial(tCurrent+1),6000);
+  }
+  function setTestimonialEngaged(engaged){
+    tEngaged=engaged||testimonialCarousel.matches(":hover")||testimonialCarousel.contains(document.activeElement);
+    scheduleTestimonialAdvance();
+  }
+  tDots.forEach((dot,i)=>dot.addEventListener("click",()=>showTestimonial(i)));
+  testimonialCarousel.addEventListener("pointerenter",()=>setTestimonialEngaged(true));
+  testimonialCarousel.addEventListener("pointerleave",()=>setTestimonialEngaged(false));
+  testimonialCarousel.addEventListener("focusin",()=>setTestimonialEngaged(true));
+  testimonialCarousel.addEventListener("focusout",event=>{if(!testimonialCarousel.contains(event.relatedTarget))setTestimonialEngaged(false)});
+  let tTouchStart=null;
+  testimonialCarousel.addEventListener("pointerdown",event=>{
+    if(event.pointerType==="touch")tTouchStart={x:event.clientX,y:event.clientY};
+  });
+  testimonialCarousel.addEventListener("pointerup",event=>{
+    if(!tTouchStart)return;
+    const deltaX=event.clientX-tTouchStart.x;
+    const deltaY=event.clientY-tTouchStart.y;
+    if(Math.abs(deltaX)>50&&Math.abs(deltaX)>Math.abs(deltaY)){
+      showTestimonial(tCurrent+(deltaX<0?1:-1));
+    }
+    tTouchStart=null;
+  });
+  testimonialCarousel.addEventListener("pointercancel",()=>{tTouchStart=null});
+  testimonialCarousel.addEventListener("keydown",event=>{
+    if(event.key==="ArrowLeft"||event.key==="ArrowRight"){
+      event.preventDefault();
+      showTestimonial(tCurrent+(event.key==="ArrowRight"?1:-1));
+    }
+  });
+  reducedMotion.addEventListener("change",scheduleTestimonialAdvance);
+  document.addEventListener("visibilitychange",scheduleTestimonialAdvance);
+  scheduleTestimonialAdvance();
+}
 /* pathways */
 const UI_CONTINUE=pick("Continue","Endelea");
 const tabs=$("#tabs");Object.keys(PATHS).forEach((k,i)=>{const b=el(`<button role="tab" aria-selected="${i==0}">${PATHS[k][0]}</button>`);b.onclick=()=>{tabs.querySelectorAll("button").forEach(x=>x.setAttribute("aria-selected","false"));b.setAttribute("aria-selected","true");show(k)};tabs.append(b)});

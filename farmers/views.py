@@ -53,6 +53,7 @@ from .models import (
     ResearchStudy,
     ResearcherApplication,
     NewsletterSubscription,
+    Testimonial,
 )
 
 
@@ -68,19 +69,22 @@ def newsletter_signups_enabled():
     )
 
 
+def _home_context(lang, **overrides):
+    context = {
+        "consultation_form": ConsultationLeadForm(lang=lang),
+        "newsletter_form": NewsletterSubscriptionForm(lang=lang),
+        "consultation_enabled": not settings.DEMO_MODE,
+        "newsletter_enabled": newsletter_signups_enabled(),
+        "testimonials": Testimonial.objects.filter(active=True),
+    }
+    context.update(overrides)
+    return context
+
+
 @require_http_methods(["GET"])
 def home(request):
     lang = current_lang(request)
-    return render(
-        request,
-        "index.html",
-        {
-            "consultation_form": ConsultationLeadForm(lang=lang),
-            "newsletter_form": NewsletterSubscriptionForm(lang=lang),
-            "consultation_enabled": not settings.DEMO_MODE,
-            "newsletter_enabled": newsletter_signups_enabled(),
-        },
-    )
+    return render(request, "index.html", _home_context(lang))
 
 
 @require_http_methods(["POST"])
@@ -92,12 +96,7 @@ def submit_consultation_lead(request):
         return render(
             request,
             "index.html",
-            {
-                "consultation_form": form,
-                "newsletter_form": NewsletterSubscriptionForm(lang=lang),
-                "consultation_enabled": not settings.DEMO_MODE,
-                "newsletter_enabled": newsletter_signups_enabled(),
-            },
+            _home_context(lang, consultation_form=form),
             status=429,
         )
 
@@ -115,12 +114,7 @@ def submit_consultation_lead(request):
     return render(
         request,
         "index.html",
-        {
-            "consultation_form": form,
-            "newsletter_form": NewsletterSubscriptionForm(lang=lang),
-            "consultation_enabled": not settings.DEMO_MODE,
-            "newsletter_enabled": newsletter_signups_enabled(),
-        },
+        _home_context(lang, consultation_form=form),
         status=400,
     )
 
@@ -140,12 +134,7 @@ def subscribe_newsletter(request):
         return render(
             request,
             "index.html",
-            {
-                "consultation_form": ConsultationLeadForm(lang=lang),
-                "newsletter_form": form,
-                "consultation_enabled": not settings.DEMO_MODE,
-                "newsletter_enabled": newsletter_signups_enabled(),
-            },
+            _home_context(lang, newsletter_form=form),
             status=429,
         )
 
@@ -153,12 +142,7 @@ def subscribe_newsletter(request):
         return render(
             request,
             "index.html",
-            {
-                "consultation_form": ConsultationLeadForm(lang=lang),
-                "newsletter_form": form,
-                "consultation_enabled": not settings.DEMO_MODE,
-                "newsletter_enabled": newsletter_signups_enabled(),
-            },
+            _home_context(lang, newsletter_form=form),
             status=400,
         )
 
@@ -189,12 +173,7 @@ def subscribe_newsletter(request):
         return render(
             request,
             "index.html",
-            {
-                "consultation_form": ConsultationLeadForm(lang=lang),
-                "newsletter_form": form,
-                "consultation_enabled": not settings.DEMO_MODE,
-                "newsletter_enabled": newsletter_signups_enabled(),
-            },
+            _home_context(lang, newsletter_form=form),
             status=503,
         )
 
