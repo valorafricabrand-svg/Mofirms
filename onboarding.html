@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-{% load static %}
-<html lang="en">
+{% load static custom_i18n %}
+<html lang="{% current_language_code %}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,93 +12,94 @@
 <body class="marketing-page">
   <header class="nav"><div class="wrap bar">
     <a class="logo" href="/"><span>Mo</span>Firms</a>
+    {% include "farmers/_lang_switch.html" %}
     <nav id="menu" aria-label="Main">
-      <a href="/">Home</a>
-      <a href="/pricing/">Pricing</a>
-      <a href="/checkout/">Checkout</a>
-      <a class="btn sm" href="/portal/register/">Open registration</a>
+      <a href="/">{% t 'pages.nav.home' %}</a>
+      <a href="/pricing/">{% t 'pages.nav.pricing' %}</a>
+      <a href="/checkout/">{% t 'pages.nav.checkout' %}</a>
+      <a class="btn sm" href="/portal/register/">{% t 'pages.nav.open_registration' %}</a>
     </nav>
   </div></header>
 
   <main>
     <section class="wrap onboarding-hero">
-      <p class="eyebrow">Trust-first onboarding</p>
-      <h1>From first application to verified support.</h1>
-      <p class="lead">We keep the process simple and credible: clear application, proof, staff review, and a recommended service package. This protects both the client and the platform.</p>
+      <p class="eyebrow">{% t 'pages.onboarding.eyebrow' %}</p>
+      <h1>{% t 'pages.onboarding.title' %}</h1>
+      <p class="lead">{% t 'pages.onboarding.lead' %}</p>
     </section>
 
     <section class="wrap flow-section">
       <div class="flow-grid">
         <article class="flow-step card">
           <span class="step-number">01</span>
-          <h3>Create your profile</h3>
-          <p>Tell us about the farm, enterprise, location, goals, and the service you need. Keep it practical and honest.</p>
+          <h3>{% t 'pages.onboarding.step1_title' %}</h3>
+          <p>{% t 'pages.onboarding.step1_body' %}</p>
         </article>
         <article class="flow-step card">
           <span class="step-number">02</span>
-          <h3>Upload evidence</h3>
-          <p>Provide a government ID, business document, or farm evidence. Separate document consent must be given before files are accepted.</p>
+          <h3>{% t 'pages.onboarding.step2_title' %}</h3>
+          <p>{% t 'pages.onboarding.step2_body' %}</p>
         </article>
         <article class="flow-step card">
           <span class="step-number">03</span>
-          <h3>Staff verification</h3>
-          <p>MoFirms reviews the application and checks that the details match the stated business or farm context.</p>
+          <h3>{% t 'pages.onboarding.step3_title' %}</h3>
+          <p>{% t 'pages.onboarding.step3_body' %}</p>
         </article>
         <article class="flow-step card">
           <span class="step-number">04</span>
-          <h3>Choose a package</h3>
-          <p>Once approved, the client selects the advisory plan, onboarding package, or enterprise support option.</p>
+          <h3>{% t 'pages.onboarding.step4_title' %}</h3>
+          <p>{% t 'pages.onboarding.step4_body' %}</p>
         </article>
         <article class="flow-step card">
           <span class="step-number">05</span>
-          <h3>Pay and proceed</h3>
-          <p>Payment is confirmed before work begins, and each engagement has a clear scope, timeline, and support plan.</p>
+          <h3>{% t 'pages.onboarding.step5_title' %}</h3>
+          <p>{% t 'pages.onboarding.step5_body' %}</p>
         </article>
       </div>
     </section>
 
     <section class="wrap trust-section alt-box">
       <div class="trust-copy">
-        <p class="eyebrow">Why this model works</p>
-        <h2>Trust is the product.</h2>
-        <p>MoFirms is not a quick-signup marketplace. It is a trusted advisory and referral platform for real farmers and enterprises. Verification reduces fraud, improves follow-through, and allows staff to focus on higher-value support.</p>
+        <p class="eyebrow">{% t 'pages.onboarding.trust_eyebrow' %}</p>
+        <h2>{% t 'pages.onboarding.trust_title' %}</h2>
+        <p>{% t 'pages.onboarding.trust_body' %}</p>
       </div>
       <ul class="checklist trust-list">
-        <li>Verified identity checks</li>
-        <li>Document consent and retention controls</li>
-        <li>No fake funding promises</li>
-        <li>Clear package pricing and scope</li>
-        <li>Staff-led review before work begins</li>
+        <li>{% t 'pages.onboarding.trust_li1' %}</li>
+        <li>{% t 'pages.onboarding.trust_li2' %}</li>
+        <li>{% t 'pages.onboarding.trust_li3' %}</li>
+        <li>{% t 'pages.onboarding.trust_li4' %}</li>
+        <li>{% t 'pages.onboarding.trust_li5' %}</li>
       </ul>
     </section>
 
     <section class="wrap support-section">
-      <h2>Client journey after approval</h2>
+      <h2>{% t 'pages.onboarding.journey_title' %}</h2>
       <div class="journey-grid">
         <div class="card">
-          <h3>Farmer journey</h3>
+          <h3>{% t 'pages.onboarding.farmer_journey_title' %}</h3>
           <ul class="checklist">
-            <li>Register farm or group details</li>
-            <li>Upload evidence and consent</li>
-            <li>Receive a plan recommendation</li>
-            <li>Pay for the selected advisory package</li>
-            <li>Receive practical support with follow-up</li>
+            <li>{% t 'pages.onboarding.farmer_li1' %}</li>
+            <li>{% t 'pages.onboarding.farmer_li2' %}</li>
+            <li>{% t 'pages.onboarding.farmer_li3' %}</li>
+            <li>{% t 'pages.onboarding.farmer_li4' %}</li>
+            <li>{% t 'pages.onboarding.farmer_li5' %}</li>
           </ul>
         </div>
         <div class="card">
-          <h3>Entrepreneur journey</h3>
+          <h3>{% t 'pages.onboarding.entrepreneur_journey_title' %}</h3>
           <ul class="checklist">
-            <li>Describe the enterprise and objective</li>
-            <li>Confirm business documentation</li>
-            <li>Review cash flow, opportunity, and risk</li>
-            <li>Choose premium advisory support</li>
-            <li>Implement the agreed action plan</li>
+            <li>{% t 'pages.onboarding.entrepreneur_li1' %}</li>
+            <li>{% t 'pages.onboarding.entrepreneur_li2' %}</li>
+            <li>{% t 'pages.onboarding.entrepreneur_li3' %}</li>
+            <li>{% t 'pages.onboarding.entrepreneur_li4' %}</li>
+            <li>{% t 'pages.onboarding.entrepreneur_li5' %}</li>
           </ul>
         </div>
       </div>
       <div class="section-cta">
-        <a class="btn" href="/pricing/">See pricing</a>
-        <a class="btn ghost" href="/portal/register/">Start registration</a>
+        <a class="btn" href="/pricing/">{% t 'pages.onboarding.see_pricing' %}</a>
+        <a class="btn ghost" href="/portal/register/">{% t 'pages.onboarding.start_registration' %}</a>
       </div>
     </section>
   </main>

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-{% load static humanize %}
-<html lang="en">
+{% load static humanize custom_i18n %}
+<html lang="{% current_language_code %}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,14 +11,15 @@
 <body class="marketing-page">
   <header class="nav"><div class="wrap bar">
     <a class="logo" href="/"><span>Mo</span>Firms</a>
-    <nav id="menu" aria-label="Main"><a href="/">Home</a><a href="/pricing/">Pricing</a><a href="/onboarding/">Onboarding</a></nav>
+    {% include "farmers/_lang_switch.html" %}
+    <nav id="menu" aria-label="Main"><a href="/">{% t 'pages.nav.home' %}</a><a href="/pricing/">{% t 'pages.nav.pricing' %}</a><a href="/onboarding/">{% t 'pages.nav.onboarding' %}</a></nav>
   </div></header>
   <main class="wrap onboarding-hero">
     <section class="card">
-      <p class="eyebrow">Secure M-PESA checkout</p>
-      <h1>Payments are currently invitation-only</h1>
-      <p class="lead">MoFirms accepts online payments only after a farmer or entrepreneur profile has been verified, a private beta application has been approved, and the package scope has been confirmed.</p>
-      <h2>Available packages</h2>
+      <p class="eyebrow">{% t 'pages.checkout.eyebrow' %}</p>
+      <h1>{% t 'pages.checkout.title' %}</h1>
+      <p class="lead">{% t 'pages.checkout.lead' %}</p>
+      <h2>{% t 'pages.checkout.available_packages' %}</h2>
       <div class="plan-grid pricing-grid">
         {% for plan in plans %}
           <article class="plan-card pricing-card">
@@ -27,14 +28,14 @@
             <p class="plan-caption">{{ plan.tagline }}</p>
           </article>
         {% empty %}
-          <p>Packages are not currently available.</p>
+          <p>{% t 'pages.checkout.no_packages' %}</p>
         {% endfor %}
       </div>
       <div class="section-cta">
-        <a class="btn" href="/portal/register/">Register for staff review</a>
-        <a class="btn ghost" href="/pricing/">View package details</a>
+        <a class="btn" href="/portal/register/">{% t 'pages.checkout.register_cta' %}</a>
+        <a class="btn ghost" href="/pricing/">{% t 'pages.checkout.view_packages_cta' %}</a>
       </div>
-      <p class="note">This page does not collect payment details. MoFirms will never ask for your M-PESA PIN or one-time security code.</p>
+      <p class="note">{% t 'pages.checkout.note' %}</p>
     </section>
   </main>
 </body>

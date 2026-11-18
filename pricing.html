@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-{% load static humanize %}
-<html lang="en">
+{% load static humanize custom_i18n %}
+<html lang="{% current_language_code %}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,32 +12,33 @@
 <body class="marketing-page">
   <header class="nav"><div class="wrap bar">
     <a class="logo" href="/"><span>Mo</span>Firms</a>
+    {% include "farmers/_lang_switch.html" %}
     <nav id="menu" aria-label="Main">
-      <a href="/">Home</a>
-      <a href="/onboarding/">Onboarding</a>
-      <a href="/checkout/">Checkout</a>
-      <a class="btn sm" href="#contact">Book a consult</a>
+      <a href="/">{% t 'pages.nav.home' %}</a>
+      <a href="/onboarding/">{% t 'pages.nav.onboarding' %}</a>
+      <a href="/checkout/">{% t 'pages.nav.checkout' %}</a>
+      <a class="btn sm" href="#contact">{% t 'pages.nav.book_consult' %}</a>
     </nav>
   </div></header>
 
   <main>
     <section class="pricing-hero wrap">
       <div class="pricing-hero-copy">
-        <p class="eyebrow">Simple pricing</p>
-        <h1>Clear packages for farmers and entrepreneurs.</h1>
-        <p class="lead">MoFirms sells trusted advisory, verification, and implementation support—not hype-driven promises. Every plan includes a staff review, practical planning, and a clarified scope before work begins.</p>
+        <p class="eyebrow">{% t 'pages.pricing.eyebrow' %}</p>
+        <h1>{% t 'pages.pricing.title' %}</h1>
+        <p class="lead">{% t 'pages.pricing.lead' %}</p>
         <div class="cta-inline">
-          <a class="btn" href="/onboarding/">Start onboarding</a>
-          <a class="btn ghost" href="#pricing-grid">Compare packages</a>
+          <a class="btn" href="/onboarding/">{% t 'pages.pricing.start_onboarding' %}</a>
+          <a class="btn ghost" href="#pricing-grid">{% t 'pages.pricing.compare_packages' %}</a>
         </div>
       </div>
       <div class="trust-box">
-        <h3>What clients get</h3>
+        <h3>{% t 'pages.pricing.what_clients_get' %}</h3>
         <ul>
-          <li>Verified onboarding review</li>
-          <li>Scope confirmation before work starts</li>
-          <li>Practical farm or business planning</li>
-          <li>Trackable staff support</li>
+          <li>{% t 'pages.pricing.trust_li1' %}</li>
+          <li>{% t 'pages.pricing.trust_li2' %}</li>
+          <li>{% t 'pages.pricing.trust_li3' %}</li>
+          <li>{% t 'pages.pricing.trust_li4' %}</li>
         </ul>
       </div>
     </section>
@@ -52,39 +53,39 @@
             <div class="plan-price">KSh {{ plan.price|floatformat:0|intcomma }}</div>
             <p class="plan-caption">{{ plan.tagline }}</p>
             <ul class="checklist">{% for feature in plan.features %}<li>{{ feature }}</li>{% endfor %}</ul>
-            <a class="btn{% if forloop.counter != 2 %} ghost{% endif %}" href="/onboarding/">Apply for this package</a>
+            <a class="btn{% if forloop.counter != 2 %} ghost{% endif %}" href="/onboarding/">{% t 'pages.pricing.apply_package' %}</a>
           </article>
         {% endfor %}
       </div>
       {% else %}
-        <p>No packages are currently available. Contact MoFirms for a tailored scope.</p>
+        <p>{% t 'pages.pricing.no_packages' %}</p>
       {% endif %}
     </section>
 
     <section class="wrap comparison-section">
-      <h2>Scope before payment</h2>
-      <p>Packages are maintained by MoFirms staff. Confirm the deliverables, exclusions, timeline and total fee in writing before payment. Only approved private-beta members receive the M-PESA checkout link.</p>
+      <h2>{% t 'pages.pricing.scope_title' %}</h2>
+      <p>{% t 'pages.pricing.scope_body' %}</p>
     </section>
 
     <section class="wrap faq-section" id="contact">
-      <h2>Pricing policy</h2>
+      <h2>{% t 'pages.pricing.policy_title' %}</h2>
       <div class="faq-grid">
         <article class="card faq-item">
-          <h3>Do plans guarantee funding?</h3>
-          <p>No. MoFirms advises and prepares plans; it does not provide loans, investment guarantees, or automatic funding decisions.</p>
+          <h3>{% t 'pages.pricing.faq1_q' %}</h3>
+          <p>{% t 'pages.pricing.faq1_a' %}</p>
         </article>
         <article class="card faq-item">
-          <h3>Can I pay later?</h3>
-          <p>Payment requests are currently limited to approved private-beta members using M-PESA STK Push. Contact MoFirms to discuss other arrangements before accepting a quote.</p>
+          <h3>{% t 'pages.pricing.faq2_q' %}</h3>
+          <p>{% t 'pages.pricing.faq2_a' %}</p>
         </article>
         <article class="card faq-item">
-          <h3>Is there a verification fee?</h3>
-          <p>There is no standalone paid verification badge. Each package’s price and scope are shown before payment.</p>
+          <h3>{% t 'pages.pricing.faq3_q' %}</h3>
+          <p>{% t 'pages.pricing.faq3_a' %}</p>
         </article>
       </div>
       <div class="section-cta">
-        <a class="btn" href="/portal/register/">Create farmer profile</a>
-        <a class="btn ghost" href="mailto:mconceptslimited@gmail.com">Talk to MoFirms</a>
+        <a class="btn" href="/portal/register/">{% t 'pages.pricing.create_profile' %}</a>
+        <a class="btn ghost" href="mailto:mconceptslimited@gmail.com">{% t 'pages.pricing.talk_to_mofirms' %}</a>
       </div>
     </section>
   </main>
@@ -94,14 +95,14 @@
       <div class="footer-main">
         <div class="footer-brand">
           <a class="footer-logo" href="/"><span>Mo</span>Firms</a>
-          <p>Practical agribusiness and enterprise advisory for farmers, entrepreneurs and organisations in Kenya.</p>
+          <p>{% t 'pages.pricing.footer_tagline' %}</p>
         </div>
         <nav class="footer-links" aria-label="Footer navigation">
-          <h2>Explore</h2>
-          <a href="/">Home</a>
-          <a href="/onboarding/">Onboarding</a>
-          <a href="/checkout/">Checkout</a>
-          <a href="/portal/register/">Farmer registration</a>
+          <h2>{% t 'pages.pricing.footer_explore' %}</h2>
+          <a href="/">{% t 'pages.nav.home' %}</a>
+          <a href="/onboarding/">{% t 'pages.nav.onboarding' %}</a>
+          <a href="/checkout/">{% t 'pages.nav.checkout' %}</a>
+          <a href="/portal/register/">{% t 'pages.pricing.footer_farmer_registration' %}</a>
         </nav>
       </div>
     </div>
