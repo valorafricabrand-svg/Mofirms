@@ -273,7 +273,14 @@
     <p>{% t 'home.projects.vofa_body' %}</p>
     <p class="project-context-note"><b>{% t 'home.projects.seedling_label' %}</b> {% t 'home.projects.seedling_body' %}</p>
   </aside>
-  <div class="grid" id="projGrid"></div>
+  <div class="cluster-controls" role="group" aria-label="{% t 'home.projects.project_controls_label' %}">
+    <button class="cluster-arrow" id="projectsPrevious" type="button" aria-label="{% t 'home.projects.project_previous' %}">←</button>
+    <button class="cluster-arrow" id="projectsNext" type="button" aria-label="{% t 'home.projects.project_next' %}">→</button>
+  </div>
+  <div class="cluster-viewport" id="projectsViewport" role="region" aria-label="{% t 'home.projects.project_region_label' %}" tabindex="0">
+    <div class="cluster-set" id="projGrid"></div>
+  </div>
+  <p class="cluster-hint">{% t 'home.projects.project_hint' %}</p>
   <div class="cluster-intro">
     <h3>{% t 'home.projects.clusters_title' %}</h3>
     <p class="sub">{% t 'home.projects.clusters_sub' %}</p>

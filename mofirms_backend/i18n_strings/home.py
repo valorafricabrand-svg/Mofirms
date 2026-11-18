@@ -570,6 +570,14 @@ STRINGS = {
             "zinaonyeshwa kwenye kila kadi."
         ),
     },
+    "home.projects.project_controls_label": {"en": "Project controls", "sw": "Vidhibiti vya miradi"},
+    "home.projects.project_previous": {"en": "Show previous projects", "sw": "Onyesha miradi iliyotangulia"},
+    "home.projects.project_next": {"en": "Show next projects", "sw": "Onyesha miradi inayofuata"},
+    "home.projects.project_region_label": {"en": "MoFirms project collaborations", "sw": "Ushirikiano wa miradi ya MoFirms"},
+    "home.projects.project_hint": {
+        "en": "Use the arrows, swipe or scroll to browse every project.",
+        "sw": "Tumia mishale, telezesha kidole, au sogeza kuangalia kila mradi.",
+    },
     "home.projects.cluster_controls_label": {"en": "Project cluster controls", "sw": "Vidhibiti vya makundi ya miradi"},
     "home.projects.cluster_previous": {"en": "Show previous project clusters", "sw": "Onyesha makundi yaliyotangulia"},
     "home.projects.cluster_next": {"en": "Show next project clusters", "sw": "Onyesha makundi yanayofuata"},
