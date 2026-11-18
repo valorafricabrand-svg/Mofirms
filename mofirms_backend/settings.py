@@ -222,9 +222,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash").strip()
 GEMINI_FALLBACK_MODELS = [
     model.strip()
-    for model in os.environ.get(
-        "GEMINI_FALLBACK_MODELS", "gemini-flash-latest,gemini-2.5-flash"
-    ).split(",")
+    for model in os.environ.get("GEMINI_FALLBACK_MODELS", "").split(",")
     if model.strip()
 ]
 ASSISTANT_RATE_LIMIT = 20
