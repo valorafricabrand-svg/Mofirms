@@ -340,12 +340,12 @@
 <section id="contact" class="wrap two contact-section">
   <div><h2>{% t 'home.contact.title' %}</h2>
   <p>{% t 'home.contact.body' %}</p>
-  <p><b>{% t 'home.contact.email_label' %}</b> <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a></p>
+  <p><b>{% t 'home.contact.email_label' %}</b> <a href="mailto:info@mofirm.co.ke">info@mofirm.co.ke</a></p>
   <p><b>{% t 'home.contact.call_label' %}</b> <a href="tel:+254140949415">+254 140 949 415</a></p>
   <p><a class="btn whatsapp-link" href="https://wa.me/254140949415?text=Hello%20MoFirms%2C%20I%20am%20a%20farmer%20and%20have%20an%20enquiry." target="_blank" rel="noopener noreferrer">{% t 'home.contact.whatsapp_chat' %}</a></p>
   <p class="note">{% t 'home.contact.whatsapp_note' %} <a href="/portal/register/">{% t 'home.contact.whatsapp_note_link' %}</a>.</p></div>
   <form class="card contact-form" id="form" method="post" action="{% url 'consultation_lead' %}">
-    {% if not consultation_enabled %}<p class="note" role="status">{% t 'home.contact.demo_notice' %} <a href="mailto:mconceptslimited@gmail.com">{% t 'home.contact.demo_notice_link' %}</a> {% t 'home.contact.demo_notice_suffix' %}</p>{% endif %}
+    {% if not consultation_enabled %}<p class="note" role="status">{% t 'home.contact.demo_notice' %} <a href="mailto:info@mofirm.co.ke">{% t 'home.contact.demo_notice_link' %}</a> {% t 'home.contact.demo_notice_suffix' %}</p>{% endif %}
     <fieldset {% if not consultation_enabled %}disabled{% endif %}>
     {% csrf_token %}
     {{ consultation_form.website }}
@@ -402,7 +402,8 @@
       <div class="footer-brand">
         <a class="footer-logo" href="#top" aria-label="{% t 'home.footer.back_to_top_aria' %}"><span>Mo</span>Firms</a>
         <p>{% t 'home.footer.tagline' %}</p>
-        <a class="footer-email" href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a>
+        <a class="footer-email" href="mailto:info@mofirm.co.ke">info@mofirm.co.ke</a>
+        <a class="footer-email" href="tel:+254140949415">+254 140 949 415</a>
       </div>
       <nav class="footer-links" aria-label="Explore MoFirms">
         <h2>{% t 'home.footer.explore_heading' %}</h2>
@@ -433,10 +434,10 @@
       <p>© <span id="yr"></span> {% t 'home.footer.copyright' %}</p>
       <div class="footer-legal">
         <button type="button" id="pv" aria-expanded="false" aria-controls="privacy">{% t 'home.footer.privacy_notice_button' %}</button>
-        <a href="mailto:mconceptslimited@gmail.com">{% t 'home.footer.contact_link' %}</a>
+        <a href="mailto:info@mofirm.co.ke">{% t 'home.footer.contact_link' %}</a>
       </div>
     </div>
-    <div id="privacy" hidden class="footer-privacy">{% t 'home.footer.privacy_body' %} <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a></div>
+    <div id="privacy" hidden class="footer-privacy">{% t 'home.footer.privacy_body' %} <a href="mailto:info@mofirm.co.ke">info@mofirm.co.ke</a></div>
   </div>
 </footer>
 <a class="whatsapp-float" href="https://wa.me/254140949415?text=Hello%20MoFirms%2C%20I%20am%20a%20farmer%20and%20have%20an%20enquiry." target="_blank" rel="noopener noreferrer" aria-label="{% t 'home.whatsapp_float_aria' %}">{% t 'home.whatsapp_float_text' %}</a>

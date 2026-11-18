@@ -168,7 +168,7 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 2_500_000
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "webmaster@localhost")
 MOFIRMS_CONTACT_EMAIL = os.environ.get(
-    "MOFIRMS_CONTACT_EMAIL", "mconceptslimited@gmail.com"
+    "MOFIRMS_CONTACT_EMAIL", "info@mofirm.co.ke"
 )
 MPESA_ENABLED = os.environ.get("MPESA_ENABLED", "True").lower() in {"1", "true", "yes"}
 LOGIN_URL = "/smart-hasibu/login/"
