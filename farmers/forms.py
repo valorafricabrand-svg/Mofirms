@@ -1166,7 +1166,7 @@ class ResearchStudyForm(forms.ModelForm):
             ),
         }
         help_texts = {
-            "target_sample_size": "A planning estimate only; Portal E does not promise a response count.",
+            "target_sample_size": "A planning estimate only; MoFirms does not promise a response count.",
             "respondent_consent_text": (
                 "Explain purpose, voluntary participation, expected time, use and retention. "
                 "Do not promise anonymity beyond what the study actually provides."
