@@ -1,3 +1,4 @@
+import csv
 import hashlib
 import logging
 from datetime import datetime
@@ -6,11 +7,13 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import PasswordResetView
 from django.core.cache import cache
+from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import Coalesce
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
@@ -113,6 +116,18 @@ def signout(request):
     return redirect("smart_hasibu:login")
 
 
+class RateLimitedPasswordResetView(PasswordResetView):
+    def post(self, request, *args, **kwargs):
+        if _rate_limit_reached(request, "password-reset"):
+            return render(
+                request,
+                self.template_name,
+                {"form": self.form_class(), "rate_limited": True},
+                status=429,
+            )
+        return super().post(request, *args, **kwargs)
+
+
 @login_required(login_url="smart_hasibu:login")
 @require_http_methods(["GET", "POST"])
 def dashboard(request):
@@ -153,7 +168,9 @@ def dashboard(request):
     )
     display_entries = entries.annotate(
         settled=Coalesce(Sum("settlements__amount"), Decimal("0.00"))
-    )
+    ).order_by("-occurred_on", "-created_at")
+    paginator = Paginator(display_entries, 50)
+    entries_page = paginator.get_page(request.GET.get("page", "1"))
     credit_entries = LedgerEntry.objects.filter(
         enterprise__owner=request.user,
         is_credit=True,
@@ -236,7 +253,7 @@ def dashboard(request):
         "smart_hasibu/dashboard.html",
         {
             "month": month_value,
-            "entries": display_entries[:100],
+            "entries": entries_page,
             "enterprises": FarmEnterprise.objects.filter(owner=request.user),
             "selected_enterprise": selected_enterprise,
             "income_total": summary["income"],
@@ -250,3 +267,131 @@ def dashboard(request):
             "settlement_form": settlement_form,
         },
     )
+
+
+@login_required(login_url="smart_hasibu:login")
+@require_http_methods(["GET", "POST"])
+def entry_edit(request, pk):
+    entry = get_object_or_404(LedgerEntry, pk=pk, enterprise__owner=request.user)
+    if request.method == "POST":
+        form = LedgerEntryForm(request.POST, instance=entry, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Entry updated.")
+            return redirect("smart_hasibu:dashboard")
+    else:
+        form = LedgerEntryForm(instance=entry, user=request.user)
+    return render(
+        request, "smart_hasibu/entry_edit.html", {"form": form, "entry": entry}
+    )
+
+
+@login_required(login_url="smart_hasibu:login")
+@require_POST
+def entry_delete(request, pk):
+    entry = get_object_or_404(LedgerEntry, pk=pk, enterprise__owner=request.user)
+    entry.delete()
+    messages.success(request, "Entry deleted.")
+    return redirect("smart_hasibu:dashboard")
+
+
+@login_required(login_url="smart_hasibu:login")
+@require_http_methods(["GET", "POST"])
+def enterprise_edit(request, pk):
+    enterprise = get_object_or_404(FarmEnterprise, pk=pk, owner=request.user)
+    if request.method == "POST":
+        form = FarmEnterpriseForm(request.POST, instance=enterprise)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    form.save()
+            except IntegrityError:
+                form.add_error(
+                    "name", "You already have an enterprise with this name."
+                )
+            else:
+                messages.success(request, "Enterprise updated.")
+                return redirect("smart_hasibu:dashboard")
+    else:
+        form = FarmEnterpriseForm(instance=enterprise)
+    return render(
+        request,
+        "smart_hasibu/enterprise_edit.html",
+        {"form": form, "enterprise": enterprise},
+    )
+
+
+@login_required(login_url="smart_hasibu:login")
+@require_POST
+def enterprise_delete(request, pk):
+    enterprise = get_object_or_404(FarmEnterprise, pk=pk, owner=request.user)
+    if enterprise.entries.exists():
+        messages.error(
+            request,
+            "This enterprise still has recorded entries. Delete or move its "
+            "entries before removing the enterprise.",
+        )
+    else:
+        enterprise.delete()
+        messages.success(request, "Enterprise deleted.")
+    return redirect("smart_hasibu:dashboard")
+
+
+@login_required(login_url="smart_hasibu:login")
+@require_http_methods(["GET"])
+def export_entries(request):
+    month_value = request.GET.get("month", timezone.localdate().strftime("%Y-%m"))
+    bounds = _month_bounds(month_value)
+    if not bounds:
+        return HttpResponseBadRequest("Choose a valid month in YYYY-MM format.")
+    start_date, end_date = bounds
+    entries = LedgerEntry.objects.filter(
+        enterprise__owner=request.user,
+        occurred_on__gte=start_date,
+        occurred_on__lt=end_date,
+    ).select_related("enterprise")
+
+    enterprise_value = request.GET.get("enterprise", "")
+    if enterprise_value:
+        try:
+            enterprise_id = int(enterprise_value)
+        except (TypeError, ValueError):
+            return HttpResponseBadRequest("Choose a valid enterprise.")
+        get_object_or_404(FarmEnterprise, pk=enterprise_id, owner=request.user)
+        entries = entries.filter(enterprise_id=enterprise_id)
+
+    entries = entries.annotate(
+        settled=Coalesce(Sum("settlements__amount"), Decimal("0.00"))
+    ).order_by("occurred_on", "pk")
+
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = (
+        f'attachment; filename="smart-hasibu-{month_value}.csv"'
+    )
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "Date", "Enterprise", "Type", "Category", "Description",
+            "Counterparty", "Amount (KSh)", "Credit", "Outstanding (KSh)",
+        ]
+    )
+    for entry in entries:
+        outstanding = (
+            max(entry.amount - entry.settled, Decimal("0.00"))
+            if entry.is_credit
+            else Decimal("0.00")
+        )
+        writer.writerow(
+            [
+                entry.occurred_on.isoformat(),
+                entry.enterprise.name,
+                entry.get_entry_type_display(),
+                entry.get_category_display(),
+                entry.description,
+                entry.counterparty,
+                entry.amount,
+                "Yes" if entry.is_credit else "No",
+                outstanding,
+            ]
+        )
+    return response

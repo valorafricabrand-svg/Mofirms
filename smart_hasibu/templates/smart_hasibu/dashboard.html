@@ -14,11 +14,12 @@
       <input id="id_month" type="month" name="month" value="{{ month }}">
       {% if selected_enterprise %}<input type="hidden" name="enterprise" value="{{ selected_enterprise.pk }}">{% endif %}
       <button class="opt" type="submit">View</button>
+      <a class="opt" href="{% url 'smart_hasibu:export_entries' %}?month={{ month }}{% if selected_enterprise %}&enterprise={{ selected_enterprise.pk }}{% endif %}">Export CSV</a>
     </form>
   </div>
 
-  <aside class="notice notice-warning">
-    <p>Pilot account: use synthetic information only. These totals are based on the entries you record; they are not audited accounts, profit forecasts, or financial advice.</p>
+  <aside class="notice">
+    <p>These totals are based on the entries you record; they are not audited accounts, profit forecasts, or financial advice.</p>
   </aside>
 
   <form method="get" class="sh-filter">
@@ -78,6 +79,21 @@
         {% include "farmers/field.html" with field=enterprise_form.category %}
         <button class="opt" type="submit">Add enterprise</button>
       </form>
+      {% if enterprises %}
+      <ul class="sh-enterprise-list">
+        {% for enterprise in enterprises %}
+        <li>
+          <span>{{ enterprise.name }} <small>{{ enterprise.get_category_display }}</small></span>
+          <span class="sh-row-actions">
+            <a class="opt" href="{% url 'smart_hasibu:enterprise_edit' enterprise.pk %}">Rename</a>
+            <form method="post" action="{% url 'smart_hasibu:enterprise_delete' enterprise.pk %}" onsubmit="return confirm('Delete this enterprise? This only works if it has no recorded entries.');">
+              {% csrf_token %}<button class="opt" type="submit">Delete</button>
+            </form>
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
       <h2 class="sh-section-gap">Record a credit payment</h2>
       {% if settlement_form.non_field_errors %}<div class="err-box" role="alert">{{ settlement_form.non_field_errors }}</div>{% endif %}
       <form method="post">
@@ -95,7 +111,7 @@
     <h2>Entries · {{ month }}</h2>
     {% if entries %}
       <div class="sh-table-wrap"><table class="sh-table">
-        <thead><tr><th>Date</th><th>Enterprise</th><th>Type</th><th>Details</th><th>Amount</th><th>Credit balance</th></tr></thead>
+        <thead><tr><th>Date</th><th>Enterprise</th><th>Type</th><th>Details</th><th>Amount</th><th>Credit balance</th><th>Actions</th></tr></thead>
         <tbody>
         {% for entry in entries %}
           <tr>
@@ -105,11 +121,27 @@
             <td>{{ entry.description }}{% if entry.counterparty %}<small>{{ entry.counterparty }}</small>{% endif %}</td>
             <td>KSh {{ entry.amount|floatformat:2|intcomma }}</td>
             <td>{% if entry.is_credit %}KSh {{ entry.amount_outstanding|floatformat:2|intcomma }}{% else %}—{% endif %}</td>
+            <td class="sh-row-actions">
+              <a class="opt" href="{% url 'smart_hasibu:entry_edit' entry.pk %}">Edit</a>
+              <form method="post" action="{% url 'smart_hasibu:entry_delete' entry.pk %}" onsubmit="return confirm('Delete this entry? This cannot be undone.');">
+                {% csrf_token %}<button class="opt" type="submit">Delete</button>
+              </form>
+            </td>
           </tr>
         {% endfor %}
         </tbody>
       </table></div>
-      {% if entry_count > 100 %}<p class="form-hint">Showing the latest 100 entries of {{ entry_count }} for this month.</p>{% endif %}
+      {% if entries.has_other_pages %}
+      <nav class="sh-pagination" aria-label="Entry pages">
+        {% if entries.has_previous %}
+          <a class="opt" href="?month={{ month }}{% if selected_enterprise %}&enterprise={{ selected_enterprise.pk }}{% endif %}&page={{ entries.previous_page_number }}">← Newer</a>
+        {% endif %}
+        <span>Page {{ entries.number }} of {{ entries.paginator.num_pages }} · {{ entry_count }} entries</span>
+        {% if entries.has_next %}
+          <a class="opt" href="?month={{ month }}{% if selected_enterprise %}&enterprise={{ selected_enterprise.pk }}{% endif %}&page={{ entries.next_page_number }}">Older →</a>
+        {% endif %}
+      </nav>
+      {% endif %}
     {% else %}
       <p>No entries for this month yet. Add the first sale or cost above.</p>
     {% endif %}

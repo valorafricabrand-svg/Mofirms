@@ -2,7 +2,7 @@
 {% block title %}Sign in to SmartHasibu | MoFirms{% endblock %}
 {% block content %}
 <section class="wrap registration sh-auth">
-  <p class="eyebrow">SmartHasibu · Farmer bookkeeping pilot</p>
+  <p class="eyebrow">SmartHasibu · Farmer bookkeeping</p>
   <div class="card registration-form">
     <h1>Sign in to your cashbook</h1>
     {% if rate_limited %}<div class="err-box" role="alert">Too many sign-in attempts. Please wait before trying again.</div>{% endif %}
@@ -14,7 +14,8 @@
       <input id="id_password" type="password" name="password" autocomplete="current-password" required>
       <button class="btn" type="submit">Sign in</button>
     </form>
-    <p>New to SmartHasibu? <a href="{% url 'smart_hasibu:signup' %}">Create a pilot account</a></p>
+    <p><a href="{% url 'smart_hasibu:password_reset' %}">Forgot your password?</a></p>
+    <p>New to SmartHasibu? <a href="{% url 'smart_hasibu:signup' %}">Create an account</a></p>
   </div>
 </section>
 {% endblock %}

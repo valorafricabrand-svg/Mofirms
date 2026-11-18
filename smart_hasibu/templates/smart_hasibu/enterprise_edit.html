@@ -1,0 +1,18 @@
+{% extends "smart_hasibu/base.html" %}
+{% block title %}Edit enterprise | SmartHasibu{% endblock %}
+{% block content %}
+<section class="wrap registration sh-auth">
+  <p class="eyebrow">SmartHasibu · Edit enterprise</p>
+  <div class="card registration-form">
+    <h1>Edit “{{ enterprise.name }}”</h1>
+    {% if form.non_field_errors %}<div class="err-box" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    <form method="post">
+      {% csrf_token %}
+      {% include "farmers/field.html" with field=form.name %}
+      {% include "farmers/field.html" with field=form.category %}
+      <button class="btn" type="submit">Save changes</button>
+    </form>
+    <p><a href="{% url 'smart_hasibu:dashboard' %}">Cancel and go back</a></p>
+  </div>
+</section>
+{% endblock %}

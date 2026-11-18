@@ -1635,7 +1635,7 @@ class ConsultationLead(models.Model):
         TRAINING = "training", "Training"
         PRODUCTS = "products", "Products"
         PROJECT = "project", "Project collaboration"
-        SMART_HASIBU = "smart_hasibu", "SmartHasibu waitlist"
+        SMART_HASIBU = "smart_hasibu", "SmartHasibu support"
         OTHER = "other", "Other"
 
     class Status(models.TextChoices):

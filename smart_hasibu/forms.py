@@ -27,7 +27,7 @@ class FarmerSignupForm(forms.Form):
     )
     consent = forms.BooleanField(
         label=(
-            "I agree to create a private SmartHasibu pilot account. My records are visible "
+            "I agree to create a private SmartHasibu account. My records are visible "
             "to me and authorised support staff only."
         )
     )
@@ -117,6 +117,15 @@ class LedgerEntryForm(forms.ModelForm):
         }
         if entry_type and category and category not in allowed.get(entry_type, set()):
             self.add_error("category", "Choose a category matching income or expense.")
+        amount = cleaned_data.get("amount")
+        if amount is not None and self.instance.pk:
+            settled = self.instance.amount_settled
+            if amount < settled:
+                self.add_error(
+                    "amount",
+                    "The amount cannot be less than the KSh %.2f already recorded "
+                    "as paid against this entry." % settled,
+                )
         return cleaned_data
 
 

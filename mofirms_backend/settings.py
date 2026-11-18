@@ -171,6 +171,38 @@ MOFIRMS_CONTACT_EMAIL = os.environ.get(
     "MOFIRMS_CONTACT_EMAIL", "mconceptslimited@gmail.com"
 )
 MPESA_ENABLED = os.environ.get("MPESA_ENABLED", "True").lower() in {"1", "true", "yes"}
+LOGIN_URL = "/smart-hasibu/login/"
+
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend"
+    if DEBUG
+    else "django.core.mail.backends.smtp.EmailBackend",
+)
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "").strip()
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "").strip()
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "").strip()
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() in {"1", "true", "yes"}
+if (
+    not DEBUG
+    and not DEMO_MODE
+    and EMAIL_BACKEND == "django.core.mail.backends.smtp.EmailBackend"
+):
+    missing_email_settings = [
+        name
+        for name, value in {
+            "EMAIL_HOST": EMAIL_HOST,
+            "EMAIL_HOST_USER": EMAIL_HOST_USER,
+            "EMAIL_HOST_PASSWORD": EMAIL_HOST_PASSWORD,
+        }.items()
+        if not value
+    ]
+    if missing_email_settings:
+        raise ImproperlyConfigured(
+            "Hosted email delivery (needed for SmartHasibu password resets) is "
+            "incomplete: " + ", ".join(missing_email_settings) + "."
+        )
 MPESA_ENVIRONMENT = os.environ.get("MPESA_ENVIRONMENT", "sandbox").strip().lower()
 if MPESA_ENVIRONMENT not in {"sandbox", "production"}:
     raise ImproperlyConfigured("MPESA_ENVIRONMENT must be 'sandbox' or 'production'.")

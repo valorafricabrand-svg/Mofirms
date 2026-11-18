@@ -182,3 +182,200 @@ class SmartHasibuTests(TestCase):
         )
         with self.assertRaises(ValidationError):
             entry.full_clean()
+
+    def test_owner_can_edit_their_own_entry(self):
+        self.client.force_login(self.user)
+        entry = LedgerEntry.objects.create(
+            enterprise=self.enterprise,
+            entry_type=LedgerEntry.EntryType.INCOME,
+            category="sales",
+            amount="100.00",
+            description="Synthetic original sale",
+        )
+
+        response = self.client.post(
+            reverse("smart_hasibu:entry_edit", args=[entry.pk]),
+            {
+                "enterprise": self.enterprise.pk,
+                "entry_type": LedgerEntry.EntryType.INCOME,
+                "category": "sales",
+                "amount": "150.00",
+                "occurred_on": date.today().isoformat(),
+                "description": "Synthetic updated sale",
+                "counterparty": "",
+                "is_credit": "",
+            },
+        )
+
+        self.assertRedirects(response, self.dashboard_url)
+        entry.refresh_from_db()
+        self.assertEqual(entry.amount, Decimal("150.00"))
+        self.assertEqual(entry.description, "Synthetic updated sale")
+
+    def test_cannot_edit_entry_below_amount_already_settled(self):
+        self.client.force_login(self.user)
+        entry = LedgerEntry.objects.create(
+            enterprise=self.enterprise,
+            entry_type=LedgerEntry.EntryType.INCOME,
+            category="sales",
+            amount="500.00",
+            description="Synthetic credit sale",
+            is_credit=True,
+        )
+        CreditSettlement.objects.create(entry=entry, amount="300.00")
+
+        response = self.client.post(
+            reverse("smart_hasibu:entry_edit", args=[entry.pk]),
+            {
+                "enterprise": self.enterprise.pk,
+                "entry_type": LedgerEntry.EntryType.INCOME,
+                "category": "sales",
+                "amount": "200.00",
+                "occurred_on": date.today().isoformat(),
+                "description": "Synthetic credit sale",
+                "counterparty": "",
+                "is_credit": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        entry.refresh_from_db()
+        self.assertEqual(entry.amount, Decimal("500.00"))
+
+    def test_owner_cannot_edit_or_delete_another_users_entry(self):
+        other_user = get_user_model().objects.create_user(
+            username="owner-two@example.test",
+            email="owner-two@example.test",
+            password="Synthetic-Only-Password-123!",
+        )
+        other_enterprise = FarmEnterprise.objects.create(
+            owner=other_user,
+            name="Other owner enterprise",
+            category=FarmEnterprise.Category.CROPS,
+        )
+        other_entry = LedgerEntry.objects.create(
+            enterprise=other_enterprise,
+            entry_type=LedgerEntry.EntryType.INCOME,
+            category="sales",
+            amount="100.00",
+            description="Synthetic other sale",
+        )
+        self.client.force_login(self.user)
+
+        self.assertEqual(
+            self.client.get(
+                reverse("smart_hasibu:entry_edit", args=[other_entry.pk])
+            ).status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.post(
+                reverse("smart_hasibu:entry_delete", args=[other_entry.pk])
+            ).status_code,
+            404,
+        )
+        self.assertTrue(LedgerEntry.objects.filter(pk=other_entry.pk).exists())
+
+    def test_owner_can_delete_their_own_entry(self):
+        self.client.force_login(self.user)
+        entry = LedgerEntry.objects.create(
+            enterprise=self.enterprise,
+            entry_type=LedgerEntry.EntryType.EXPENSE,
+            category="inputs",
+            amount="75.00",
+            description="Synthetic input cost",
+        )
+
+        response = self.client.post(
+            reverse("smart_hasibu:entry_delete", args=[entry.pk])
+        )
+
+        self.assertRedirects(response, self.dashboard_url)
+        self.assertFalse(LedgerEntry.objects.filter(pk=entry.pk).exists())
+
+    def test_enterprise_rename(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("smart_hasibu:enterprise_edit", args=[self.enterprise.pk]),
+            {"name": "Renamed Tomato Plot", "category": FarmEnterprise.Category.CROPS},
+        )
+
+        self.assertRedirects(response, self.dashboard_url)
+        self.enterprise.refresh_from_db()
+        self.assertEqual(self.enterprise.name, "Renamed Tomato Plot")
+
+    def test_enterprise_with_entries_cannot_be_deleted(self):
+        self.client.force_login(self.user)
+        LedgerEntry.objects.create(
+            enterprise=self.enterprise,
+            entry_type=LedgerEntry.EntryType.INCOME,
+            category="sales",
+            amount="50.00",
+            description="Synthetic sale",
+        )
+
+        response = self.client.post(
+            reverse("smart_hasibu:enterprise_delete", args=[self.enterprise.pk])
+        )
+
+        self.assertRedirects(response, self.dashboard_url)
+        self.assertTrue(FarmEnterprise.objects.filter(pk=self.enterprise.pk).exists())
+
+    def test_empty_enterprise_can_be_deleted(self):
+        self.client.force_login(self.user)
+        empty_enterprise = FarmEnterprise.objects.create(
+            owner=self.user,
+            name="Synthetic Empty Enterprise",
+            category=FarmEnterprise.Category.OTHER,
+        )
+
+        response = self.client.post(
+            reverse("smart_hasibu:enterprise_delete", args=[empty_enterprise.pk])
+        )
+
+        self.assertRedirects(response, self.dashboard_url)
+        self.assertFalse(FarmEnterprise.objects.filter(pk=empty_enterprise.pk).exists())
+
+    def test_export_entries_returns_csv_for_owned_records_only(self):
+        self.client.force_login(self.user)
+        LedgerEntry.objects.create(
+            enterprise=self.enterprise,
+            entry_type=LedgerEntry.EntryType.INCOME,
+            category="sales",
+            amount="321.00",
+            description="Synthetic export sale",
+            occurred_on=date.today(),
+        )
+
+        response = self.client.get(
+            reverse("smart_hasibu:export_entries"),
+            {"month": date.today().strftime("%Y-%m")},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        content = response.content.decode()
+        self.assertIn("Synthetic export sale", content)
+        self.assertIn("321.00", content)
+
+    def test_dashboard_paginates_beyond_fifty_entries(self):
+        self.client.force_login(self.user)
+        LedgerEntry.objects.bulk_create(
+            [
+                LedgerEntry(
+                    enterprise=self.enterprise,
+                    entry_type=LedgerEntry.EntryType.INCOME,
+                    category="sales",
+                    amount="10.00",
+                    description=f"Synthetic bulk sale {i}",
+                )
+                for i in range(60)
+            ]
+        )
+
+        first_page = self.client.get(self.dashboard_url)
+        second_page = self.client.get(self.dashboard_url, {"page": 2})
+
+        self.assertEqual(len(first_page.context["entries"]), 50)
+        self.assertEqual(len(second_page.context["entries"]), 10)
