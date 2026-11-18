@@ -1,18 +1,19 @@
-{% load static %}
+{% load static custom_i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% current_language_code %}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Questionnaire unavailable | MoFirms research</title>
+<title>{% t 'farmers.research_unavailable.title_tag' %}</title>
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
 <main id="main"><section class="wrap registration"><div class="card">
-  <p class="eyebrow">MoFirms · Research questionnaire</p>
-  <h1>This invitation is unavailable</h1>
-  <p>The invitation may have expired, already been used, or the study may have closed. Contact MoFirms if you believe this is an error.</p>
-  <a class="btn" href="/">Return to MoFirms</a>
+  {% include "farmers/_lang_switch.html" %}
+  <p class="eyebrow">{% t 'farmers.research_unavailable.eyebrow' %}</p>
+  <h1>{% t 'farmers.research_unavailable.title' %}</h1>
+  <p>{% t 'farmers.research_unavailable.body' %}</p>
+  <a class="btn" href="/">{% t 'farmers.research_unavailable.return_link' %}</a>
 </div></section></main>
 </body>
 </html>

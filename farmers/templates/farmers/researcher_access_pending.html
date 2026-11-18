@@ -1,6 +1,6 @@
-{% load static %}
+{% load static custom_i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% current_language_code %}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,11 +8,15 @@
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
+<header class="nav"><div class="wrap bar">
+  <a class="logo" href="/"><span>Mo</span>Firms</a>
+  {% include "farmers/_lang_switch.html" %}
+</div></header>
 <main id="main"><section class="wrap registration"><div class="card">
-  <p class="eyebrow">Researcher access</p>
-  <h1>Access is not available</h1>
-  <p>Your researcher account must be manually approved by MoFirms before you can create or view study proposals.</p>
-  <a class="btn" href="{% url 'researcher_login' %}">Return to sign in</a>
+  <p class="eyebrow">{% t 'farmers.researcher_access_pending.eyebrow' %}</p>
+  <h1>{% t 'farmers.researcher_access_pending.title' %}</h1>
+  <p>{% t 'farmers.researcher_access_pending.body' %}</p>
+  <a class="btn" href="{% url 'researcher_login' %}">{% t 'farmers.researcher_access_pending.return_link' %}</a>
 </div></section></main>
 </body>
 </html>

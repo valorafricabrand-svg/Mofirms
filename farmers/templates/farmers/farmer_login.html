@@ -1,6 +1,6 @@
-{% load static %}
+{% load static custom_i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% current_language_code %}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,29 +8,30 @@
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
+<a class="skip" href="#main">{% t 'common.skip_to_content' %}</a>
 <header class="nav"><div class="wrap bar">
   <a class="logo" href="/"><span>Mo</span>Firms</a>
-  <a class="btn sm" href="/">Back to MoFirms</a>
+  {% include "farmers/_lang_switch.html" %}
+  <a class="btn sm" href="/">{% t 'farmers.common.back_to_mofirms' %}</a>
 </div></header>
 <main id="main"><section class="wrap registration">
   <div class="card registration-form">
-    <p class="eyebrow">Farmer account</p>
-    <h1>Sign in</h1>
-    <p>Use the email address and password you set when you created an account during registration. If you registered without creating an account, there is nothing to sign in to yet.</p>
-    {% if form.errors %}<div class="err-box" role="alert">Sign-in failed. Check your email and password.</div>{% endif %}
+    <p class="eyebrow">{% t 'farmers.farmer_login.eyebrow' %}</p>
+    <h1>{% t 'common.sign_in' %}</h1>
+    <p>{% t 'farmers.farmer_login.body' %}</p>
+    {% if form.errors %}<div class="err-box" role="alert">{% t 'err.signin_failed' %}</div>{% endif %}
     <form method="post" novalidate>
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ next }}">
       {% include "farmers/field.html" with field=form.username %}
       {% include "farmers/field.html" with field=form.password %}
-      <button class="btn" type="submit">Sign in</button>
+      <button class="btn" type="submit">{% t 'common.sign_in' %}</button>
     </form>
-    <p><a href="{% url 'register_farmer' %}">Register as a farmer</a></p>
+    <p><a href="{% url 'register_farmer' %}">{% t 'farmers.common.register_as_farmer_link' %}</a></p>
   </div>
 </section></main>
 <footer><div class="wrap">
-  <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
+  <p>© <span id="yr"></span> {% t 'farmers.common.company_name' %} <a href="/">{% t 'farmers.common.main_website_link' %}</a></p>
 </div></footer>
 </body>
 </html>

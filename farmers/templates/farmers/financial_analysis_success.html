@@ -1,25 +1,26 @@
-{% load static %}
+{% load static custom_i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% current_language_code %}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Request received | MoFirms</title>
+<title>{% t 'farmers.financial_analysis_success.title_tag' %}</title>
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
 <header class="nav"><div class="wrap bar">
   <a class="logo" href="/"><span>Mo</span>Firms</a>
+  {% include "farmers/_lang_switch.html" %}
 </div></header>
 <main id="main">
   <section class="wrap registration">
     <div class="card">
-      <p class="eyebrow">Financial analysis and business planning</p>
-      <h1>Your request has been received</h1>
-      <p>Keep this reference for your records: <strong>{{ reference }}</strong></p>
-      <p>A MoFirms staff member will review the request and contact you about the scope, any additional information, and a fee quote. Work does not begin until the scope and quote are agreed.</p>
-      <p>This reference is not a public status link. For questions, contact MoFirms using the contact details on the main website.</p>
-      <a class="btn" href="/">Return to MoFirms</a>
+      <p class="eyebrow">{% t 'farmers.financial_analysis_success.eyebrow' %}</p>
+      <h1>{% t 'farmers.financial_analysis_success.title' %}</h1>
+      <p>{% t 'farmers.financial_analysis_success.reference_prefix' %} <strong>{{ reference }}</strong></p>
+      <p>{% t 'farmers.financial_analysis_success.review_notice' %}</p>
+      <p>{% t 'farmers.financial_analysis_success.contact_notice' %}</p>
+      <a class="btn" href="/">{% t 'farmers.financial_analysis_success.return_link' %}</a>
     </div>
   </section>
 </main>

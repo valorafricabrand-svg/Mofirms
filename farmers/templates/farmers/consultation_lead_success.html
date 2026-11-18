@@ -1,6 +1,6 @@
-{% load static %}
+{% load static custom_i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% current_language_code %}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,15 +10,16 @@
 <body>
 <header class="nav"><div class="wrap bar">
   <a class="logo" href="/"><span>Mo</span>Firms</a>
+  {% include "farmers/_lang_switch.html" %}
 </div></header>
 <main id="main">
   <section class="wrap registration">
     <div class="card">
-      <p class="eyebrow">Consultation request</p>
-      <h1>Thank you. We received your enquiry.</h1>
-      <p>Your reference is <strong>{{ reference }}</strong>. Keep it for your records.</p>
-      <p>A MoFirms staff member will review your enquiry and follow up manually if it is within our service scope. No automated email or SMS has been sent.</p>
-      <a class="btn" href="/">Return to MoFirms</a>
+      <p class="eyebrow">{% t 'farmers.consultation_lead_success.eyebrow' %}</p>
+      <h1>{% t 'farmers.consultation_lead_success.title' %}</h1>
+      <p>{% t 'farmers.consultation_lead_success.reference_prefix' %} <strong>{{ reference }}</strong>{% t 'farmers.consultation_lead_success.reference_suffix' %}</p>
+      <p>{% t 'farmers.consultation_lead_success.body' %}</p>
+      <a class="btn" href="/">{% t 'farmers.consultation_lead_success.return_link' %}</a>
     </div>
   </section>
 </main>

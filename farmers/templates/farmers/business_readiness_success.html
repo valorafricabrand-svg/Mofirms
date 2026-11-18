@@ -1,6 +1,6 @@
-{% load static %}
+{% load static custom_i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% current_language_code %}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,16 +10,17 @@
 <body>
 <header class="nav"><div class="wrap bar">
   <a class="logo" href="/"><span>Mo</span>Firms</a>
+  {% include "farmers/_lang_switch.html" %}
 </div></header>
 <main id="main">
   <section class="wrap registration">
     <div class="card">
-      <p class="eyebrow">Private pilot · Business readiness</p>
-      <h1>Your request has been received</h1>
-      <p>Keep this reference for your records: <strong>{{ reference }}</strong></p>
-      <p>A MoFirms staff member will review your request and contact you about the proposed scope, fee, and timing. Work does not begin until you agree to the scope and quote.</p>
-      <p>This reference is not a public status link. No AI-generated report is delivered automatically.</p>
-      <a class="btn" href="/">Return to MoFirms</a>
+      <p class="eyebrow">{% t 'farmers.business_readiness_success.eyebrow' %}</p>
+      <h1>{% t 'farmers.business_readiness_success.title' %}</h1>
+      <p>{% t 'farmers.business_readiness_success.reference_prefix' %} <strong>{{ reference }}</strong></p>
+      <p>{% t 'farmers.business_readiness_success.body1' %}</p>
+      <p>{% t 'farmers.business_readiness_success.body2' %}</p>
+      <a class="btn" href="/">{% t 'farmers.business_readiness_success.return_link' %}</a>
     </div>
   </section>
 </main>

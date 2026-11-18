@@ -1,12 +1,13 @@
 {% extends "smart_hasibu/base.html" %}
+{% load custom_i18n %}
 {% block title %}Create a SmartHasibu account | MoFirms{% endblock %}
 {% block content %}
 <section class="wrap registration sh-auth">
-  <p class="eyebrow">SmartHasibu · Farmer bookkeeping</p>
+  <p class="eyebrow">{% t 'sh.login.eyebrow' %}</p>
   <div class="card registration-form">
-    <h1>Create your private cashbook</h1>
-    <p>Start recording farm sales, expenses, and credit. Your entries belong to your account and are not shared with buyers or lenders.</p>
-    {% if rate_limited %}<div class="err-box" role="alert">Too many attempts. Please wait before trying again.</div>{% endif %}
+    <h1>{% t 'sh.signup.title' %}</h1>
+    <p>{% t 'sh.signup.subtitle' %}</p>
+    {% if rate_limited %}<div class="err-box" role="alert">{% t 'sh.signup.rate_limited' %}</div>{% endif %}
     {% if form.non_field_errors %}<div class="err-box" role="alert">{{ form.non_field_errors }}</div>{% endif %}
     <form method="post" novalidate>
       {% csrf_token %}
@@ -15,9 +16,9 @@
       {% include "farmers/field.html" with field=form.password1 %}
       {% include "farmers/field.html" with field=form.password2 %}
       {% include "farmers/field.html" with field=form.consent %}
-      <button class="btn" type="submit">Create account</button>
+      <button class="btn" type="submit">{% t 'sh.signup.submit' %}</button>
     </form>
-    <p>Already have an account? <a href="{% url 'smart_hasibu:login' %}">Sign in</a></p>
+    <p>{% t 'sh.signup.have_account_prompt' %} <a href="{% url 'smart_hasibu:login' %}">{% t 'sh.signup.signin_link' %}</a></p>
   </div>
 </section>
 {% endblock %}

@@ -18,6 +18,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
+from farmers.templatetags.custom_i18n import current_lang, translate
 from .forms import (
     CreditSettlementForm,
     FarmerSignupForm,
@@ -68,14 +69,15 @@ def signup(request):
             status=429,
         )
 
-    form = FarmerSignupForm(request.POST or None)
+    lang = current_lang(request)
+    form = FarmerSignupForm(request.POST or None, lang=lang)
     if request.method == "POST" and form.is_valid():
         try:
             with transaction.atomic():
                 user = form.save()
         except IntegrityError:
             logger.exception("Could not create a SmartHasibu farmer account.")
-            form.add_error(None, "The account could not be created. Please try again.")
+            form.add_error(None, translate("err.account_create_failed", lang))
         else:
             login(request, user)
             return redirect("smart_hasibu:dashboard")
@@ -106,7 +108,7 @@ def signin(request):
         if user is not None:
             login(request, user)
             return redirect("smart_hasibu:dashboard")
-        messages.error(request, "Sign-in failed. Check your email and password.")
+        messages.error(request, translate("err.signin_failed", current_lang(request)))
     return render(request, "smart_hasibu/login.html", {"email": request.POST.get("email", "")})
 
 
@@ -131,10 +133,11 @@ class RateLimitedPasswordResetView(PasswordResetView):
 @login_required(login_url="smart_hasibu:login")
 @require_http_methods(["GET", "POST"])
 def dashboard(request):
+    lang = current_lang(request)
     month_value = request.GET.get("month", timezone.localdate().strftime("%Y-%m"))
     bounds = _month_bounds(month_value)
     if not bounds:
-        return HttpResponseBadRequest("Choose a valid month in YYYY-MM format.")
+        return HttpResponseBadRequest(translate("err.invalid_month", lang))
     start_date, end_date = bounds
     entries = LedgerEntry.objects.filter(
         enterprise__owner=request.user,
@@ -147,7 +150,7 @@ def dashboard(request):
         try:
             enterprise_id = int(enterprise_value)
         except (TypeError, ValueError):
-            return HttpResponseBadRequest("Choose a valid enterprise.")
+            return HttpResponseBadRequest(translate("err.invalid_enterprise", lang))
         selected_enterprise = get_object_or_404(
             FarmEnterprise,
             pk=enterprise_id,
@@ -190,12 +193,12 @@ def dashboard(request):
             Decimal("0.00"),
         )
 
-    enterprise_form = FarmEnterpriseForm()
-    entry_form = LedgerEntryForm(user=request.user)
-    settlement_form = CreditSettlementForm(user=request.user)
+    enterprise_form = FarmEnterpriseForm(lang=lang)
+    entry_form = LedgerEntryForm(user=request.user, lang=lang)
+    settlement_form = CreditSettlementForm(user=request.user, lang=lang)
     if request.method == "POST":
         if request.POST.get("action") == "enterprise":
-            enterprise_form = FarmEnterpriseForm(request.POST)
+            enterprise_form = FarmEnterpriseForm(request.POST, lang=lang)
             if enterprise_form.is_valid():
                 enterprise = enterprise_form.save(commit=False)
                 enterprise.owner = request.user
@@ -205,19 +208,19 @@ def dashboard(request):
                 except IntegrityError:
                     enterprise_form.add_error(
                         "name",
-                        "You already have an enterprise with this name.",
+                        translate("err.enterprise_name_taken", lang),
                     )
                 else:
-                    messages.success(request, "Enterprise added.")
+                    messages.success(request, translate("msg.enterprise_added", lang))
                     return redirect("smart_hasibu:dashboard")
         elif request.POST.get("action") == "entry":
-            entry_form = LedgerEntryForm(request.POST, user=request.user)
+            entry_form = LedgerEntryForm(request.POST, user=request.user, lang=lang)
             if entry_form.is_valid():
                 entry_form.save()
-                messages.success(request, "Record saved to your private cashbook.")
+                messages.success(request, translate("msg.entry_saved", lang))
                 return redirect("smart_hasibu:dashboard")
         elif request.POST.get("action") == "settlement":
-            settlement_form = CreditSettlementForm(request.POST, user=request.user)
+            settlement_form = CreditSettlementForm(request.POST, user=request.user, lang=lang)
             if settlement_form.is_valid():
                 try:
                     with transaction.atomic():
@@ -233,20 +236,20 @@ def dashboard(request):
                         if prior_settlements + payment.amount > credit_entry.amount:
                             settlement_form.add_error(
                                 "amount",
-                                "The payment is greater than the outstanding balance.",
+                                translate("err.overpayment", lang),
                             )
                         else:
                             payment.entry = credit_entry
                             payment.save()
-                            messages.success(request, "Credit payment recorded.")
+                            messages.success(request, translate("msg.credit_payment_recorded", lang))
                             return redirect("smart_hasibu:dashboard")
                 except LedgerEntry.DoesNotExist:
                     settlement_form.add_error(
                         "entry",
-                        "Select an outstanding credit record from your account.",
+                        translate("err.select_outstanding_entry", lang),
                     )
         else:
-            return HttpResponseBadRequest("Choose a valid cashbook action.")
+            return HttpResponseBadRequest(translate("err.invalid_action", lang))
 
     return render(
         request,
@@ -272,15 +275,16 @@ def dashboard(request):
 @login_required(login_url="smart_hasibu:login")
 @require_http_methods(["GET", "POST"])
 def entry_edit(request, pk):
+    lang = current_lang(request)
     entry = get_object_or_404(LedgerEntry, pk=pk, enterprise__owner=request.user)
     if request.method == "POST":
-        form = LedgerEntryForm(request.POST, instance=entry, user=request.user)
+        form = LedgerEntryForm(request.POST, instance=entry, user=request.user, lang=lang)
         if form.is_valid():
             form.save()
-            messages.success(request, "Entry updated.")
+            messages.success(request, translate("msg.entry_updated", lang))
             return redirect("smart_hasibu:dashboard")
     else:
-        form = LedgerEntryForm(instance=entry, user=request.user)
+        form = LedgerEntryForm(instance=entry, user=request.user, lang=lang)
     return render(
         request, "smart_hasibu/entry_edit.html", {"form": form, "entry": entry}
     )
@@ -291,29 +295,30 @@ def entry_edit(request, pk):
 def entry_delete(request, pk):
     entry = get_object_or_404(LedgerEntry, pk=pk, enterprise__owner=request.user)
     entry.delete()
-    messages.success(request, "Entry deleted.")
+    messages.success(request, translate("msg.entry_deleted", current_lang(request)))
     return redirect("smart_hasibu:dashboard")
 
 
 @login_required(login_url="smart_hasibu:login")
 @require_http_methods(["GET", "POST"])
 def enterprise_edit(request, pk):
+    lang = current_lang(request)
     enterprise = get_object_or_404(FarmEnterprise, pk=pk, owner=request.user)
     if request.method == "POST":
-        form = FarmEnterpriseForm(request.POST, instance=enterprise)
+        form = FarmEnterpriseForm(request.POST, instance=enterprise, lang=lang)
         if form.is_valid():
             try:
                 with transaction.atomic():
                     form.save()
             except IntegrityError:
                 form.add_error(
-                    "name", "You already have an enterprise with this name."
+                    "name", translate("err.enterprise_name_taken", lang)
                 )
             else:
-                messages.success(request, "Enterprise updated.")
+                messages.success(request, translate("msg.enterprise_updated", lang))
                 return redirect("smart_hasibu:dashboard")
     else:
-        form = FarmEnterpriseForm(instance=enterprise)
+        form = FarmEnterpriseForm(instance=enterprise, lang=lang)
     return render(
         request,
         "smart_hasibu/enterprise_edit.html",
@@ -324,26 +329,24 @@ def enterprise_edit(request, pk):
 @login_required(login_url="smart_hasibu:login")
 @require_POST
 def enterprise_delete(request, pk):
+    lang = current_lang(request)
     enterprise = get_object_or_404(FarmEnterprise, pk=pk, owner=request.user)
     if enterprise.entries.exists():
-        messages.error(
-            request,
-            "This enterprise still has recorded entries. Delete or move its "
-            "entries before removing the enterprise.",
-        )
+        messages.error(request, translate("err.enterprise_has_entries", lang))
     else:
         enterprise.delete()
-        messages.success(request, "Enterprise deleted.")
+        messages.success(request, translate("msg.enterprise_deleted", lang))
     return redirect("smart_hasibu:dashboard")
 
 
 @login_required(login_url="smart_hasibu:login")
 @require_http_methods(["GET"])
 def export_entries(request):
+    lang = current_lang(request)
     month_value = request.GET.get("month", timezone.localdate().strftime("%Y-%m"))
     bounds = _month_bounds(month_value)
     if not bounds:
-        return HttpResponseBadRequest("Choose a valid month in YYYY-MM format.")
+        return HttpResponseBadRequest(translate("err.invalid_month", lang))
     start_date, end_date = bounds
     entries = LedgerEntry.objects.filter(
         enterprise__owner=request.user,
@@ -356,7 +359,7 @@ def export_entries(request):
         try:
             enterprise_id = int(enterprise_value)
         except (TypeError, ValueError):
-            return HttpResponseBadRequest("Choose a valid enterprise.")
+            return HttpResponseBadRequest(translate("err.invalid_enterprise", lang))
         get_object_or_404(FarmEnterprise, pk=enterprise_id, owner=request.user)
         entries = entries.filter(enterprise_id=enterprise_id)
 
@@ -371,8 +374,15 @@ def export_entries(request):
     writer = csv.writer(response)
     writer.writerow(
         [
-            "Date", "Enterprise", "Type", "Category", "Description",
-            "Counterparty", "Amount (KSh)", "Credit", "Outstanding (KSh)",
+            translate("sh.dashboard.table_date", lang),
+            translate("sh.dashboard.table_enterprise", lang),
+            translate("sh.dashboard.table_type", lang),
+            translate("field.ledger_category", lang),
+            translate("sh.dashboard.table_details", lang),
+            translate("field.counterparty", lang),
+            translate("sh.csv.amount_ksh", lang),
+            translate("sh.csv.credit", lang),
+            translate("sh.csv.outstanding_ksh", lang),
         ]
     )
     for entry in entries:
@@ -385,12 +395,12 @@ def export_entries(request):
             [
                 entry.occurred_on.isoformat(),
                 entry.enterprise.name,
-                entry.get_entry_type_display(),
-                entry.get_category_display(),
+                translate(f"choice.entry_type.{entry.entry_type}", lang),
+                translate(f"choice.ledger_category.{entry.category}", lang),
                 entry.description,
                 entry.counterparty,
                 entry.amount,
-                "Yes" if entry.is_credit else "No",
+                translate("sh.csv.yes", lang) if entry.is_credit else translate("sh.csv.no", lang),
                 outstanding,
             ]
         )

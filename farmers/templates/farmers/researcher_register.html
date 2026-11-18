@@ -1,6 +1,6 @@
-{% load static %}
+{% load static custom_i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% current_language_code %}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,32 +8,33 @@
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
+<a class="skip" href="#main">{% t 'common.skip_to_content' %}</a>
 <header class="nav"><div class="wrap bar">
   <a class="logo" href="/"><span>Mo</span>Firms</a>
-  <a class="btn sm" href="{% url 'researcher_login' %}">Researcher sign in</a>
+  {% include "farmers/_lang_switch.html" %}
+  <a class="btn sm" href="{% url 'researcher_login' %}">{% t 'farmers.researcher_register.nav_signin_link' %}</a>
 </div></header>
 <main id="main">
 <section class="wrap registration">
-  <p class="eyebrow">Researcher registration</p>
-  <h1>Apply to conduct research with MoFirms</h1>
-  <p class="lead">Research organisations, universities, marketing and insights companies, and students may apply independently of farmer or partner registration.</p>
+  <p class="eyebrow">{% t 'farmers.researcher_register.eyebrow' %}</p>
+  <h1>{% t 'farmers.researcher_register.title' %}</h1>
+  <p class="lead">{% t 'farmers.researcher_register.lead' %}</p>
   <aside class="notice notice-warning">
-    <h2>Vetting and access boundaries</h2>
+    <h2>{% t 'farmers.researcher_register.vetting_heading' %}</h2>
     <ul>
-      <li>Every applicant and every study is manually reviewed. Creating an account does not grant access to farmer or partner records.</li>
-      <li>MoFirms staff invite only registrant contacts who separately opted in to research invitations. Respondents make a separate, voluntary choice for each study.</li>
-      <li>Researchers see aggregate, de-identified results only. Individual responses, contact details, and respondent lists are not available to researchers.</li>
-      <li>Research questionnaires support fixed answer choices only. Do not design questions that ask respondents to enter names, contact details, account data, health data, or other identifying information.</li>
-      <li>Use synthetic information only until MoFirms approves the privacy, ethics, vetting, retention, and production security arrangements.</li>
+      <li>{% t 'farmers.researcher_register.vetting_li1' %}</li>
+      <li>{% t 'farmers.researcher_register.vetting_li2' %}</li>
+      <li>{% t 'farmers.researcher_register.vetting_li3' %}</li>
+      <li>{% t 'farmers.researcher_register.vetting_li4' %}</li>
+      <li>{% t 'farmers.researcher_register.vetting_li5' %}</li>
     </ul>
   </aside>
   <form method="post" class="card registration-form" novalidate>
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="err-box" role="alert">{{ form.non_field_errors }}</div>{% endif %}
-    {% if form.errors and not form.non_field_errors %}<p class="form-hint">Please correct the highlighted fields.</p>{% endif %}
+    {% if form.errors and not form.non_field_errors %}<p class="form-hint">{% t 'farmers.researcher_register.form_hint_correct' %}</p>{% endif %}
     <fieldset class="form-section">
-      <legend>Account and applicant</legend>
+      <legend>{% t 'farmers.researcher_register.account_legend' %}</legend>
       <div class="form-grid">
         <div>{% include "farmers/field.html" with field=form.email %}</div>
         <div>{% include "farmers/field.html" with field=form.applicant_type %}</div>
@@ -47,7 +48,7 @@
       </div>
     </fieldset>
     <fieldset class="form-section">
-      <legend>Research purpose and safeguards</legend>
+      <legend>{% t 'farmers.researcher_register.purpose_legend' %}</legend>
       <div class="form-grid">
         <div class="wide-field">{% include "farmers/field.html" with field=form.research_purpose %}</div>
         <div class="wide-field">{% include "farmers/field.html" with field=form.methods_summary %}</div>
@@ -56,19 +57,19 @@
       </div>
     </fieldset>
     <fieldset class="form-section">
-      <legend>Student supervision</legend>
-      <p class="form-hint">Required for student applications. Not required for other applicant categories.</p>
+      <legend>{% t 'farmers.researcher_register.supervision_legend' %}</legend>
+      <p class="form-hint">{% t 'farmers.researcher_register.supervision_hint' %}</p>
       <div class="form-grid">
         <div>{% include "farmers/field.html" with field=form.supervisor_name %}</div>
         <div>{% include "farmers/field.html" with field=form.supervisor_email %}</div>
       </div>
     </fieldset>
     <fieldset class="form-section">
-      <legend>Consent</legend>
-      <p>MoFirms uses this application to assess your identity, institution, research purpose, and data safeguards. Application information is restricted to authorised staff and is scheduled for deletion after two years without recorded contact. Please review the privacy notice and retention rules before real applications open.</p>
+      <legend>{% t 'farmers.researcher_register.consent_legend' %}</legend>
+      <p>{% t 'farmers.researcher_register.consent_body' %}</p>
       {% include "farmers/field.html" with field=form.consent %}
     </fieldset>
-    <button class="btn" type="submit">Submit application for vetting</button>
+    <button class="btn" type="submit">{% t 'farmers.researcher_register.submit_button' %}</button>
   </form>
 </section>
 </main>

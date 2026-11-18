@@ -1,7 +1,8 @@
+{% load custom_i18n %}
 <div class="document-row">
   <div>{% include "farmers/field.html" with field=document_form.document_type %}</div>
   <div>{% include "farmers/field.html" with field=document_form.description %}</div>
   <div>{% include "farmers/field.html" with field=document_form.file %}</div>
-  <button class="remove-document opt" type="button">Remove</button>
+  <button class="remove-document opt" type="button">{% t 'farmers.document_row.remove' %}</button>
   {% for hidden in document_form.hidden_fields %}{{ hidden }}{% endfor %}
 </div>

@@ -1,21 +1,22 @@
 {% extends "smart_hasibu/base.html" %}
+{% load custom_i18n %}
 {% block title %}Sign in to SmartHasibu | MoFirms{% endblock %}
 {% block content %}
 <section class="wrap registration sh-auth">
-  <p class="eyebrow">SmartHasibu · Farmer bookkeeping</p>
+  <p class="eyebrow">{% t 'sh.login.eyebrow' %}</p>
   <div class="card registration-form">
-    <h1>Sign in to your cashbook</h1>
-    {% if rate_limited %}<div class="err-box" role="alert">Too many sign-in attempts. Please wait before trying again.</div>{% endif %}
+    <h1>{% t 'sh.login.title' %}</h1>
+    {% if rate_limited %}<div class="err-box" role="alert">{% t 'sh.login.rate_limited' %}</div>{% endif %}
     <form method="post" novalidate>
       {% csrf_token %}
-      <label for="id_email">Email</label>
+      <label for="id_email">{% t 'sh.login.email_label' %}</label>
       <input id="id_email" type="email" name="email" value="{{ email }}" autocomplete="email" required>
-      <label for="id_password">Password</label>
+      <label for="id_password">{% t 'sh.login.password_label' %}</label>
       <input id="id_password" type="password" name="password" autocomplete="current-password" required>
-      <button class="btn" type="submit">Sign in</button>
+      <button class="btn" type="submit">{% t 'sh.login.submit' %}</button>
     </form>
-    <p><a href="{% url 'smart_hasibu:password_reset' %}">Forgot your password?</a></p>
-    <p>New to SmartHasibu? <a href="{% url 'smart_hasibu:signup' %}">Create an account</a></p>
+    <p><a href="{% url 'smart_hasibu:password_reset' %}">{% t 'sh.login.forgot_password' %}</a></p>
+    <p>{% t 'sh.login.new_prompt' %} <a href="{% url 'smart_hasibu:signup' %}">{% t 'sh.login.create_account_link' %}</a></p>
   </div>
 </section>
 {% endblock %}

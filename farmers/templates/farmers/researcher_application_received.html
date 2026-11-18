@@ -1,6 +1,6 @@
-{% load static %}
+{% load static custom_i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% current_language_code %}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,12 +8,16 @@
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
+<header class="nav"><div class="wrap bar">
+  <a class="logo" href="/"><span>Mo</span>Firms</a>
+  {% include "farmers/_lang_switch.html" %}
+</div></header>
 <main id="main"><section class="wrap registration"><div class="card">
-  <p class="eyebrow">Researcher registration</p>
-  <h1>Application received</h1>
-  <p>MoFirms staff will manually review your application. Sign-in remains disabled until vetting is complete. Staff may contact you using the details provided.</p>
-  <p>Approval does not grant access to farmer or partner contact details. Each study requires its own review, accepted fee quote, ethics status, and deployment approval.</p>
-  <a class="btn" href="/">Return to MoFirms</a>
+  <p class="eyebrow">{% t 'farmers.researcher_application_received.eyebrow' %}</p>
+  <h1>{% t 'farmers.researcher_application_received.title' %}</h1>
+  <p>{% t 'farmers.researcher_application_received.body1' %}</p>
+  <p>{% t 'farmers.researcher_application_received.body2' %}</p>
+  <a class="btn" href="/">{% t 'farmers.researcher_application_received.return_link' %}</a>
 </div></section></main>
 </body>
 </html>

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-{% load static %}
-<html lang="en">
+{% load static custom_i18n %}
+<html lang="{% current_language_code %}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,325 +11,326 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
 <link rel="preload" as="image" href="{% static 'images/climate-smart-farming.webp' %}" imagesrcset="{% static 'images/climate-smart-farming-480.webp' %} 480w, {% static 'images/climate-smart-farming.webp' %} 736w" imagesizes="(min-width: 901px) 540px, calc(100vw - 40px)" fetchpriority="high">
 <link rel="stylesheet" href="{% static 'css/style.css' %}?v=plan-grid-fix-2026-11">
-<script src="{% static 'js/app.js' %}?v=online-services-carousel-2026-11" defer></script>
+<script src="{% static 'js/app.js' %}?v=bilingual-2026-11" defer></script>
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
+<a class="skip" href="#main">{% t 'home.nav.skip' %}</a>
 <header class="nav"><div class="wrap bar">
   <a class="logo site-logo" href="#top"><img src="{% static 'images/mofirms-company-logo.png' %}" alt="MoFirms" width="195" height="65"><span class="site-logo-name">Marks Organic Farms Concepts Limited</span></a>
-  <button id="burger" type="button" aria-label="Open menu" aria-controls="menu" aria-expanded="false">☰</button>
+  {% include "farmers/_lang_switch.html" %}
+  <button id="burger" type="button" aria-label="{% t 'home.nav.open_menu' %}" aria-controls="menu" aria-expanded="false">☰</button>
   <nav id="menu" aria-label="Main">
-    <a href="#online-services">Online services</a><a href="#services">Services</a><a href="#smarthasibu">SmartHasibu</a><a href="#projects">Projects</a>
-    <a href="#products">Products</a><a href="#about">About</a><a href="/pricing/">Pricing</a><a class="btn sm" href="#contact">Request a consultation</a>
+    <a href="#online-services">{% t 'home.nav.online_services' %}</a><a href="#services">{% t 'home.nav.services' %}</a><a href="#smarthasibu">{% t 'home.nav.smarthasibu' %}</a><a href="#projects">{% t 'home.nav.projects' %}</a>
+    <a href="#products">{% t 'home.nav.products' %}</a><a href="#about">{% t 'home.nav.about' %}</a><a href="/pricing/">{% t 'home.nav.pricing' %}</a><a class="btn sm" href="#contact">{% t 'home.nav.request_consultation' %}</a>
   </nav>
 </div></header>
 
 <main id="main">
 <section id="top" class="hero">
   <div class="wrap hero-layout">
-    <div class="hero-carousel" id="agriCarousel" role="region" aria-label="MoFirms and farmer services" aria-roledescription="carousel" tabindex="0">
+    <div class="hero-carousel" id="agriCarousel" role="region" aria-label="{% t 'home.hero.region_label' %}" aria-roledescription="carousel" tabindex="0">
       <div class="carousel-stage">
-        <article class="carousel-slide is-active" data-slide="0" role="group" aria-roledescription="slide" aria-label="1 of 10: About MoFirms">
+        <article class="carousel-slide is-active" data-slide="0" role="group" aria-roledescription="slide" aria-label="1 {% t 'home.hero.of' %} 10: About MoFirms">
           <div class="carousel-photo">
             <picture>
               <source srcset="{% static 'images/climate-smart-farming-480.webp' %} 480w, {% static 'images/climate-smart-farming.webp' %} 736w" sizes="(min-width: 901px) 540px, calc(100vw - 40px)" type="image/webp">
               <img src="{% static 'images/climate-smart-farming.jpg' %}" alt="Farmer tending irrigated vegetable crops on a green, climate-smart farm" width="736" height="736" fetchpriority="high" decoding="async">
             </picture>
-            <span class="photo-caption">AGRIBUSINESS &amp; ENTERPRISE ADVISORY · KENYA</span>
+            <span class="photo-caption">{% t 'home.hero.photo_caption.agribusiness' %}</span>
           </div>
           <div class="carousel-copy">
-            <p class="carousel-kicker">MOFIRMS · ESTABLISHED 2019</p>
-            <h1>Practical advice for sustainable farms.</h1>
-            <p>Marks Organic Farms Concepts Limited, trading as MoFirms, helps farmers, entrepreneurs and organisations plan agricultural businesses and assess opportunities—with financial analysis, market development and digital tools.</p>
-            <div class="cta"><a class="btn" href="#contact">Request a consultation</a><a class="btn ghost" href="#services">Explore services</a></div>
+            <p class="carousel-kicker">{% t 'home.hero.s1.kicker' %}</p>
+            <h1>{% t 'home.hero.s1.h1' %}</h1>
+            <p>{% t 'home.hero.s1.body' %}</p>
+            <div class="cta"><a class="btn" href="#contact">{% t 'home.hero.s1.cta_consult' %}</a><a class="btn ghost" href="#services">{% t 'home.hero.s1.cta_services' %}</a></div>
           </div>
         </article>
-        <article class="carousel-slide" data-slide="1" role="group" aria-roledescription="slide" aria-label="2 of 10: Farmer services" hidden>
+        <article class="carousel-slide" data-slide="1" role="group" aria-roledescription="slide" aria-label="2 {% t 'home.hero.of' %} 10: Farmer services" hidden>
           <div class="carousel-photo">
             <img src="{% static 'images/productive-farmland.jpg' %}" alt="Farmers tending productive crop rows across a broad agricultural landscape" width="735" height="490" loading="lazy" decoding="async">
-            <span class="photo-caption">PRACTICAL SUPPORT FOR FARMERS</span>
+            <span class="photo-caption">{% t 'home.hero.photo_caption.farmer_support' %}</span>
           </div>
           <div class="carousel-copy">
-            <p class="carousel-kicker">YOUR FARM. YOUR NEXT STEP.</p>
-            <h2>Build a stronger farm business.</h2>
-            <p>Find practical support for farm planning, financial analysis and market opportunities. Explore farmer registration and the tools we are building with local enterprises.</p>
-            <div class="cta"><a class="btn" href="/portal/register/">Farmer registration</a><a class="btn ghost" href="#services">Explore services</a></div>
+            <p class="carousel-kicker">{% t 'home.hero.s2.kicker' %}</p>
+            <h2>{% t 'home.hero.s2.h2' %}</h2>
+            <p>{% t 'home.hero.s2.body' %}</p>
+            <div class="cta"><a class="btn" href="/portal/register/">{% t 'home.hero.s2.cta_register' %}</a><a class="btn ghost" href="#services">{% t 'home.hero.s2.cta_services' %}</a></div>
           </div>
         </article>
-        <article class="carousel-slide" data-slide="2" role="group" aria-roledescription="slide" aria-label="3 of 10: Sustainable crop farming" hidden>
+        <article class="carousel-slide" data-slide="2" role="group" aria-roledescription="slide" aria-label="3 {% t 'home.hero.of' %} 10: Sustainable crop farming" hidden>
           <div class="carousel-photo">
             <img src="{% static 'images/hero-crop-farm.webp' %}" alt="A farmer tending green crop rows across a productive farm" width="1365" height="768" loading="lazy">
-            <span class="photo-caption">SUSTAINABLE FARMING &amp; PRODUCTION</span>
+            <span class="photo-caption">{% t 'home.hero.photo_caption.sustainable_farming' %}</span>
           </div>
           <div class="carousel-copy">
-            <p class="carousel-kicker">PLAN WITH PRACTICAL SUPPORT</p>
-            <h2>Grow a stronger farm enterprise.</h2>
-            <p>Explore farm planning, farmer development and practical business support. Services depend on confirmed scope and delivery capacity.</p>
-            <div class="cta"><a class="btn" href="/portal/register/">Farmer registration</a><a class="btn ghost" href="#services">Explore services</a></div>
+            <p class="carousel-kicker">{% t 'home.hero.s3.kicker' %}</p>
+            <h2>{% t 'home.hero.s3.h2' %}</h2>
+            <p>{% t 'home.hero.s3.body' %}</p>
+            <div class="cta"><a class="btn" href="/portal/register/">{% t 'home.hero.s2.cta_register' %}</a><a class="btn ghost" href="#services">{% t 'home.hero.s2.cta_services' %}</a></div>
           </div>
         </article>
-        <article class="carousel-slide" data-slide="3" role="group" aria-roledescription="slide" aria-label="4 of 10: Farming landscapes" hidden>
+        <article class="carousel-slide" data-slide="3" role="group" aria-roledescription="slide" aria-label="4 {% t 'home.hero.of' %} 10: Farming landscapes" hidden>
           <div class="carousel-photo">
             <img src="{% static 'images/hero-farm-landscape.webp' %}" alt="Open agricultural fields and livestock across a broad rural landscape" width="1025" height="768" loading="lazy">
-            <span class="photo-caption">FARM PLANNING &amp; ENTERPRISE DEVELOPMENT</span>
+            <span class="photo-caption">{% t 'home.hero.photo_caption.farm_planning' %}</span>
           </div>
           <div class="carousel-copy">
-            <p class="carousel-kicker">START WITH THE ENTERPRISE</p>
-            <h2>Make your next farming decision with a plan.</h2>
-            <p>Map production, costs, risks and market needs with practical agribusiness advice for farmers and growing enterprises.</p>
-            <div class="cta"><a class="btn" href="#check">Try the readiness check</a><a class="btn ghost" href="#contact">Talk to MoFirms</a></div>
+            <p class="carousel-kicker">{% t 'home.hero.s4.kicker' %}</p>
+            <h2>{% t 'home.hero.s4.h2' %}</h2>
+            <p>{% t 'home.hero.s4.body' %}</p>
+            <div class="cta"><a class="btn" href="#check">{% t 'home.hero.s4.cta_check' %}</a><a class="btn ghost" href="#contact">{% t 'home.hero.s4.cta_talk' %}</a></div>
           </div>
         </article>
-        <article class="carousel-slide" data-slide="4" role="group" aria-roledescription="slide" aria-label="5 of 10: Farmer development" hidden>
+        <article class="carousel-slide" data-slide="4" role="group" aria-roledescription="slide" aria-label="5 {% t 'home.hero.of' %} 10: Farmer development" hidden>
           <div class="carousel-photo">
             <img src="{% static 'images/hero-farmer-in-field.webp' %}" alt="A woman farmer working among green crops" width="1152" height="768" loading="lazy">
-            <span class="photo-caption">FARMER DEVELOPMENT &amp; SUPPORT</span>
+            <span class="photo-caption">{% t 'home.hero.photo_caption.farmer_development' %}</span>
           </div>
           <div class="carousel-copy">
-            <p class="carousel-kicker">FARMERS &amp; FARMER GROUPS</p>
-            <h2>Practical support for the people behind every harvest.</h2>
-            <p>Register as a farmer or group to share your needs with MoFirms for staff review. Registration does not guarantee funding, inputs or market access.</p>
-            <div class="cta"><a class="btn" href="/portal/register/">Register as a farmer</a><a class="btn ghost" href="#online-services">Explore online services</a></div>
+            <p class="carousel-kicker">{% t 'home.hero.s5.kicker' %}</p>
+            <h2>{% t 'home.hero.s5.h2' %}</h2>
+            <p>{% t 'home.hero.s5.body' %}</p>
+            <div class="cta"><a class="btn" href="/portal/register/">{% t 'home.hero.s5.cta_register' %}</a><a class="btn ghost" href="#online-services">{% t 'home.hero.s5.cta_online' %}</a></div>
           </div>
         </article>
-        <article class="carousel-slide" data-slide="5" role="group" aria-roledescription="slide" aria-label="6 of 10: Connected farmland" hidden>
+        <article class="carousel-slide" data-slide="5" role="group" aria-roledescription="slide" aria-label="6 {% t 'home.hero.of' %} 10: Connected farmland" hidden>
           <div class="carousel-photo">
             <img src="{% static 'images/hero-farm-aerial.webp' %}" alt="Aerial view of smallholder fields across a green agricultural landscape" width="1075" height="768" loading="lazy">
-            <span class="photo-caption">FARMERS · MARKETS · OPPORTUNITY</span>
+            <span class="photo-caption">{% t 'home.hero.photo_caption.connected_farmland' %}</span>
           </div>
           <div class="carousel-copy">
-            <p class="carousel-kicker">IDEAS GROUNDED IN LOCAL NEEDS</p>
-            <h2>Connect farm plans with real-world opportunity.</h2>
-            <p>Explore enterprise development, market preparation and the project concepts under consideration—clearly separated from approved work.</p>
-            <div class="cta"><a class="btn" href="#projects">Explore project concepts</a><a class="btn ghost" href="#contact" data-cat="Project collaboration">Discuss a project</a></div>
+            <p class="carousel-kicker">{% t 'home.hero.s6.kicker' %}</p>
+            <h2>{% t 'home.hero.s6.h2' %}</h2>
+            <p>{% t 'home.hero.s6.body' %}</p>
+            <div class="cta"><a class="btn" href="#projects">{% t 'home.hero.s6.cta_projects' %}</a><a class="btn ghost" href="#contact" data-cat="Project collaboration">{% t 'home.hero.s6.cta_discuss' %}</a></div>
           </div>
         </article>
-        <article class="carousel-slide" data-slide="6" role="group" aria-roledescription="slide" aria-label="7 of 10: Aquaculture opportunity" hidden>
+        <article class="carousel-slide" data-slide="6" role="group" aria-roledescription="slide" aria-label="7 {% t 'home.hero.of' %} 10: Aquaculture opportunity" hidden>
           <div class="carousel-photo">
             <img src="{% static 'images/hero-aquaculture-cages.webp' %}" alt="Floating fish-farming cages on a lake" width="1092" height="768" loading="lazy">
-            <span class="photo-caption">AQUACULTURE · PROJECT CONCEPT</span>
+            <span class="photo-caption">{% t 'home.hero.photo_caption.aquaculture_opportunity' %}</span>
           </div>
           <div class="carousel-copy">
-            <p class="carousel-kicker">A PROPOSED VOFA CLUSTER</p>
-            <h2>Explore aquaculture as a project concept.</h2>
-            <p>Pond aquaculture using locally formulated feed is among the ideas VOFA reports for consideration. It is not an approved or funded project.</p>
-            <div class="cta"><a class="btn" href="#clusterGrid">Explore proposed clusters</a><a class="btn ghost" href="#contact" data-cat="Project collaboration">Discuss a project</a></div>
+            <p class="carousel-kicker">{% t 'home.hero.s7.kicker' %}</p>
+            <h2>{% t 'home.hero.s7.h2' %}</h2>
+            <p>{% t 'home.hero.s7.body' %}</p>
+            <div class="cta"><a class="btn" href="#clusterGrid">{% t 'home.hero.s7.cta_clusters' %}</a><a class="btn ghost" href="#contact" data-cat="Project collaboration">{% t 'home.hero.s7.cta_discuss' %}</a></div>
           </div>
         </article>
-        <article class="carousel-slide" data-slide="7" role="group" aria-roledescription="slide" aria-label="8 of 10: Aquaculture planning" hidden>
+        <article class="carousel-slide" data-slide="7" role="group" aria-roledescription="slide" aria-label="8 {% t 'home.hero.of' %} 10: Aquaculture planning" hidden>
           <div class="carousel-photo">
             <img src="{% static 'images/hero-aquaculture-concept.webp' %}" alt="Fish-farming cages arranged across a lake" width="1092" height="768" loading="lazy">
-            <span class="photo-caption">PRODUCTION IDEAS · CAREFUL PLANNING</span>
+            <span class="photo-caption">{% t 'home.hero.photo_caption.aquaculture_planning' %}</span>
           </div>
           <div class="carousel-copy">
-            <p class="carousel-kicker">ASSESS THE OPPORTUNITY FIRST</p>
-            <h2>Good projects begin with evidence.</h2>
-            <p>Member readiness, production suitability, costs and potential buyers must be assessed before a proposed cluster can proceed.</p>
-            <div class="cta"><a class="btn" href="#projects">How project concepts progress</a><a class="btn ghost" href="#contact">Request a consultation</a></div>
+            <p class="carousel-kicker">{% t 'home.hero.s8.kicker' %}</p>
+            <h2>{% t 'home.hero.s8.h2' %}</h2>
+            <p>{% t 'home.hero.s8.body' %}</p>
+            <div class="cta"><a class="btn" href="#projects">{% t 'home.hero.s8.cta_progress' %}</a><a class="btn ghost" href="#contact">{% t 'home.hero.s8.cta_consult' %}</a></div>
           </div>
         </article>
-        <article class="carousel-slide" data-slide="8" role="group" aria-roledescription="slide" aria-label="9 of 10: Fish production" hidden>
+        <article class="carousel-slide" data-slide="8" role="group" aria-roledescription="slide" aria-label="9 {% t 'home.hero.of' %} 10: Fish production" hidden>
           <div class="carousel-photo">
             <img src="{% static 'images/hero-fish-production.webp' %}" alt="Fish swimming in an aquaculture pond" width="1152" height="768" loading="lazy">
-            <span class="photo-caption">FISH FARMING · CONCEPT ONLY</span>
+            <span class="photo-caption">{% t 'home.hero.photo_caption.fish_production' %}</span>
           </div>
           <div class="carousel-copy">
-            <p class="carousel-kicker">PLAN BEFORE YOU INVEST</p>
-            <h2>Build resilient agricultural enterprises.</h2>
-            <p>Explore human-led planning and risk assessment for agricultural ideas. No automated scores, financing decisions or guaranteed returns.</p>
-            <div class="cta"><a class="btn" href="/portal/risk-assessment/">Request an assessment</a><a class="btn ghost" href="#services">Explore services</a></div>
+            <p class="carousel-kicker">{% t 'home.hero.s9.kicker' %}</p>
+            <h2>{% t 'home.hero.s9.h2' %}</h2>
+            <p>{% t 'home.hero.s9.body' %}</p>
+            <div class="cta"><a class="btn" href="/portal/risk-assessment/">{% t 'home.hero.s9.cta_assessment' %}</a><a class="btn ghost" href="#services">{% t 'home.hero.s9.cta_services' %}</a></div>
           </div>
         </article>
-        <article class="carousel-slide" data-slide="9" role="group" aria-roledescription="slide" aria-label="10 of 10: Lake aquaculture concept" hidden>
+        <article class="carousel-slide" data-slide="9" role="group" aria-roledescription="slide" aria-label="10 {% t 'home.hero.of' %} 10: Lake aquaculture concept" hidden>
           <div class="carousel-photo">
             <img src="{% static 'images/hero-lake-aquaculture.webp' %}" alt="Aerial view of fish-farming pens on a lake" width="1024" height="768" loading="lazy">
-            <span class="photo-caption">AQUACULTURE · UNDER CONSIDERATION</span>
+            <span class="photo-caption">{% t 'home.hero.photo_caption.lake_aquaculture' %}</span>
           </div>
           <div class="carousel-copy">
-            <p class="carousel-kicker">FARMER-LED IDEAS. HONEST STATUS.</p>
-            <h2>Explore what’s possible—without the promises.</h2>
-            <p>VOFA project clusters are proposals, not secured markets or funded programmes. See the ideas and the steps needed before approval.</p>
-            <div class="cta"><a class="btn" href="#clusterGrid">View project clusters</a><a class="btn ghost" href="#contact" data-cat="Project collaboration">Start a conversation</a></div>
+            <p class="carousel-kicker">{% t 'home.hero.s10.kicker' %}</p>
+            <h2>{% t 'home.hero.s10.h2' %}</h2>
+            <p>{% t 'home.hero.s10.body' %}</p>
+            <div class="cta"><a class="btn" href="#clusterGrid">{% t 'home.hero.s10.cta_view' %}</a><a class="btn ghost" href="#contact" data-cat="Project collaboration">{% t 'home.hero.s10.cta_start' %}</a></div>
           </div>
         </article>
       </div>
-      <div class="carousel-controls" role="group" aria-label="Choose a hero slide">
-        <button type="button" class="carousel-arrow" id="carouselPrevious" aria-label="Previous hero slide">←</button>
+      <div class="carousel-controls" role="group" aria-label="{% t 'home.hero.controls.choose_slide' %}">
+        <button type="button" class="carousel-arrow" id="carouselPrevious" aria-label="{% t 'home.hero.controls.previous' %}">←</button>
         <span class="carousel-position"><span id="carouselCurrent">01</span><span aria-hidden="true"> / </span><span id="carouselTotal">10</span></span>
-        <span class="carousel-progress" role="progressbar" aria-label="Hero slide position" aria-valuemin="1" aria-valuemax="10" aria-valuenow="1"><span id="carouselProgress"></span></span>
-        <button type="button" class="carousel-arrow carousel-toggle" id="carouselToggle" aria-label="Start automatic slide rotation">▶</button>
-        <button type="button" class="carousel-arrow" id="carouselNext" aria-label="Next hero slide">→</button>
+        <span class="carousel-progress" role="progressbar" aria-label="{% t 'home.hero.controls.position_label' %}" aria-valuemin="1" aria-valuemax="10" aria-valuenow="1"><span id="carouselProgress"></span></span>
+        <button type="button" class="carousel-arrow carousel-toggle" id="carouselToggle" aria-label="{% t 'home.hero.controls.start_rotation' %}">▶</button>
+        <button type="button" class="carousel-arrow" id="carouselNext" aria-label="{% t 'home.hero.controls.next' %}">→</button>
       </div>
       <p class="visually-hidden" id="carouselAnnouncement" aria-live="polite" aria-atomic="true"></p>
     </div>
-    <ul class="stats" aria-label="MoFirms at a glance"><li><b>Established 2019</b>Incorporated in Kenya</li><li><b>5 online services</b>Farmer, partner, advisory and research requests</li><li><b>Private cashbook</b>SmartHasibu bookkeeping</li></ul>
+    <ul class="stats" aria-label="MoFirms at a glance"><li><b>{% t 'home.stats.established' %}</b>{% t 'home.stats.established_sub' %}</li><li><b>{% t 'home.stats.online_services' %}</b>{% t 'home.stats.online_services_sub' %}</li><li><b>{% t 'home.stats.cashbook' %}</b>{% t 'home.stats.cashbook_sub' %}</li></ul>
   </div>
 </section>
 
-<section id="path" class="wrap"><h2>Where do you fit?</h2><p class="sub">Choose who you are and we’ll point you to the most relevant support.</p>
+<section id="path" class="wrap"><h2>{% t 'home.path.title' %}</h2><p class="sub">{% t 'home.path.sub' %}</p>
   <div class="tabs" role="tablist" id="tabs"></div><div id="pathOut" class="card out" aria-live="polite"></div>
 </section>
 
 <section id="about" class="wrap two">
-  <div><h2>About MoFirms</h2>
-  <p>Our approach starts with the enterprise: what it can produce, who will buy, what resources are needed and which risks must be managed. We help turn ideas into structured plans and identify the expertise, information and relationships needed to deliver them.</p>
-  <p>Our advisory approach draws on decades of combined experience in agricultural finance, risk management and capacity building. Where an assignment needs specialist expertise, we coordinate with appropriately qualified professionals.</p>
+  <div><h2>{% t 'home.about.title' %}</h2>
+  <p>{% t 'home.about.p1' %}</p>
+  <p>{% t 'home.about.p2' %}</p>
   <div class="company-identity">
     <img src="{% static 'images/mofirms-company-logo.png' %}" alt="MoFirms company logo" width="390" height="130" loading="lazy">
-    <p>Marks Organic Farms Concepts Limited</p>
+    <p>{% t 'home.about.company_name' %}</p>
   </div></div>
-  <div class="card"><h3>Mission</h3><p>To help farmers and enterprises make informed decisions, improve their business practices and develop commercially sound, environmentally responsible projects.</p>
-  <h3>Vision</h3><p>Productive farms and resilient enterprises supported by dependable information, practical skills and access to markets.</p></div>
+  <div class="card"><h3>{% t 'home.about.mission_title' %}</h3><p>{% t 'home.about.mission_body' %}</p>
+  <h3>{% t 'home.about.vision_title' %}</h3><p>{% t 'home.about.vision_body' %}</p></div>
 </section>
 
 <section class="alt online-services" id="online-services" aria-labelledby="online-services-title">
   <div class="wrap">
     <div class="online-services-heading">
       <div>
-        <p class="eyebrow">GET STARTED ONLINE</p>
-        <h2 id="online-services-title">Online services</h2>
-        <p class="sub">Choose a service to start a request. Our team reviews each submission and follows up on next steps.</p>
+        <p class="eyebrow">{% t 'home.online_services.eyebrow' %}</p>
+        <h2 id="online-services-title">{% t 'home.online_services.title' %}</h2>
+        <p class="sub">{% t 'home.online_services.sub' %}</p>
       </div>
-      <span class="online-services-count">5 ways to get started</span>
+      <span class="online-services-count">{% t 'home.online_services.count' %}</span>
     </div>
-    <div class="online-service-controls" role="group" aria-label="Online service controls">
-      <button class="online-service-arrow" id="onlineServicesPrevious" type="button" aria-label="Show previous online services">←</button>
-      <button class="online-service-arrow" id="onlineServicesNext" type="button" aria-label="Show next online services">→</button>
+    <div class="online-service-controls" role="group" aria-label="{% t 'home.online_services.controls_label' %}">
+      <button class="online-service-arrow" id="onlineServicesPrevious" type="button" aria-label="{% t 'home.online_services.previous' %}">←</button>
+      <button class="online-service-arrow" id="onlineServicesNext" type="button" aria-label="{% t 'home.online_services.next' %}">→</button>
     </div>
-    <div class="online-service-viewport" id="onlineServicesViewport" role="region" aria-label="Choose an online service" tabindex="0">
-      <ol class="online-service-set" id="onlineServices" aria-label="Choose an online service"></ol>
+    <div class="online-service-viewport" id="onlineServicesViewport" role="region" aria-label="{% t 'home.online_services.choose_label' %}" tabindex="0">
+      <ol class="online-service-set" id="onlineServices" aria-label="{% t 'home.online_services.choose_label' %}"></ol>
     </div>
-    <p class="online-services-hint">Use the arrows, swipe or scroll horizontally to see all five services.</p>
-    <p class="online-services-note"><strong>What to expect:</strong> Specialist work starts only after the scope and fee are agreed. A request is not approval, funding, or a guarantee of service. Research participation is separate and voluntary.</p>
+    <p class="online-services-hint">{% t 'home.online_services.hint' %}</p>
+    <p class="online-services-note"><strong>{% t 'home.online_services.note_label' %}</strong> {% t 'home.online_services.note_body' %}</p>
   </div>
 </section>
 
 <section id="services" class="alt"><div class="wrap">
-  <h2>Services</h2>
-  <p class="sub">Every service carries an honest status label. Advice supports applications and decisions; it does not guarantee funding or returns.</p>
-  <div class="filters" id="filters" aria-label="Filter services"></div>
-  <div class="service-controls" role="group" aria-label="Service controls">
-    <button class="service-arrow" id="servicesPrevious" type="button" aria-label="Show previous services">←</button>
-    <button class="service-arrow" id="servicesNext" type="button" aria-label="Show next services">→</button>
+  <h2>{% t 'home.services.title' %}</h2>
+  <p class="sub">{% t 'home.services.sub' %}</p>
+  <div class="filters" id="filters" aria-label="{% t 'home.services.filter_label' %}"></div>
+  <div class="service-controls" role="group" aria-label="{% t 'home.services.controls_label' %}">
+    <button class="service-arrow" id="servicesPrevious" type="button" aria-label="{% t 'home.services.previous' %}">←</button>
+    <button class="service-arrow" id="servicesNext" type="button" aria-label="{% t 'home.services.next' %}">→</button>
   </div>
-  <div class="service-viewport" id="servicesViewport" role="region" aria-label="MoFirms services" tabindex="0">
+  <div class="service-viewport" id="servicesViewport" role="region" aria-label="{% t 'home.services.region_label' %}" tabindex="0">
     <div class="service-set" id="serviceSet"></div>
   </div>
-  <p class="service-hint">Use the arrows, swipe or scroll horizontally to explore every service.</p>
+  <p class="service-hint">{% t 'home.services.hint' %}</p>
 </div></section>
 
 <section class="wrap monetization-landing" aria-labelledby="monetization-title">
   <div class="monetization-header">
     <div>
-      <p class="eyebrow">MoFirms growth model</p>
-      <h2 id="monetization-title">A trust-first way to serve farmers and entrepreneurs</h2>
+      <p class="eyebrow">{% t 'home.monetization.eyebrow' %}</p>
+      <h2 id="monetization-title">{% t 'home.monetization.title' %}</h2>
     </div>
-    <a class="btn" href="/pricing/">View pricing</a>
+    <a class="btn" href="/pricing/">{% t 'home.monetization.view_pricing' %}</a>
   </div>
   <div class="plan-grid">
     <article class="plan-card">
-      <span class="plan-tag">Verified onboarding</span>
-      <h3>1. Apply with proof</h3>
-      <p>Farmer or enterprise profiles start with a short registration, ID/business evidence, and a consent check.</p>
+      <span class="plan-tag">{% t 'home.monetization.step1_tag' %}</span>
+      <h3>{% t 'home.monetization.step1_title' %}</h3>
+      <p>{% t 'home.monetization.step1_body' %}</p>
     </article>
     <article class="plan-card">
-      <span class="plan-tag">Staff review</span>
-      <h3>2. MoFirms verifies</h3>
-      <p>Each request is reviewed for legitimacy, scope, and risk. We confirm whether the client is fit for advisory support.</p>
+      <span class="plan-tag">{% t 'home.monetization.step2_tag' %}</span>
+      <h3>{% t 'home.monetization.step2_title' %}</h3>
+      <p>{% t 'home.monetization.step2_body' %}</p>
     </article>
     <article class="plan-card">
-      <span class="plan-tag">Pay and proceed</span>
-      <h3>3. Choose a plan</h3>
-      <p>Once reviewed, the client chooses a package, pays, and receives the agreed advisory, planning or bookkeeping support.</p>
+      <span class="plan-tag">{% t 'home.monetization.step3_tag' %}</span>
+      <h3>{% t 'home.monetization.step3_title' %}</h3>
+      <p>{% t 'home.monetization.step3_body' %}</p>
     </article>
   </div>
 </section>
 
-<section id="check" class="wrap"><h2>Enterprise readiness check</h2>
-  <p class="sub">Five quick questions to see where planning support would help most. Nothing is stored or sent.</p>
+<section id="check" class="wrap"><h2>{% t 'home.check.title' %}</h2>
+  <p class="sub">{% t 'home.check.sub' %}</p>
   <div class="card" id="quiz"></div>
 </section>
 
 <section id="smarthasibu" class="alt"><div class="wrap two">
-  <div><span class="tag now">Available now</span>
-  <h2>SmartHasibu</h2>
-  <p>“Hasibu” is Kiswahili for account or reckoning. SmartHasibu is a phone-friendly bookkeeping tool for farmers and small enterprises. Record sales and costs, separate farm activities, track unpaid credit, and review monthly totals.</p>
-  <p>Create a free private account to start recording your farm's sales, costs, and credit today.</p>
-  <a class="btn" href="/smart-hasibu/">Open SmartHasibu</a></div>
-  <div class="card"><h3>What you can do today</h3>
+  <div><span class="tag now">{% t 'home.smarthasibu.tag_now' %}</span>
+  <h2>{% t 'home.smarthasibu.title' %}</h2>
+  <p>{% t 'home.smarthasibu.p1' %}</p>
+  <p>{% t 'home.smarthasibu.p2' %}</p>
+  <a class="btn" href="/smart-hasibu/">{% t 'home.smarthasibu.open_button' %}</a></div>
+  <div class="card"><h3>{% t 'home.smarthasibu.card_title' %}</h3>
   <ul class="feat" id="feat"></ul>
-  <p class="note">Offline sync, shared group books, and automated SMS are not available yet. Payments are recorded manually; SmartHasibu does not process money.</p>
-  <div class="calc"><label for="amt">Sale total (KSh)</label><input id="amt" type="number" min="0" inputmode="numeric" placeholder="850">
-  <label for="paid">Customer pays (KSh)</label><input id="paid" type="number" min="0" inputmode="numeric" placeholder="1000">
-  <p id="chg" class="chg" aria-live="polite">Change: KSh 0</p></div></div>
+  <p class="note">{% t 'home.smarthasibu.note' %}</p>
+  <div class="calc"><label for="amt">{% t 'home.smarthasibu.calc_sale_label' %}</label><input id="amt" type="number" min="0" inputmode="numeric" placeholder="850">
+  <label for="paid">{% t 'home.smarthasibu.calc_paid_label' %}</label><input id="paid" type="number" min="0" inputmode="numeric" placeholder="1000">
+  <p id="chg" class="chg" aria-live="polite">{% t 'home.smarthasibu.calc_change_default' %}</p></div></div>
 </div></section>
 
-<section id="projects" class="wrap"><h2>Projects &amp; collaborations</h2>
-  <p class="sub">Each entry states the owner, MoFirms’ role and the stage. Proposals and models are not presented as results.</p>
+<section id="projects" class="wrap"><h2>{% t 'home.projects.title' %}</h2>
+  <p class="sub">{% t 'home.projects.sub' %}</p>
   <aside class="project-context card" aria-labelledby="vofa-context-title">
-    <div class="project-context-heading"><span class="tag now">Association milestones reported</span><span class="note">VOFA guide · 31 October 2026</span></div>
-    <h3 id="vofa-context-title">A farmer-led association building its next steps</h3>
-    <p>Vihiga Organic Farmers Association (VOFA) is a separate, farmer-governed community-based organisation—not a MoFirms subsidiary. Its guide reports that VOFA has adopted its Constitution, completed CBO registration, opened a bank account, and begun farmer registration across Vihiga’s 29 wards. These are guide-reported milestones, not independently verified by MoFirms.</p>
-    <p class="project-context-note"><b>Reported seedling progress:</b> the guide says KALRO committed oil-palm seedlings for Emuhaya and that 500 of 1,000 discussed seedlings had been delivered to two members. VOFA noted this delivery had not yet been entered in its asset register.</p>
+    <div class="project-context-heading"><span class="tag now">{% t 'home.projects.vofa_tag' %}</span><span class="note">{% t 'home.projects.vofa_guide_date' %}</span></div>
+    <h3 id="vofa-context-title">{% t 'home.projects.vofa_title' %}</h3>
+    <p>{% t 'home.projects.vofa_body' %}</p>
+    <p class="project-context-note"><b>{% t 'home.projects.seedling_label' %}</b> {% t 'home.projects.seedling_body' %}</p>
   </aside>
   <div class="grid" id="projGrid"></div>
   <div class="cluster-intro">
-    <h3>Project clusters under consideration</h3>
-    <p class="sub">VOFA reports written proposals and illustrative financial models for these ideas. None is yet an approved or funded project. Activities under consideration are shown on each card.</p>
+    <h3>{% t 'home.projects.clusters_title' %}</h3>
+    <p class="sub">{% t 'home.projects.clusters_sub' %}</p>
   </div>
-  <div class="cluster-controls" role="group" aria-label="Project cluster controls">
-    <button class="cluster-arrow" id="clustersPrevious" type="button" aria-label="Show previous project clusters">←</button>
-    <button class="cluster-arrow" id="clustersNext" type="button" aria-label="Show next project clusters">→</button>
+  <div class="cluster-controls" role="group" aria-label="{% t 'home.projects.cluster_controls_label' %}">
+    <button class="cluster-arrow" id="clustersPrevious" type="button" aria-label="{% t 'home.projects.cluster_previous' %}">←</button>
+    <button class="cluster-arrow" id="clustersNext" type="button" aria-label="{% t 'home.projects.cluster_next' %}">→</button>
   </div>
-  <div class="cluster-viewport" id="clustersViewport" role="region" aria-label="Proposed VOFA project clusters" tabindex="0">
+  <div class="cluster-viewport" id="clustersViewport" role="region" aria-label="{% t 'home.projects.cluster_region_label' %}" tabindex="0">
     <div class="cluster-set" id="clusterGrid"></div>
   </div>
-  <p class="cluster-hint">Use the arrows, swipe or scroll to browse every proposed cluster.</p>
+  <p class="cluster-hint">{% t 'home.projects.cluster_hint' %}</p>
   <section class="project-readiness" aria-labelledby="project-readiness-title">
-    <h3 id="project-readiness-title">What needs to happen before a cluster can proceed</h3>
+    <h3 id="project-readiness-title">{% t 'home.projects.readiness_title' %}</h3>
     <ol class="concept-steps">
-      <li><b>Understand member readiness.</b><span>Survey interested members’ production, capacity, and willingness to participate.</span></li>
-      <li><b>Check demand and viability.</b><span>Assess potential buyers, supply terms, costs, likely earnings after costs, working-capital needs, and environmental fit.</span></li>
-      <li><b>Share a clear plan.</b><span>Give interested members the proposed costs, responsibilities, risks, and terms to review.</span></li>
-      <li><b>Obtain formal approval.</b><span>VOFA’s Committee must approve a cluster before the association commits resources or confirms partners.</span></li>
+      <li><b>{% t 'home.projects.step1_b' %}</b><span>{% t 'home.projects.step1_span' %}</span></li>
+      <li><b>{% t 'home.projects.step2_b' %}</b><span>{% t 'home.projects.step2_span' %}</span></li>
+      <li><b>{% t 'home.projects.step3_b' %}</b><span>{% t 'home.projects.step3_span' %}</span></li>
+      <li><b>{% t 'home.projects.step4_b' %}</b><span>{% t 'home.projects.step4_span' %}</span></li>
     </ol>
-    <p>With enough interested, verified members, a cluster could explore buyer negotiations, group input prices, and shared transport. Any approach to financiers depends on demonstrated production and genuine buyer interest; no outcome is guaranteed.</p>
-    <p class="project-safeguard"><b>Financial safeguards:</b> the proposed mutual-guarantee fund is not an approved scheme; VOFA’s guide says no deposits are being requested. Carbon budgets assume zero income until eligibility, methodology, and net benefit are independently verified.</p>
-    <a class="project-link" href="#contact" data-cat="Project collaboration">Discuss a similar project <span aria-hidden="true">→</span></a>
+    <p>{% t 'home.projects.negotiation_note' %}</p>
+    <p class="project-safeguard"><b>{% t 'home.projects.safeguard_label' %}</b> {% t 'home.projects.safeguard_body' %}</p>
+    <a class="project-link" href="#contact" data-cat="Project collaboration">{% t 'home.projects.discuss_similar' %} <span aria-hidden="true">→</span></a>
   </section>
 </section>
 
 <section id="products" class="alt"><div class="wrap">
-  <h2>Products &amp; supply enquiries</h2>
-  <p>We are exploring ways to help clients reach producers and suppliers of seedlings, poultry and beekeeping equipment. MoFirms would act as coordinator or introducer, not seller of record, unless confirmed otherwise. Listings go live only once specifications, availability, pricing and delivery terms are confirmed.</p>
-  <a class="btn ghost" href="#contact" data-cat="Products">Enquire about availability</a>
+  <h2>{% t 'home.products.title' %}</h2>
+  <p>{% t 'home.products.body' %}</p>
+  <a class="btn ghost" href="#contact" data-cat="Products">{% t 'home.products.enquire' %}</a>
 </div></section>
 
 <section id="contact" class="wrap two contact-section">
-  <div><h2>Request a consultation</h2>
-  <p>Tell us briefly what you need. Please don’t include ID numbers, tax PINs, land records or detailed financial information here.</p>
-  <p><b>Email:</b> <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a></p>
-  <p><a class="btn whatsapp-link" href="https://wa.me/254113665283?text=Hello%20MoFirms%2C%20I%20am%20a%20farmer%20and%20have%20an%20enquiry." target="_blank" rel="noopener noreferrer">Chat with MoFirms on WhatsApp</a></p>
-  <p class="note">WhatsApp opens an external chat. Please don’t send IDs or other sensitive information; <a href="/portal/register/">submit farmer registrations through the registration form</a>.</p></div>
+  <div><h2>{% t 'home.contact.title' %}</h2>
+  <p>{% t 'home.contact.body' %}</p>
+  <p><b>{% t 'home.contact.email_label' %}</b> <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a></p>
+  <p><a class="btn whatsapp-link" href="https://wa.me/254113665283?text=Hello%20MoFirms%2C%20I%20am%20a%20farmer%20and%20have%20an%20enquiry." target="_blank" rel="noopener noreferrer">{% t 'home.contact.whatsapp_chat' %}</a></p>
+  <p class="note">{% t 'home.contact.whatsapp_note' %} <a href="/portal/register/">{% t 'home.contact.whatsapp_note_link' %}</a>.</p></div>
   <form class="card contact-form" id="form" method="post" action="{% url 'consultation_lead' %}">
-    {% if not consultation_enabled %}<p class="note" role="status">This live site is currently a read-only demo. Please don’t submit personal details. Contact <a href="mailto:mconceptslimited@gmail.com">MoFirms by email</a> instead.</p>{% endif %}
+    {% if not consultation_enabled %}<p class="note" role="status">{% t 'home.contact.demo_notice' %} <a href="mailto:mconceptslimited@gmail.com">{% t 'home.contact.demo_notice_link' %}</a> {% t 'home.contact.demo_notice_suffix' %}</p>{% endif %}
     <fieldset {% if not consultation_enabled %}disabled{% endif %}>
     {% csrf_token %}
     {{ consultation_form.website }}
     {% if consultation_form.non_field_errors %}<div class="err" role="alert">{{ consultation_form.non_field_errors }}</div>{% endif %}
     <div class="contact-fields">
-      <div><label for="name">Name *</label>{{ consultation_form.full_name }}{{ consultation_form.full_name.errors }}</div>
-      <div><label for="how">Preferred contact *</label>{{ consultation_form.preferred_contact }}{{ consultation_form.preferred_contact.errors }}</div>
-      <div><label for="email">Email</label>{{ consultation_form.email }}{{ consultation_form.email.errors }}</div>
-      <div><label for="phone">Phone or WhatsApp</label>{{ consultation_form.phone }}{{ consultation_form.phone.errors }}</div>
-      <div><label for="org">Organisation / county (optional)</label>{{ consultation_form.organisation_or_county }}{{ consultation_form.organisation_or_county.errors }}</div>
-      <div><label for="cat">Enquiry category *</label>{{ consultation_form.category }}{{ consultation_form.category.errors }}</div>
-      <div class="contact-wide"><label for="msg">Message *</label>{{ consultation_form.message }}{{ consultation_form.message.errors }}</div>
+      <div><label for="name">{% t 'home.contact.name_label' %}</label>{{ consultation_form.full_name }}{{ consultation_form.full_name.errors }}</div>
+      <div><label for="how">{% t 'home.contact.contact_method_label' %}</label>{{ consultation_form.preferred_contact }}{{ consultation_form.preferred_contact.errors }}</div>
+      <div><label for="email">{% t 'home.contact.email_field_label' %}</label>{{ consultation_form.email }}{{ consultation_form.email.errors }}</div>
+      <div><label for="phone">{% t 'home.contact.phone_label' %}</label>{{ consultation_form.phone }}{{ consultation_form.phone.errors }}</div>
+      <div><label for="org">{% t 'home.contact.org_label' %}</label>{{ consultation_form.organisation_or_county }}{{ consultation_form.organisation_or_county.errors }}</div>
+      <div><label for="cat">{% t 'home.contact.category_label' %}</label>{{ consultation_form.category }}{{ consultation_form.category.errors }}</div>
+      <div class="contact-wide"><label for="msg">{% t 'home.contact.message_label' %}</label>{{ consultation_form.message }}{{ consultation_form.message.errors }}</div>
     </div>
     <label class="chk" for="id_privacy_consent">{{ consultation_form.privacy_consent }} {{ consultation_form.privacy_consent.label }}</label>
     {{ consultation_form.privacy_consent.errors }}
-    <p class="note">Use this form for a short enquiry only. Don’t include ID numbers, tax PINs, bank details, passwords, or sensitive financial records. No email or SMS automation is configured; a staff member will review requests and follow up manually. See the privacy notice below.</p>
-    <button class="btn" type="submit">Send enquiry</button>
+    <p class="note">{% t 'home.contact.privacy_note' %}</p>
+    <button class="btn" type="submit">{% t 'home.contact.send_button' %}</button>
     </fieldset>
   </form>
 </section>
@@ -338,18 +339,18 @@
 <section class="newsletter-section" id="newsletter">
   <div class="wrap newsletter-layout">
     <div>
-      <p class="eyebrow">MoFirms updates</p>
-      <h2>News and practical insights for your next business decision</h2>
-      <p>Get selected updates on farming and agribusiness, entrepreneurship and business advisory, or business risk assessment.</p>
-      <p class="note">We only use your email for the topics you select. You can unsubscribe at any time. Newsletter emails are not currently sent automatically.</p>
+      <p class="eyebrow">{% t 'home.newsletter.eyebrow' %}</p>
+      <h2>{% t 'home.newsletter.title' %}</h2>
+      <p>{% t 'home.newsletter.body' %}</p>
+      <p class="note">{% t 'home.newsletter.note' %}</p>
     </div>
     <form class="card newsletter-form" method="post" action="{% url 'subscribe_newsletter' %}">
-      {% if not newsletter_enabled %}<p class="note" role="status">Newsletter signups aren’t open on this site yet. Please don’t submit personal details.</p>{% endif %}
+      {% if not newsletter_enabled %}<p class="note" role="status">{% t 'home.newsletter.disabled_notice' %}</p>{% endif %}
       <fieldset {% if not newsletter_enabled %}disabled{% endif %}>
         {% csrf_token %}
         {{ newsletter_form.website }}
         {% if newsletter_form.non_field_errors %}<div class="err" role="alert">{{ newsletter_form.non_field_errors }}</div>{% endif %}
-        <label for="{{ newsletter_form.email.id_for_label }}">Email address</label>
+        <label for="{{ newsletter_form.email.id_for_label }}">{% t 'home.newsletter.email_label' %}</label>
         {{ newsletter_form.email }}{{ newsletter_form.email.errors }}
         <fieldset class="newsletter-topics">
           <legend>{{ newsletter_form.topics.label }}</legend>
@@ -357,7 +358,7 @@
         </fieldset>
         <label class="chk" for="{{ newsletter_form.marketing_consent.id_for_label }}">{{ newsletter_form.marketing_consent }} {{ newsletter_form.marketing_consent.label }}</label>
         {{ newsletter_form.marketing_consent.errors }}
-        <button class="btn" type="submit">Subscribe to updates</button>
+        <button class="btn" type="submit">{% t 'home.newsletter.subscribe_button' %}</button>
       </fieldset>
     </form>
   </div>
@@ -367,44 +368,44 @@
   <div class="wrap">
     <div class="footer-main">
       <div class="footer-brand">
-        <a class="footer-logo" href="#top" aria-label="MoFirms, back to top"><span>Mo</span>Firms</a>
-        <p>Practical agribusiness and enterprise advisory for farmers, entrepreneurs and organisations in Kenya.</p>
+        <a class="footer-logo" href="#top" aria-label="{% t 'home.footer.back_to_top_aria' %}"><span>Mo</span>Firms</a>
+        <p>{% t 'home.footer.tagline' %}</p>
         <a class="footer-email" href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a>
       </div>
       <nav class="footer-links" aria-label="Explore MoFirms">
-        <h2>Explore</h2>
-        <a href="#services">Services</a>
-        <a href="#projects">Projects &amp; collaborations</a>
-        <a href="#about">About MoFirms</a>
-        <a href="#smarthasibu">SmartHasibu</a>
-        <a href="/pricing/">Pricing</a>
-        <a href="/onboarding/">Onboarding</a>
+        <h2>{% t 'home.footer.explore_heading' %}</h2>
+        <a href="#services">{% t 'home.footer.explore_services' %}</a>
+        <a href="#projects">{% t 'home.footer.explore_projects' %}</a>
+        <a href="#about">{% t 'home.footer.explore_about' %}</a>
+        <a href="#smarthasibu">{% t 'home.footer.explore_smarthasibu' %}</a>
+        <a href="/pricing/">{% t 'home.footer.explore_pricing' %}</a>
+        <a href="/onboarding/">{% t 'home.footer.explore_onboarding' %}</a>
       </nav>
       <nav class="footer-links" aria-label="Farmer and partner portals">
-        <h2>Portals</h2>
-        <a href="/portal/register/">Farmer registration</a>
-        <a href="/portal/partners/register/">Partner registration</a>
-        <a href="/portal/business-readiness/">Farmer Business Readiness pilot</a>
-        <a href="/portal/financial-analysis/">Financial analysis</a>
-        <a href="/portal/risk-assessment/">Risk assessment</a>
-        <a href="/portal/research/register/">Research portal</a>
+        <h2>{% t 'home.footer.portals_heading' %}</h2>
+        <a href="/portal/register/">{% t 'home.footer.portal_farmer' %}</a>
+        <a href="/portal/partners/register/">{% t 'home.footer.portal_partner' %}</a>
+        <a href="/portal/business-readiness/">{% t 'home.footer.portal_readiness' %}</a>
+        <a href="/portal/financial-analysis/">{% t 'home.footer.portal_financial' %}</a>
+        <a href="/portal/risk-assessment/">{% t 'home.footer.portal_risk' %}</a>
+        <a href="/portal/research/register/">{% t 'home.footer.portal_research' %}</a>
       </nav>
       <div class="footer-contact">
-        <h2>Let’s talk</h2>
-        <p>Have a farm, business or project question? Tell us what support you’re looking for.</p>
-        <a class="footer-cta" href="#contact">Request a consultation <span aria-hidden="true">→</span></a>
-        <a class="footer-top" href="#top">Back to top ↑</a>
+        <h2>{% t 'home.footer.talk_heading' %}</h2>
+        <p>{% t 'home.footer.talk_body' %}</p>
+        <a class="footer-cta" href="#contact">{% t 'home.footer.talk_cta' %} <span aria-hidden="true">→</span></a>
+        <a class="footer-top" href="#top">{% t 'home.footer.back_to_top' %} ↑</a>
       </div>
     </div>
     <div class="footer-bottom">
-      <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). Registered in Kenya, No. PVT-5JULR6L.</p>
+      <p>© <span id="yr"></span> {% t 'home.footer.copyright' %}</p>
       <div class="footer-legal">
-        <button type="button" id="pv" aria-expanded="false" aria-controls="privacy">Privacy notice</button>
-        <a href="mailto:mconceptslimited@gmail.com">Contact</a>
+        <button type="button" id="pv" aria-expanded="false" aria-controls="privacy">{% t 'home.footer.privacy_notice_button' %}</button>
+        <a href="mailto:mconceptslimited@gmail.com">{% t 'home.footer.contact_link' %}</a>
       </div>
     </div>
-    <div id="privacy" hidden class="footer-privacy">We use consultation details to review and respond to enquiries; enquiry records are scheduled for deletion after two years without recorded contact. If you subscribe, we store your email, selected topics, and consent date to manage the newsletter. We use that address only for the selected updates and retain your unsubscribe status to avoid contacting you again. Unsubscribe using the link shown after signup or in newsletter messages. You may ask us to access, correct or delete your data by emailing <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a>. Newsletter emails are not currently sent automatically.</div>
+    <div id="privacy" hidden class="footer-privacy">{% t 'home.footer.privacy_body' %} <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a></div>
   </div>
 </footer>
-<a class="whatsapp-float" href="https://wa.me/254113665283?text=Hello%20MoFirms%2C%20I%20am%20a%20farmer%20and%20have%20an%20enquiry." target="_blank" rel="noopener noreferrer" aria-label="Chat with MoFirms on WhatsApp">Chat on WhatsApp</a>
+<a class="whatsapp-float" href="https://wa.me/254113665283?text=Hello%20MoFirms%2C%20I%20am%20a%20farmer%20and%20have%20an%20enquiry." target="_blank" rel="noopener noreferrer" aria-label="{% t 'home.whatsapp_float_aria' %}">{% t 'home.whatsapp_float_text' %}</a>
 </body></html>

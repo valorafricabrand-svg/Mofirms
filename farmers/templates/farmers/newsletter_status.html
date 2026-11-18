@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-{% load static %}
-<html lang="en">
+{% load static custom_i18n %}
+<html lang="{% current_language_code %}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MoFirms newsletter</title>
+  <title>{% t 'farmers.newsletter_status.title_tag' %}</title>
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body class="marketing-page">
@@ -13,22 +13,23 @@
       <img src="{% static 'images/mofirms-company-logo.png' %}" alt="MoFirms" width="195" height="65">
       <span class="site-logo-name">Marks Organic Farms Concepts Limited</span>
     </a>
+    {% include "farmers/_lang_switch.html" %}
     {% if mode == "subscribed" %}
-      <h1>You’re subscribed to MoFirms updates</h1>
-      <p>Your email and selected topics have been saved. Newsletter emails are not currently sent automatically; we’ll only send updates for the topics you chose.</p>
-      <p><a href="{{ unsubscribe_url }}">Manage or unsubscribe from this subscription</a>.</p>
+      <h1>{% t 'farmers.newsletter_status.subscribed_title' %}</h1>
+      <p>{% t 'farmers.newsletter_status.subscribed_body' %}</p>
+      <p><a href="{{ unsubscribe_url }}">{% t 'farmers.newsletter_status.manage_unsubscribe_link' %}</a>.</p>
     {% elif mode == "confirm_unsubscribe" %}
-      <h1>Unsubscribe from MoFirms updates?</h1>
-      <p>Confirm below to stop future newsletters to this address.</p>
+      <h1>{% t 'farmers.newsletter_status.confirm_unsubscribe_title' %}</h1>
+      <p>{% t 'farmers.newsletter_status.confirm_unsubscribe_body' %}</p>
       <form method="post">
         {% csrf_token %}
-        <button class="btn" type="submit">Confirm unsubscribe</button>
+        <button class="btn" type="submit">{% t 'farmers.newsletter_status.confirm_unsubscribe_button' %}</button>
       </form>
     {% else %}
-      <h1>You’re unsubscribed</h1>
-      <p>This address will no longer receive MoFirms newsletter updates.</p>
+      <h1>{% t 'farmers.newsletter_status.unsubscribed_title' %}</h1>
+      <p>{% t 'farmers.newsletter_status.unsubscribed_body' %}</p>
     {% endif %}
-    <p><a href="/">Return to MoFirms</a></p>
+    <p><a href="/">{% t 'farmers.newsletter_status.return_link' %}</a></p>
   </main>
 </body>
 </html>

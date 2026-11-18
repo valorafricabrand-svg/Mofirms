@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import F, Sum
 from django.db.models.functions import Coalesce
 
+from farmers.templatetags.custom_i18n import localize_choices, translate
 from .models import CreditSettlement, FarmEnterprise, LedgerEntry, SmartHasibuAccount
 
 
@@ -32,11 +33,20 @@ class FarmerSignupForm(forms.Form):
         )
     )
 
+    def __init__(self, *args, lang="en", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lang = lang
+        self.fields["name"].label = translate("field.your_name", lang)
+        self.fields["password1"].label = translate("field.password", lang)
+        self.fields["password1"].help_text = translate("help.password_unique", lang)
+        self.fields["password2"].label = translate("field.confirm_password", lang)
+        self.fields["consent"].label = translate("field.consent_smarthasibu", lang)
+
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
         user_model = get_user_model()
         if user_model.objects.filter(email__iexact=email).exists():
-            raise ValidationError("An account already uses this email address.")
+            raise ValidationError(translate("err.email_taken", self.lang))
         return email
 
     def clean(self):
@@ -44,7 +54,7 @@ class FarmerSignupForm(forms.Form):
         password1 = cleaned_data.get("password1")
         password2 = cleaned_data.get("password2")
         if password1 and password2 and password1 != password2:
-            self.add_error("password2", "The passwords do not match.")
+            self.add_error("password2", translate("err.passwords_mismatch", self.lang))
         if password1 and cleaned_data.get("email"):
             candidate = get_user_model()(username=cleaned_data["email"], email=cleaned_data["email"])
             try:
@@ -75,6 +85,16 @@ class FarmEnterpriseForm(forms.ModelForm):
             "name": "Examples: Greenhouse tomatoes, dairy goats, or maize plot.",
         }
 
+    def __init__(self, *args, lang="en", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lang = lang
+        self.fields["name"].label = translate("field.enterprise_name", lang)
+        self.fields["name"].help_text = translate("help.enterprise_name_examples", lang)
+        self.fields["category"].label = translate("field.enterprise_category", lang)
+        self.fields["category"].choices = localize_choices(
+            FarmEnterprise.Category.choices, lang, "choice.enterprise_category"
+        )
+
 
 class LedgerEntryForm(forms.ModelForm):
     class Meta:
@@ -98,9 +118,27 @@ class LedgerEntryForm(forms.ModelForm):
             "is_credit": "Tick when some or all of this sale or expense is still unpaid.",
         }
 
-    def __init__(self, *args, user, **kwargs):
+    def __init__(self, *args, user, lang="en", **kwargs):
         super().__init__(*args, **kwargs)
+        self.lang = lang
         self.fields["enterprise"].queryset = FarmEnterprise.objects.filter(owner=user)
+        self.fields["enterprise"].label = translate("field.ledger_enterprise", lang)
+        self.fields["entry_type"].label = translate("field.entry_type", lang)
+        self.fields["entry_type"].choices = localize_choices(
+            LedgerEntry.EntryType.choices, lang, "choice.entry_type"
+        )
+        self.fields["category"].label = translate("field.ledger_category", lang)
+        self.fields["category"].choices = localize_choices(
+            LedgerEntry.Category.choices, lang, "choice.ledger_category"
+        )
+        self.fields["amount"].label = translate("field.amount", lang)
+        self.fields["amount"].help_text = translate("help.amount_full", lang)
+        self.fields["occurred_on"].label = translate("field.occurred_on", lang)
+        self.fields["description"].label = translate("field.description", lang)
+        self.fields["counterparty"].label = translate("field.counterparty", lang)
+        self.fields["counterparty"].help_text = translate("help.counterparty", lang)
+        self.fields["is_credit"].label = translate("field.is_credit", lang)
+        self.fields["is_credit"].help_text = translate("help.is_credit", lang)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -116,15 +154,14 @@ class LedgerEntryForm(forms.ModelForm):
             },
         }
         if entry_type and category and category not in allowed.get(entry_type, set()):
-            self.add_error("category", "Choose a category matching income or expense.")
+            self.add_error("category", translate("err.category_mismatch", self.lang))
         amount = cleaned_data.get("amount")
         if amount is not None and self.instance.pk:
             settled = self.instance.amount_settled
             if amount < settled:
                 self.add_error(
                     "amount",
-                    "The amount cannot be less than the KSh %.2f already recorded "
-                    "as paid against this entry." % settled,
+                    translate("err.amount_below_settled", self.lang, amount="%.2f" % settled),
                 )
         return cleaned_data
 
@@ -138,8 +175,9 @@ class CreditSettlementForm(forms.ModelForm):
             "amount": forms.NumberInput(attrs={"min": "0.01", "step": "0.01", "inputmode": "decimal"}),
         }
 
-    def __init__(self, *args, user, **kwargs):
+    def __init__(self, *args, user, lang="en", **kwargs):
         super().__init__(*args, **kwargs)
+        self.lang = lang
         self.fields["entry"].queryset = (
             LedgerEntry.objects.filter(enterprise__owner=user, is_credit=True)
             .annotate(
@@ -148,7 +186,14 @@ class CreditSettlementForm(forms.ModelForm):
             .filter(amount__gt=F("settled"))
             .select_related("enterprise")
         )
+        self.fields["entry"].label = translate("field.settlement_entry", lang)
+        entry_type_labels = dict(
+            localize_choices(LedgerEntry.EntryType.choices, lang, "choice.entry_type")
+        )
         self.fields["entry"].label_from_instance = lambda entry: (
-            f"{entry.get_entry_type_display()} — {entry.description} "
+            f"{entry_type_labels.get(entry.entry_type, entry.entry_type)} — {entry.description} "
             f"({entry.enterprise.name}, KSh {entry.amount - entry.settled} outstanding)"
         )
+        self.fields["amount"].label = translate("field.amount", lang)
+        self.fields["settled_on"].label = translate("field.settled_on", lang)
+        self.fields["note"].label = translate("field.note", lang)

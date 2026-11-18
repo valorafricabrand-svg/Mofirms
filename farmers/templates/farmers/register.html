@@ -1,38 +1,39 @@
-{% load static %}
+{% load static custom_i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% current_language_code %}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Farmer registration | MoFirms</title>
-<meta name="description" content="Register a farmer or farmer group with MoFirms for onboarding and a needs assessment.">
+<title>{% t 'farmers.register.title_tag' %}</title>
+<meta name="description" content="{% t 'farmers.register.meta_description' %}">
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
+<a class="skip" href="#main">{% t 'farmers.register.skip_to_content' %}</a>
 <header class="nav"><div class="wrap bar">
   <a class="logo" href="/"><span>Mo</span>Firms</a>
-  <a class="btn sm" href="/">Back to MoFirms</a>
+  {% include "farmers/_lang_switch.html" %}
+  <a class="btn sm" href="/">{% t 'farmers.register.back_to_mofirms' %}</a>
 </div></header>
 
 <main id="main">
 <section class="wrap registration">
-  <p class="eyebrow">Farmer and group onboarding</p>
-  <h1>Farmer and group registration</h1>
-  <p class="lead">Tell MoFirms about your farming activities, the markets you serve, and the support that could help your farm or organisation grow. A MoFirms reviewer will assess your submission and follow up if needed.</p>
-  <p>Need help with registration? <a class="btn whatsapp-link" href="https://wa.me/254113665283?text=Hello%20MoFirms%2C%20I%20need%20help%20with%20farmer%20registration." target="_blank" rel="noopener noreferrer">Ask on WhatsApp</a></p>
-  <p class="form-hint">Submit your registration through this form. Please don’t send identity documents, bank details, or other sensitive information through WhatsApp.</p>
+  <p class="eyebrow">{% t 'farmers.register.eyebrow' %}</p>
+  <h1>{% t 'farmers.register.title' %}</h1>
+  <p class="lead">{% t 'farmers.register.lead' %}</p>
+  <p>{% t 'farmers.register.whatsapp_prefix' %} <a class="btn whatsapp-link" href="https://wa.me/254113665283?text=Hello%20MoFirms%2C%20I%20need%20help%20with%20farmer%20registration." target="_blank" rel="noopener noreferrer">{% t 'farmers.register.whatsapp_link' %}</a></p>
+  <p class="form-hint">{% t 'farmers.register.whatsapp_hint' %}</p>
 
   <aside class="notice notice-warning">
-    <h2>Before you begin</h2>
+    <h2>{% t 'farmers.register.before_you_begin' %}</h2>
     <ul>
-      <li>Provide information you are authorised to share. Group representatives should have permission to submit group information.</li>
-      <li>Identity and registration evidence is optional. Only upload documents relevant to the selected review, and do not upload bank statements, tax PIN records, passwords, or unrelated people's IDs.</li>
-      <li>Uploads are limited to {{ max_documents }} documents, {{ max_file_size_mb }} MB each and {{ max_total_size_mb }} MB total. Accepted types: PDF, JPG and PNG.</li>
-      <li>Uploaded evidence is scheduled for deletion after one year. Farmer profiles and assessments are scheduled for deletion after two years without recorded contact.</li>
+      <li>{% t 'farmers.register.notice_authorised_info' %}</li>
+      <li>{% t 'farmers.register.notice_evidence_optional' %}</li>
+      <li>{% t 'farmers.register.notice_uploads_limit_prefix' %} {{ max_documents }} {% t 'farmers.register.notice_uploads_limit_documents_mid' %} {{ max_file_size_mb }} {% t 'farmers.register.notice_uploads_limit_each_mid' %} {{ max_total_size_mb }} {% t 'farmers.register.notice_uploads_limit_total_suffix' %} {% t 'farmers.register.notice_accepted_types' %}</li>
+      <li>{% t 'farmers.register.notice_deletion_schedule' %}</li>
     </ul>
     {% if not portal_is_production %}
-    <p>This portal is running in local development. Do not enter real personal information or upload real identity documents until MoFirms has approved the privacy notice and deployed the service to secure production hosting.</p>
+    <p>{% t 'farmers.register.dev_notice' %}</p>
     {% endif %}
   </aside>
 
@@ -40,10 +41,10 @@
     {% csrf_token %}
     {{ form.website }}
     {% if form.non_field_errors %}<div class="err-box" role="alert">{{ form.non_field_errors }}</div>{% endif %}
-    {% if form.errors and not form.non_field_errors %}<p class="form-hint">Please correct the highlighted fields.</p>{% endif %}
+    {% if form.errors and not form.non_field_errors %}<p class="form-hint">{% t 'farmers.register.please_correct_fields' %}</p>{% endif %}
 
     <fieldset class="form-section choice-set">
-      <legend>Who are you registering? *</legend>
+      <legend>{% t 'farmers.register.legend_who' %}</legend>
       <div class="choice-grid">
         {% for radio in form.registration_type %}
           <label class="choice">{{ radio.tag }} {{ radio.choice_label }}</label>
@@ -53,7 +54,7 @@
     </fieldset>
 
     <fieldset id="groupFields" class="form-section">
-      <legend>Group or association details</legend>
+      <legend>{% t 'farmers.register.legend_group' %}</legend>
       <div class="form-grid">
         <div>{% include "farmers/field.html" with field=form.group_name %}</div>
         <div>{% include "farmers/field.html" with field=form.group_type %}</div>
@@ -66,7 +67,7 @@
     </fieldset>
 
     <fieldset class="form-section">
-      <legend>Primary contact</legend>
+      <legend>{% t 'farmers.register.legend_contact' %}</legend>
       <div class="form-grid">
         <div>{% include "farmers/field.html" with field=form.full_name %}</div>
         <div>{% include "farmers/field.html" with field=form.phone %}</div>
@@ -77,8 +78,8 @@
     </fieldset>
 
     <fieldset class="form-section">
-      <legend>Create an account (optional)</legend>
-      <p class="form-hint">Tick this if you want to sign in later to check your registration status. Leave it unticked to submit without an account, as before.</p>
+      <legend>{% t 'farmers.register.legend_create_account' %}</legend>
+      <p class="form-hint">{% t 'farmers.register.hint_create_account' %}</p>
       <div class="form-grid">
         <div class="wide-field">{% include "farmers/field.html" with field=form.create_account %}</div>
         <div>{% include "farmers/field.html" with field=form.password1 %}</div>
@@ -87,8 +88,8 @@
     </fieldset>
 
     <fieldset class="form-section">
-      <legend>Where you farm</legend>
-      <p class="form-hint">County is required. More specific local areas are optional; do not enter exact coordinates or plot details.</p>
+      <legend>{% t 'farmers.register.legend_location' %}</legend>
+      <p class="form-hint">{% t 'farmers.register.hint_location' %}</p>
       <div class="form-grid">
         <div>{% include "farmers/field.html" with field=form.county %}</div>
         <div>{% include "farmers/field.html" with field=form.sub_county %}</div>
@@ -98,8 +99,8 @@
     </fieldset>
 
     <fieldset class="form-section">
-      <legend>Farm and production profile</legend>
-      <p class="form-hint">Optional production details help MoFirms understand the scale and type of support that may fit. Estimates are fine.</p>
+      <legend>{% t 'farmers.register.legend_farm_profile' %}</legend>
+      <p class="form-hint">{% t 'farmers.register.hint_farm_profile' %}</p>
       <div class="form-grid">
         <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.activities %}</div>
         <div>{% include "farmers/field.html" with field=form.main_products %}</div>
@@ -113,8 +114,8 @@
     </fieldset>
 
     <fieldset class="form-section">
-      <legend>Business health and needs assessment</legend>
-      <p class="form-hint">Financial bands are optional estimates; do not enter bank account numbers, exact loan credentials, or passwords.</p>
+      <legend>{% t 'farmers.register.legend_needs_assessment' %}</legend>
+      <p class="form-hint">{% t 'farmers.register.hint_needs_assessment' %}</p>
       <div class="form-grid">
         <div>{% include "farmers/field.html" with field=form.sales_band %}</div>
         <div>{% include "farmers/field.html" with field=form.operating_cost_band %}</div>
@@ -129,8 +130,8 @@
     </fieldset>
 
     <fieldset class="form-section">
-      <legend>Optional supporting evidence</legend>
-      <p class="form-hint">Evidence helps a reviewer assess the relevant claim; submitting a file does not automatically verify identity, registration, or farm activity.</p>
+      <legend>{% t 'farmers.register.legend_evidence' %}</legend>
+      <p class="form-hint">{% t 'farmers.register.hint_evidence' %}</p>
       {{ document_formset.management_form }}
       {{ document_formset.non_form_errors }}
       {% for error in upload_errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
@@ -140,28 +141,28 @@
         {% endfor %}
       </div>
       <template id="emptyDocumentRow">{% include "farmers/document_row.html" with document_form=document_formset.empty_form %}</template>
-      <button id="addDocument" class="opt" type="button">Add another document</button>
-      <p class="form-hint">Private files are only available to authorised MoFirms staff. Evidence is scheduled for deletion after one year, even if an assessment remains open.</p>
+      <button id="addDocument" class="opt" type="button">{% t 'farmers.register.add_document_button' %}</button>
+      <p class="form-hint">{% t 'farmers.register.hint_files_private' %}</p>
       <label class="choice consent"><input type="checkbox" name="document_consent">
-        I consent to MoFirms reviewing any evidence I upload and deleting each file no later than one year after upload. I will not upload unrelated personal information.
+        {% t 'farmers.register.consent_document_upload' %}
       </label>
     </fieldset>
 
     <fieldset class="form-section">
-      <legend>Privacy and consent</legend>
-      <p>MoFirms uses the information on this form to assess your farming or organisation needs, review submitted evidence, and contact you about the registration. Access is restricted to authorised MoFirms staff.</p>
-      <p>Farmer profile and assessment details are scheduled for deletion after two years without recorded contact. You may request access, correction, or deletion by contacting <a href="mailto:{{ mofirms_contact_email }}">{{ mofirms_contact_email }}</a>. This notice and retention schedule must be reviewed and approved by MoFirms before the portal accepts real registrations.</p>
-      <p>Research invitations are separate from registration. You may withdraw optional invitation permission by contacting MoFirms. If you represent a group, this choice applies only to you as the named contact; every participant must make their own choice.</p>
+      <legend>{% t 'farmers.register.legend_privacy' %}</legend>
+      <p>{% t 'farmers.register.privacy_p1' %}</p>
+      <p>{% t 'farmers.register.privacy_p2_prefix' %} <a href="mailto:{{ mofirms_contact_email }}">{{ mofirms_contact_email }}</a>{% t 'farmers.register.privacy_p2_suffix' %}</p>
+      <p>{% t 'farmers.register.privacy_p3' %}</p>
       {% include "farmers/field.html" with field=form.privacy_consent %}
       {% include "farmers/field.html" with field=form.research_invite_consent %}
     </fieldset>
 
-    <button class="btn" type="submit">Submit registration for review</button>
+    <button class="btn" type="submit">{% t 'farmers.register.submit_button' %}</button>
   </form>
 </section>
 </main>
 <footer><div class="wrap">
-  <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
+  <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). <a href="/">{% t 'farmers.register.footer_main_website' %}</a></p>
 </div></footer>
 <script src="{% static 'js/register.js' %}"></script>
 </body>

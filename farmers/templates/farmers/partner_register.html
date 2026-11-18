@@ -1,37 +1,38 @@
-{% load static %}
+{% load static custom_i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% current_language_code %}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Supplier and buyer registration | MoFirms</title>
-<meta name="description" content="Register your agricultural supply, buying, or professional services business with MoFirms.">
+<title>{% t 'farmers.partner_register.title_tag' %}</title>
+<meta name="description" content="{% t 'farmers.partner_register.meta_description' %}">
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
+<a class="skip" href="#main">{% t 'farmers.partner_register.skip_to_content' %}</a>
 <header class="nav"><div class="wrap bar">
   <a class="logo" href="/"><span>Mo</span>Firms</a>
-  <a class="btn sm" href="/">Back to MoFirms</a>
+  {% include "farmers/_lang_switch.html" %}
+  <a class="btn sm" href="/">{% t 'farmers.partner_register.back_to_mofirms' %}</a>
 </div></header>
 
 <main id="main">
 <section class="wrap registration">
-  <p class="eyebrow">Supplier, buyer and service-provider onboarding</p>
-  <h1>Register your business or services</h1>
-  <p class="lead">Tell MoFirms what you supply, buy, or do; where you operate; and how you could work with farmers and agricultural businesses. You can select more than one partner role.</p>
+  <p class="eyebrow">{% t 'farmers.partner_register.eyebrow' %}</p>
+  <h1>{% t 'farmers.partner_register.title' %}</h1>
+  <p class="lead">{% t 'farmers.partner_register.lead' %}</p>
 
   <aside class="notice notice-warning">
-    <h2>Before you begin</h2>
+    <h2>{% t 'farmers.partner_register.before_you_begin' %}</h2>
     <ul>
-      <li>Give accurate information and provide evidence only when relevant to the specific claim being reviewed.</li>
-      <li>Business registration and identity evidence is optional. Do not upload tax PIN records, bank statements, passwords, unrelated people's IDs, or confidential customer records.</li>
-      <li>Uploads are limited to {{ max_documents }} documents, {{ max_file_size_mb }} MB each and {{ max_total_size_mb }} MB total. Accepted types: PDF, JPG and PNG.</li>
-      <li>Uploaded evidence is scheduled for deletion after one year. Partner profiles are scheduled for deletion after two years without recorded contact.</li>
-      <li>Submitting a profile does not make your company, identity, licence, products, or services “verified.” MoFirms staff review claims and record the evidence and scope of each decision.</li>
+      <li>{% t 'farmers.partner_register.notice_accurate_info' %}</li>
+      <li>{% t 'farmers.partner_register.notice_evidence_optional' %}</li>
+      <li>{% t 'farmers.partner_register.notice_uploads_limit_prefix' %} {{ max_documents }} {% t 'farmers.partner_register.notice_uploads_limit_documents_mid' %} {{ max_file_size_mb }} {% t 'farmers.partner_register.notice_uploads_limit_each_mid' %} {{ max_total_size_mb }} {% t 'farmers.partner_register.notice_uploads_limit_total_suffix' %} {% t 'farmers.partner_register.notice_accepted_types' %}</li>
+      <li>{% t 'farmers.partner_register.notice_deletion_schedule' %}</li>
+      <li>{% t 'farmers.partner_register.notice_not_verified' %}</li>
     </ul>
     {% if not portal_is_production %}
-    <p>This service is running in local development. Do not enter real personal or company information, or upload real documents, until MoFirms has approved the privacy notice and deployed the portal to secure production hosting.</p>
+    <p>{% t 'farmers.partner_register.dev_notice' %}</p>
     {% endif %}
   </aside>
 
@@ -39,17 +40,17 @@
     {% csrf_token %}
     {{ form.website_trap }}
     {% if form.non_field_errors %}<div class="err-box" role="alert">{{ form.non_field_errors }}</div>{% endif %}
-    {% if form.errors and not form.non_field_errors %}<p class="form-hint">Please correct the highlighted fields.</p>{% endif %}
+    {% if form.errors and not form.non_field_errors %}<p class="form-hint">{% t 'farmers.partner_register.please_correct_fields' %}</p>{% endif %}
 
     <fieldset class="form-section choice-set">
-      <legend>About your registration</legend>
-      <p class="form-hint">Choose whether the profile represents an individual or an organisation, then select every role that applies.</p>
+      <legend>{% t 'farmers.partner_register.legend_about_registration' %}</legend>
+      <p class="form-hint">{% t 'farmers.partner_register.hint_about_registration' %}</p>
       {% include "farmers/field.html" with field=form.applicant_type %}
       {% include "farmers/checkboxes.html" with field=form.roles %}
     </fieldset>
 
     <fieldset class="form-section">
-      <legend>Business and primary contact</legend>
+      <legend>{% t 'farmers.partner_register.legend_business_contact' %}</legend>
       <div class="form-grid">
         <div>{% include "farmers/field.html" with field=form.contact_name %}</div>
         <div>{% include "farmers/field.html" with field=form.phone %}</div>
@@ -64,8 +65,8 @@
     </fieldset>
 
     <fieldset class="form-section">
-      <legend>Organisation and experience</legend>
-      <p class="form-hint">Provide approximate business information. Formal registration is not required to submit a profile.</p>
+      <legend>{% t 'farmers.partner_register.legend_org_experience' %}</legend>
+      <p class="form-hint">{% t 'farmers.partner_register.hint_org_experience' %}</p>
       <div class="form-grid">
         <div>{% include "farmers/field.html" with field=form.registration_status %}</div>
         <div>{% include "farmers/field.html" with field=form.registration_number %}</div>
@@ -77,8 +78,8 @@
     </fieldset>
 
     <fieldset class="form-section">
-      <legend>Location and coverage</legend>
-      <p class="form-hint">Provide your operating base and the counties you serve or source from. Do not enter a private home address or exact coordinates.</p>
+      <legend>{% t 'farmers.partner_register.legend_location' %}</legend>
+      <p class="form-hint">{% t 'farmers.partner_register.hint_location' %}</p>
       <div class="form-grid">
         <div>{% include "farmers/field.html" with field=form.county %}</div>
         <div>{% include "farmers/field.html" with field=form.sub_county %}</div>
@@ -89,8 +90,8 @@
     </fieldset>
 
     <fieldset id="supplierFields" class="form-section">
-      <legend>Supplier profile</legend>
-      <p class="form-hint">Complete this section if you supply farm inputs, equipment, produce-related services, or other goods and services.</p>
+      <legend>{% t 'farmers.partner_register.legend_supplier' %}</legend>
+      <p class="form-hint">{% t 'farmers.partner_register.hint_supplier' %}</p>
       <div class="form-grid">
         <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.offer_categories %}</div>
         <div>{% include "farmers/field.html" with field=form.brands_or_products %}</div>
@@ -102,8 +103,8 @@
     </fieldset>
 
     <fieldset id="buyerFields" class="form-section">
-      <legend>Produce buyer profile</legend>
-      <p class="form-hint">Complete this section if you buy agricultural produce directly or on behalf of an organisation. Estimates and indicative requirements are fine.</p>
+      <legend>{% t 'farmers.partner_register.legend_buyer' %}</legend>
+      <p class="form-hint">{% t 'farmers.partner_register.hint_buyer' %}</p>
       <div class="form-grid">
         <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.produce_categories %}</div>
         <div class="wide-field">{% include "farmers/field.html" with field=form.produce_details %}</div>
@@ -116,8 +117,8 @@
     </fieldset>
 
     <fieldset id="serviceFields" class="form-section">
-      <legend>Professional and service provider profile</legend>
-      <p class="form-hint">Complete this section if you provide professional, technical, training, or other services to farmers and agricultural organisations.</p>
+      <legend>{% t 'farmers.partner_register.legend_service' %}</legend>
+      <p class="form-hint">{% t 'farmers.partner_register.hint_service' %}</p>
       <div class="form-grid">
         <div class="wide-field">{% include "farmers/field.html" with field=form.service_description %}</div>
         <div class="wide-field">{% include "farmers/field.html" with field=form.clients_and_references %}</div>
@@ -128,13 +129,13 @@
     </fieldset>
 
     <fieldset id="sharedOfferFields" class="form-section">
-      <legend>Goods and service availability</legend>
-      <p class="form-hint">Describe your offering, typical availability, and any important limits.</p>
+      <legend>{% t 'farmers.partner_register.legend_offer' %}</legend>
+      <p class="form-hint">{% t 'farmers.partner_register.hint_offer' %}</p>
       {% include "farmers/field.html" with field=form.offer_details %}
     </fieldset>
 
     <fieldset class="form-section">
-      <legend>Partnership goals and challenges</legend>
+      <legend>{% t 'farmers.partner_register.legend_goals' %}</legend>
       <div class="form-grid">
         <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.engagement_interests %}</div>
         <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.challenges %}</div>
@@ -144,8 +145,8 @@
     </fieldset>
 
     <fieldset class="form-section">
-      <legend>Optional supporting evidence</legend>
-      <p class="form-hint">Examples: business registration certificate, professional licence, product catalogue, quality certificate, or evidence of buying or supply capacity. Upload only files that support a selected role or claim; an upload does not itself verify a business or product.</p>
+      <legend>{% t 'farmers.partner_register.legend_evidence' %}</legend>
+      <p class="form-hint">{% t 'farmers.partner_register.hint_evidence_examples' %}</p>
       {{ document_formset.management_form }}
       {{ document_formset.non_form_errors }}
       {% for error in upload_errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
@@ -155,29 +156,29 @@
         {% endfor %}
       </div>
       <template id="emptyDocumentRow">{% include "farmers/document_row.html" with document_form=document_formset.empty_form %}</template>
-      <button id="addDocument" class="opt" type="button">Add another document</button>
-      <p class="form-hint">Files are private and available only to authorised MoFirms staff. Each file is scheduled for deletion no later than one year after upload.</p>
+      <button id="addDocument" class="opt" type="button">{% t 'farmers.partner_register.add_document_button' %}</button>
+      <p class="form-hint">{% t 'farmers.partner_register.hint_files_private' %}</p>
       <label class="choice consent"><input type="checkbox" name="document_consent">
-        I consent to MoFirms staff reviewing any evidence I upload and deleting it no later than one year after upload. I will not upload tax, bank, password, or unrelated personal documents.
+        {% t 'farmers.partner_register.consent_document_upload' %}
       </label>
     </fieldset>
 
     <fieldset class="form-section">
-      <legend>Privacy and permissions</legend>
-      <p>MoFirms uses the information on this form to review your partner profile, assess fit with farmer and organisation needs, and contact you about relevant opportunities. Access is restricted to authorised MoFirms staff. Profiles are scheduled for deletion after two years without recorded contact.</p>
-      <p>Sharing your details directly with a prospective partner is optional and requires separate consent below. Your details will not be published in a public directory. You may request access, correction, or deletion at <a href="mailto:{{ mofirms_contact_email }}">{{ mofirms_contact_email }}</a>. This notice and retention schedule must be reviewed and approved by MoFirms before real registrations open.</p>
-      <p>You may withdraw optional research-invitation permission by contacting MoFirms. Researchers do not receive your contact details or individual answers.</p>
+      <legend>{% t 'farmers.partner_register.legend_privacy' %}</legend>
+      <p>{% t 'farmers.partner_register.privacy_p1' %}</p>
+      <p>{% t 'farmers.partner_register.privacy_p2_prefix' %} <a href="mailto:{{ mofirms_contact_email }}">{{ mofirms_contact_email }}</a>{% t 'farmers.partner_register.privacy_p2_suffix' %}</p>
+      <p>{% t 'farmers.partner_register.privacy_p3' %}</p>
       {% include "farmers/field.html" with field=form.privacy_consent %}
       {% include "farmers/field.html" with field=form.listing_consent %}
       {% include "farmers/field.html" with field=form.research_invite_consent %}
     </fieldset>
 
-    <button class="btn" type="submit">Submit partner registration for review</button>
+    <button class="btn" type="submit">{% t 'farmers.partner_register.submit_button' %}</button>
   </form>
 </section>
 </main>
 <footer><div class="wrap">
-  <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
+  <p>© <span id="yr"></span> Marks Organic Farms Concepts Limited (MoFirms). <a href="/">{% t 'farmers.partner_register.footer_main_website' %}</a></p>
 </div></footer>
 <script src="{% static 'js/register.js' %}"></script>
 </body>

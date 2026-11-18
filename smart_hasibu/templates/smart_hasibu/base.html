@@ -1,6 +1,6 @@
-{% load static %}
+{% load static custom_i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% current_language_code %}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,17 +10,18 @@
 <link rel="stylesheet" href="{% static 'css/smart-hasibu.css' %}">
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
+<a class="skip" href="#main">{% t 'common.skip_to_content' %}</a>
 <header class="nav"><div class="wrap bar">
   <a class="logo" href="/"><span>Mo</span>Firms</a>
+  {% include "farmers/_lang_switch.html" %}
   {% if request.user.is_authenticated %}
     <span class="sh-user">{{ request.user.first_name|default:request.user.email }}</span>
-    <a class="opt" href="{% url 'smart_hasibu:password_change' %}">Change password</a>
+    <a class="opt" href="{% url 'smart_hasibu:password_change' %}">{% t 'sh.nav.change_password' %}</a>
     <form method="post" action="{% url 'smart_hasibu:logout' %}">
-      {% csrf_token %}<button class="opt" type="submit">Sign out</button>
+      {% csrf_token %}<button class="opt" type="submit">{% t 'common.sign_out' %}</button>
     </form>
   {% else %}
-    <a class="btn sm" href="{% url 'smart_hasibu:login' %}">Sign in</a>
+    <a class="btn sm" href="{% url 'smart_hasibu:login' %}">{% t 'common.sign_in' %}</a>
   {% endif %}
 </div></header>
 <main id="main">
@@ -31,6 +32,6 @@
   {% endif %}
   {% block content %}{% endblock %}
 </main>
-<footer><div class="wrap"><p>SmartHasibu · Kenyan shillings (KSh) · <a href="/">MoFirms website</a></p></div></footer>
+<footer><div class="wrap"><p>{% t 'sh.footer.tagline' %} · <a href="/">{% t 'common.home' %}</a></p></div></footer>
 </body>
 </html>

@@ -1,19 +1,20 @@
-{% load static %}
+{% load static custom_i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% current_language_code %}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Thank you | MoFirms research</title>
+<title>{% t 'farmers.research_thanks.title_tag' %}</title>
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
 <main id="main"><section class="wrap registration"><div class="card">
-  <p class="eyebrow">MoFirms · Research questionnaire</p>
-  <h1>Thank you for participating</h1>
-  <p>Your response was received without storing your name or contact details with your answers. The invitation has been used and cannot be submitted again.</p>
-  <p>Researchers receive only aggregate results, subject to minimum group-size safeguards.</p>
-  <a class="btn" href="/">Return to MoFirms</a>
+  {% include "farmers/_lang_switch.html" %}
+  <p class="eyebrow">{% t 'farmers.research_thanks.eyebrow' %}</p>
+  <h1>{% t 'farmers.research_thanks.title' %}</h1>
+  <p>{% t 'farmers.research_thanks.body1' %}</p>
+  <p>{% t 'farmers.research_thanks.body2' %}</p>
+  <a class="btn" href="/">{% t 'farmers.research_thanks.return_link' %}</a>
 </div></section></main>
 </body>
 </html>

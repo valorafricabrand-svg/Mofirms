@@ -1,60 +1,61 @@
 {% extends "smart_hasibu/base.html" %}
-{% load humanize %}
+{% load humanize custom_i18n %}
 {% block title %}My cashbook | SmartHasibu{% endblock %}
 {% block content %}
 <section class="wrap sh-dashboard">
-  <p class="eyebrow">SmartHasibu · Private farmer cashbook</p>
+  <p class="eyebrow">{% t 'sh.dashboard.eyebrow' %}</p>
   <div class="sh-heading">
     <div>
-      <h1>Hello, {{ request.user.first_name|default:"farmer" }}</h1>
-      <p class="sh-lead">Record simply. Understand where your farm money goes.</p>
+      {% t 'sh.dashboard.farmer_fallback' as farmer_fallback %}
+      <h1>{% t 'sh.dashboard.hello' %}, {{ request.user.first_name|default:farmer_fallback }}</h1>
+      <p class="sh-lead">{% t 'sh.dashboard.lead' %}</p>
     </div>
     <form method="get" class="sh-period">
-      <label for="id_month">Summary month</label>
+      <label for="id_month">{% t 'sh.dashboard.summary_month' %}</label>
       <input id="id_month" type="month" name="month" value="{{ month }}">
       {% if selected_enterprise %}<input type="hidden" name="enterprise" value="{{ selected_enterprise.pk }}">{% endif %}
-      <button class="opt" type="submit">View</button>
-      <a class="opt" href="{% url 'smart_hasibu:export_entries' %}?month={{ month }}{% if selected_enterprise %}&enterprise={{ selected_enterprise.pk }}{% endif %}">Export CSV</a>
+      <button class="opt" type="submit">{% t 'sh.dashboard.view_button' %}</button>
+      <a class="opt" href="{% url 'smart_hasibu:export_entries' %}?month={{ month }}{% if selected_enterprise %}&enterprise={{ selected_enterprise.pk }}{% endif %}">{% t 'sh.dashboard.export_csv' %}</a>
     </form>
   </div>
 
   <aside class="notice">
-    <p>These totals are based on the entries you record; they are not audited accounts, profit forecasts, or financial advice.</p>
+    <p>{% t 'sh.dashboard.notice_accounts' %}</p>
   </aside>
 
   <form method="get" class="sh-filter">
     <input type="hidden" name="month" value="{{ month }}">
-    <label for="id_enterprise_filter">Enterprise</label>
+    <label for="id_enterprise_filter">{% t 'sh.dashboard.enterprise_filter_label' %}</label>
     <select id="id_enterprise_filter" name="enterprise">
-      <option value="">All my enterprises</option>
+      <option value="">{% t 'sh.dashboard.all_enterprises' %}</option>
       {% for enterprise in enterprises %}
         <option value="{{ enterprise.pk }}"{% if selected_enterprise.pk == enterprise.pk %} selected{% endif %}>{{ enterprise.name }}</option>
       {% endfor %}
     </select>
-    <button class="opt" type="submit">Filter</button>
-    {% if selected_enterprise %}<a class="opt" href="?month={{ month }}">Clear</a>{% endif %}
+    <button class="opt" type="submit">{% t 'sh.dashboard.filter_button' %}</button>
+    {% if selected_enterprise %}<a class="opt" href="?month={{ month }}">{% t 'sh.dashboard.clear_button' %}</a>{% endif %}
   </form>
 
   {% if not enterprises %}
   <div class="card sh-empty">
-    <h2>Start with one farm activity</h2>
-    <p>Add an enterprise such as “Dairy goats” or “Tomato greenhouse”, then record the first sale or cost.</p>
+    <h2>{% t 'sh.dashboard.empty_title' %}</h2>
+    <p>{% t 'sh.dashboard.empty_body' %}</p>
   </div>
   {% endif %}
 
   <div class="sh-summary" aria-label="Monthly cashbook summary">
-    <article class="card"><span>Sales and income recorded</span><strong>KSh {{ income_total|floatformat:2|intcomma }}</strong></article>
-    <article class="card"><span>Costs recorded</span><strong>KSh {{ expense_total|floatformat:2|intcomma }}</strong></article>
-    <article class="card"><span>Difference recorded</span><strong>KSh {{ net_total|floatformat:2|intcomma }}</strong><small>Income less costs · {{ entry_count }} entries</small></article>
-    <article class="card"><span>Customers owe you</span><strong>KSh {{ receivable_total|floatformat:2|intcomma }}</strong></article>
-    <article class="card"><span>You owe suppliers</span><strong>KSh {{ payable_total|floatformat:2|intcomma }}</strong></article>
+    <article class="card"><span>{% t 'sh.dashboard.summary_income' %}</span><strong>KSh {{ income_total|floatformat:2|intcomma }}</strong></article>
+    <article class="card"><span>{% t 'sh.dashboard.summary_costs' %}</span><strong>KSh {{ expense_total|floatformat:2|intcomma }}</strong></article>
+    <article class="card"><span>{% t 'sh.dashboard.summary_diff' %}</span><strong>KSh {{ net_total|floatformat:2|intcomma }}</strong><small>{% t 'sh.dashboard.income_less_costs' %} · {{ entry_count }} {% t 'sh.common.entries_word' %}</small></article>
+    <article class="card"><span>{% t 'sh.dashboard.summary_receivable' %}</span><strong>KSh {{ receivable_total|floatformat:2|intcomma }}</strong></article>
+    <article class="card"><span>{% t 'sh.dashboard.summary_payable' %}</span><strong>KSh {{ payable_total|floatformat:2|intcomma }}</strong></article>
   </div>
 
   <div class="sh-columns">
     <section class="card sh-panel">
-      <h2>Record a sale or cost</h2>
+      <h2>{% t 'sh.dashboard.record_entry_heading' %}</h2>
       {% if entry_form.non_field_errors %}<div class="err-box" role="alert">{{ entry_form.non_field_errors }}</div>{% endif %}
-      {% if not enterprises %}<p>Add an enterprise before making a transaction entry.</p>{% else %}
+      {% if not enterprises %}<p>{% t 'sh.dashboard.add_enterprise_before' %}</p>{% else %}
       <form method="post">
         {% csrf_token %}<input type="hidden" name="action" value="entry">
         {% include "farmers/field.html" with field=entry_form.enterprise %}
@@ -65,36 +66,36 @@
         {% include "farmers/field.html" with field=entry_form.description %}
         {% include "farmers/field.html" with field=entry_form.counterparty %}
         {% include "farmers/field.html" with field=entry_form.is_credit %}
-        <button class="btn" type="submit">Save entry</button>
+        <button class="btn" type="submit">{% t 'sh.dashboard.save_entry_button' %}</button>
       </form>
       {% endif %}
     </section>
 
     <section class="card sh-panel">
-      <h2>Add an enterprise</h2>
+      <h2>{% t 'sh.dashboard.add_enterprise_heading' %}</h2>
       {% if enterprise_form.non_field_errors %}<div class="err-box" role="alert">{{ enterprise_form.non_field_errors }}</div>{% endif %}
       <form method="post">
         {% csrf_token %}<input type="hidden" name="action" value="enterprise">
         {% include "farmers/field.html" with field=enterprise_form.name %}
         {% include "farmers/field.html" with field=enterprise_form.category %}
-        <button class="opt" type="submit">Add enterprise</button>
+        <button class="opt" type="submit">{% t 'sh.dashboard.add_enterprise_button' %}</button>
       </form>
       {% if enterprises %}
       <ul class="sh-enterprise-list">
         {% for enterprise in enterprises %}
         <li>
-          <span>{{ enterprise.name }} <small>{{ enterprise.get_category_display }}</small></span>
+          <span>{{ enterprise.name }} <small>{% choice_label enterprise.category "choice.enterprise_category" %}</small></span>
           <span class="sh-row-actions">
-            <a class="opt" href="{% url 'smart_hasibu:enterprise_edit' enterprise.pk %}">Rename</a>
-            <form method="post" action="{% url 'smart_hasibu:enterprise_delete' enterprise.pk %}" onsubmit="return confirm('Delete this enterprise? This only works if it has no recorded entries.');">
-              {% csrf_token %}<button class="opt" type="submit">Delete</button>
+            <a class="opt" href="{% url 'smart_hasibu:enterprise_edit' enterprise.pk %}">{% t 'sh.dashboard.rename_link' %}</a>
+            <form method="post" action="{% url 'smart_hasibu:enterprise_delete' enterprise.pk %}" onsubmit="return confirm('{% t 'sh.dashboard.delete_enterprise_confirm' %}');">
+              {% csrf_token %}<button class="opt" type="submit">{% t 'sh.dashboard.delete_link' %}</button>
             </form>
           </span>
         </li>
         {% endfor %}
       </ul>
       {% endif %}
-      <h2 class="sh-section-gap">Record a credit payment</h2>
+      <h2 class="sh-section-gap">{% t 'sh.dashboard.record_payment_heading' %}</h2>
       {% if settlement_form.non_field_errors %}<div class="err-box" role="alert">{{ settlement_form.non_field_errors }}</div>{% endif %}
       <form method="post">
         {% csrf_token %}<input type="hidden" name="action" value="settlement">
@@ -102,29 +103,29 @@
         {% include "farmers/field.html" with field=settlement_form.amount %}
         {% include "farmers/field.html" with field=settlement_form.settled_on %}
         {% include "farmers/field.html" with field=settlement_form.note %}
-        <button class="opt" type="submit">Save payment</button>
+        <button class="opt" type="submit">{% t 'sh.dashboard.save_payment_button' %}</button>
       </form>
     </section>
   </div>
 
   <section class="card sh-ledger">
-    <h2>Entries · {{ month }}</h2>
+    <h2>{% t 'sh.dashboard.entries_heading' %} · {{ month }}</h2>
     {% if entries %}
       <div class="sh-table-wrap"><table class="sh-table">
-        <thead><tr><th>Date</th><th>Enterprise</th><th>Type</th><th>Details</th><th>Amount</th><th>Credit balance</th><th>Actions</th></tr></thead>
+        <thead><tr><th>{% t 'sh.dashboard.table_date' %}</th><th>{% t 'sh.dashboard.table_enterprise' %}</th><th>{% t 'sh.dashboard.table_type' %}</th><th>{% t 'sh.dashboard.table_details' %}</th><th>{% t 'sh.dashboard.table_amount' %}</th><th>{% t 'sh.dashboard.table_credit_balance' %}</th><th>{% t 'sh.dashboard.table_actions' %}</th></tr></thead>
         <tbody>
         {% for entry in entries %}
           <tr>
             <td>{{ entry.occurred_on }}</td>
             <td>{{ entry.enterprise.name }}</td>
-            <td>{{ entry.get_entry_type_display }}</td>
+            <td>{% choice_label entry.entry_type "choice.entry_type" %}</td>
             <td>{{ entry.description }}{% if entry.counterparty %}<small>{{ entry.counterparty }}</small>{% endif %}</td>
             <td>KSh {{ entry.amount|floatformat:2|intcomma }}</td>
             <td>{% if entry.is_credit %}KSh {{ entry.amount_outstanding|floatformat:2|intcomma }}{% else %}—{% endif %}</td>
             <td class="sh-row-actions">
-              <a class="opt" href="{% url 'smart_hasibu:entry_edit' entry.pk %}">Edit</a>
-              <form method="post" action="{% url 'smart_hasibu:entry_delete' entry.pk %}" onsubmit="return confirm('Delete this entry? This cannot be undone.');">
-                {% csrf_token %}<button class="opt" type="submit">Delete</button>
+              <a class="opt" href="{% url 'smart_hasibu:entry_edit' entry.pk %}">{% t 'sh.dashboard.edit_link' %}</a>
+              <form method="post" action="{% url 'smart_hasibu:entry_delete' entry.pk %}" onsubmit="return confirm('{% t 'sh.dashboard.delete_entry_confirm' %}');">
+                {% csrf_token %}<button class="opt" type="submit">{% t 'sh.dashboard.delete_link' %}</button>
               </form>
             </td>
           </tr>
@@ -134,16 +135,16 @@
       {% if entries.has_other_pages %}
       <nav class="sh-pagination" aria-label="Entry pages">
         {% if entries.has_previous %}
-          <a class="opt" href="?month={{ month }}{% if selected_enterprise %}&enterprise={{ selected_enterprise.pk }}{% endif %}&page={{ entries.previous_page_number }}">← Newer</a>
+          <a class="opt" href="?month={{ month }}{% if selected_enterprise %}&enterprise={{ selected_enterprise.pk }}{% endif %}&page={{ entries.previous_page_number }}">{% t 'sh.dashboard.newer_link' %}</a>
         {% endif %}
-        <span>Page {{ entries.number }} of {{ entries.paginator.num_pages }} · {{ entry_count }} entries</span>
+        <span>{% t 'sh.dashboard.page_of' %} {{ entries.number }} {% t 'sh.dashboard.of_word' %} {{ entries.paginator.num_pages }} · {{ entry_count }} {% t 'sh.common.entries_word' %}</span>
         {% if entries.has_next %}
-          <a class="opt" href="?month={{ month }}{% if selected_enterprise %}&enterprise={{ selected_enterprise.pk }}{% endif %}&page={{ entries.next_page_number }}">Older →</a>
+          <a class="opt" href="?month={{ month }}{% if selected_enterprise %}&enterprise={{ selected_enterprise.pk }}{% endif %}&page={{ entries.next_page_number }}">{% t 'sh.dashboard.older_link' %}</a>
         {% endif %}
       </nav>
       {% endif %}
     {% else %}
-      <p>No entries for this month yet. Add the first sale or cost above.</p>
+      <p>{% t 'sh.dashboard.no_entries' %}</p>
     {% endif %}
   </section>
 </section>

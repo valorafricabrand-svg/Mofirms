@@ -6,6 +6,7 @@ from django.views.generic import TemplateView
 
 from mofirms_backend.health import health_check
 from mofirms_backend.retention import run_retention_purge
+from mofirms_backend.views import set_language
 from farmers.views import (
     home,
     download_document,
@@ -20,6 +21,7 @@ from farmers.billing import pricing, public_checkout
 
 urlpatterns = [
     path("", home, name="home"),
+    path("lang/", set_language, name="set_language"),
     path("newsletter/subscribe/", subscribe_newsletter, name="subscribe_newsletter"),
     path(
         "newsletter/unsubscribe/<uuid:token>/",

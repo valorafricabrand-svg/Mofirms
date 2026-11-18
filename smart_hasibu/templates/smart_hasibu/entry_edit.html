@@ -1,10 +1,11 @@
 {% extends "smart_hasibu/base.html" %}
+{% load custom_i18n %}
 {% block title %}Edit entry | SmartHasibu{% endblock %}
 {% block content %}
 <section class="wrap registration sh-auth">
-  <p class="eyebrow">SmartHasibu · Edit entry</p>
+  <p class="eyebrow">{% t 'sh.entry_edit.eyebrow' %}</p>
   <div class="card registration-form">
-    <h1>Edit this record</h1>
+    <h1>{% t 'sh.entry_edit.title' %}</h1>
     {% if form.non_field_errors %}<div class="err-box" role="alert">{{ form.non_field_errors }}</div>{% endif %}
     <form method="post">
       {% csrf_token %}
@@ -16,9 +17,9 @@
       {% include "farmers/field.html" with field=form.description %}
       {% include "farmers/field.html" with field=form.counterparty %}
       {% include "farmers/field.html" with field=form.is_credit %}
-      <button class="btn" type="submit">Save changes</button>
+      <button class="btn" type="submit">{% t 'sh.common.save_changes' %}</button>
     </form>
-    <p><a href="{% url 'smart_hasibu:dashboard' %}">Cancel and go back</a></p>
+    <p><a href="{% url 'smart_hasibu:dashboard' %}">{% t 'sh.common.cancel_back' %}</a></p>
   </div>
 </section>
 {% endblock %}

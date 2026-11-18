@@ -1,0 +1,6 @@
+{% load custom_i18n %}
+{% current_language_code as lang_code %}
+<a class="lang-switch" href="{% url 'set_language' %}?lang={% if lang_code == 'sw' %}en{% else %}sw{% endif %}&next={{ request.get_full_path|urlencode }}" aria-label="{% t 'common.switch_language_label' %}">
+  <span aria-hidden="true">🌐</span>
+  {% if lang_code == 'sw' %}{% t 'common.switch_to_en' %}{% else %}{% t 'common.switch_to_sw' %}{% endif %}
+</a>

@@ -1,6 +1,6 @@
-{% load static %}
+{% load static custom_i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% current_language_code %}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,29 +9,30 @@
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
+<a class="skip" href="#main">{% t 'common.skip_to_content' %}</a>
 <header class="nav"><div class="wrap bar">
   <a class="logo" href="/"><span>Mo</span>Firms</a>
-  <a class="btn sm" href="/">Back to MoFirms</a>
+  {% include "farmers/_lang_switch.html" %}
+  <a class="btn sm" href="/">{% t 'farmers.risk_assessment.back_link' %}</a>
 </div></header>
 
 <main id="main">
 <section class="wrap registration">
-  <p class="eyebrow">Risk and opportunity assessment</p>
-  <h1>Request a risk and opportunity assessment</h1>
-  <p class="lead">Describe your enterprise, the risks you are managing, and the opportunities you want to explore. A MoFirms reviewer will discuss the scope and fee before any specialist work begins.</p>
+  <p class="eyebrow">{% t 'farmers.risk_assessment.eyebrow' %}</p>
+  <h1>{% t 'farmers.risk_assessment.title' %}</h1>
+  <p class="lead">{% t 'farmers.risk_assessment.lead' %}</p>
 
   <aside class="notice notice-warning">
-    <h2>Before you begin</h2>
+    <h2>{% t 'farmers.risk_assessment.before_heading' %}</h2>
     <ul>
-      <li>This is a request for a human-led, specialist-prepared assessment. There is no automated risk score, investment or lending decision, insurance underwriting, legal opinion, or guarantee of an outcome.</li>
-      <li>MoFirms will review the request and contact you about the scope, suitability, specialist availability, and a fee quote. Work starts only after you agree to the scope and quote.</li>
-      <li>Do not include account passwords, personal ID numbers, tax PINs, full account or card numbers, or confidential information about people who have not agreed to share it.</li>
-      <li>Supporting files are optional. Upload only relevant, redacted summaries. Files are private, limited to {{ max_documents }} per request, {{ max_file_size_mb }} MB each and {{ max_total_size_mb }} MB total. Accepted types: PDF, JPG and PNG.</li>
-      <li>Uploaded files are scheduled for deletion after one year; requests are scheduled for deletion after two years without recorded contact.</li>
+      <li>{% t 'farmers.risk_assessment.before_li1' %}</li>
+      <li>{% t 'farmers.risk_assessment.before_li2' %}</li>
+      <li>{% t 'farmers.risk_assessment.before_li3' %}</li>
+      <li>{% t 'farmers.risk_assessment.before_li4_prefix' %} {{ max_documents }} {% t 'farmers.risk_assessment.before_li4_per_request' %} {{ max_file_size_mb }} {% t 'farmers.risk_assessment.before_li4_mb_each_and' %} {{ max_total_size_mb }} {% t 'farmers.risk_assessment.before_li4_suffix' %}</li>
+      <li>{% t 'farmers.risk_assessment.before_li5' %}</li>
     </ul>
     {% if not portal_is_production %}
-    <p>This service is running in local development. Use synthetic information only; do not enter real personal or commercially sensitive information until MoFirms has approved the privacy notice and deployed the portal to secure production hosting.</p>
+    <p>{% t 'farmers.risk_assessment.dev_notice' %}</p>
     {% endif %}
   </aside>
 
@@ -39,10 +40,10 @@
     {% csrf_token %}
     {{ form.website_trap }}
     {% if form.non_field_errors %}<div class="err-box" role="alert">{{ form.non_field_errors }}</div>{% endif %}
-    {% if form.errors and not form.non_field_errors %}<p class="form-hint">Please correct the highlighted fields.</p>{% endif %}
+    {% if form.errors and not form.non_field_errors %}<p class="form-hint">{% t 'farmers.risk_assessment.form_hint_correct' %}</p>{% endif %}
 
     <fieldset class="form-section choice-set">
-      <legend>Enterprise and contact</legend>
+      <legend>{% t 'farmers.risk_assessment.enterprise_contact_legend' %}</legend>
       <div class="form-grid">
         <div class="wide-field">{% include "farmers/field.html" with field=form.applicant_type %}</div>
         <div>{% include "farmers/field.html" with field=form.contact_name %}</div>
@@ -57,7 +58,7 @@
     </fieldset>
 
     <fieldset class="form-section choice-set">
-      <legend>Assessment scope</legend>
+      <legend>{% t 'farmers.risk_assessment.scope_legend' %}</legend>
       <div class="form-grid">
         <div class="wide-field">{% include "farmers/checkboxes.html" with field=form.assessment_areas %}</div>
         <div>{% include "farmers/checkboxes.html" with field=form.risk_priorities %}</div>
@@ -68,8 +69,8 @@
     </fieldset>
 
     <fieldset class="form-section">
-      <legend>Optional supporting documents</legend>
-      <p class="form-hint">Examples: a short business profile, redacted production or market summary, or redacted financial overview. You can submit without files and discuss a secure exchange method with staff first.</p>
+      <legend>{% t 'farmers.risk_assessment.documents_legend' %}</legend>
+      <p class="form-hint">{% t 'farmers.risk_assessment.documents_hint' %}</p>
       {{ document_formset.management_form }}
       {{ document_formset.non_form_errors }}
       {% for error in upload_errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
@@ -79,25 +80,25 @@
         {% endfor %}
       </div>
       <template id="emptyDocumentRow">{% include "farmers/document_row.html" with document_form=document_formset.empty_form %}</template>
-      <button id="addDocument" class="opt" type="button">Add a document</button>
-      <p class="form-hint">Files are available only to authorised MoFirms staff as private downloads and are scheduled for deletion no later than one year after upload.</p>
+      <button id="addDocument" class="opt" type="button">{% t 'farmers.risk_assessment.add_document_button' %}</button>
+      <p class="form-hint">{% t 'farmers.risk_assessment.files_private_notice' %}</p>
       <label class="choice consent"><input type="checkbox" name="document_consent">
-        I consent to authorised MoFirms staff reviewing the files I choose to upload and deleting them no later than one year after upload.
+        {% t 'farmers.risk_assessment.document_consent_label' %}
       </label>
     </fieldset>
 
     <fieldset class="form-section">
-      <legend>Privacy and contact permission</legend>
-      <p>MoFirms uses these details to assess your request, discuss a possible scope and fee, and contact you about the assessment. Access is restricted to authorised staff. Requests are scheduled for deletion after two years without recorded contact.</p>
+      <legend>{% t 'farmers.risk_assessment.privacy_legend' %}</legend>
+      <p>{% t 'farmers.risk_assessment.privacy_body' %}</p>
       {% include "farmers/field.html" with field=form.privacy_consent %}
     </fieldset>
 
-    <button class="btn" type="submit">Submit assessment request</button>
+    <button class="btn" type="submit">{% t 'farmers.risk_assessment.submit_button' %}</button>
   </form>
 </section>
 </main>
 <footer><div class="wrap">
-  <p>Marks Organic Farms Concepts Limited (MoFirms). <a href="/">Main website</a></p>
+  <p>{% t 'farmers.risk_assessment.footer_company' %} <a href="/">{% t 'farmers.risk_assessment.footer_home_link' %}</a></p>
 </div></footer>
 <script src="{% static 'js/register.js' %}"></script>
 </body>
