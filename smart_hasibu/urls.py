@@ -14,6 +14,7 @@ urlpatterns = [
     path("export/", views.export_entries, name="export_entries"),
     path("entries/<int:pk>/edit/", views.entry_edit, name="entry_edit"),
     path("entries/<int:pk>/delete/", views.entry_delete, name="entry_delete"),
+    path("entries/<int:pk>/restore/", views.entry_restore, name="entry_restore"),
     path(
         "enterprises/<int:pk>/edit/",
         views.enterprise_edit,

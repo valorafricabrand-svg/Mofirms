@@ -291,7 +291,71 @@ class SmartHasibuTests(TestCase):
         )
 
         self.assertRedirects(response, self.dashboard_url)
-        self.assertFalse(LedgerEntry.objects.filter(pk=entry.pk).exists())
+        entry.refresh_from_db()
+        self.assertTrue(entry.is_deleted)
+        self.assertIsNotNone(entry.deleted_at)
+
+    def test_deleted_entry_is_hidden_but_restorable(self):
+        self.client.force_login(self.user)
+        entry = LedgerEntry.objects.create(
+            enterprise=self.enterprise,
+            entry_type=LedgerEntry.EntryType.EXPENSE,
+            category="inputs",
+            amount="75.00",
+            description="Synthetic restorable cost",
+        )
+        self.client.post(reverse("smart_hasibu:entry_delete", args=[entry.pk]))
+
+        dashboard_response = self.client.get(self.dashboard_url)
+        self.assertEqual(len(dashboard_response.context["entries"]), 0)
+        self.assertEqual(len(dashboard_response.context["deleted_entries"]), 1)
+        self.assertEqual(
+            dashboard_response.context["deleted_entries"][0].description,
+            "Synthetic restorable cost",
+        )
+        self.assertEqual(dashboard_response.context["income_total"], Decimal("0.00"))
+
+        self.assertEqual(
+            self.client.get(
+                reverse("smart_hasibu:entry_edit", args=[entry.pk])
+            ).status_code,
+            404,
+        )
+
+        restore_response = self.client.post(
+            reverse("smart_hasibu:entry_restore", args=[entry.pk])
+        )
+        self.assertRedirects(restore_response, self.dashboard_url)
+        entry.refresh_from_db()
+        self.assertFalse(entry.is_deleted)
+        self.assertIsNone(entry.deleted_at)
+        self.assertContains(self.client.get(self.dashboard_url), "Synthetic restorable cost")
+
+    def test_cannot_restore_another_users_deleted_entry(self):
+        other_user = get_user_model().objects.create_user(
+            username="restore-other@example.test",
+            email="restore-other@example.test",
+            password="Synthetic-Only-Password-123!",
+        )
+        other_enterprise = FarmEnterprise.objects.create(
+            owner=other_user,
+            name="Other restorer enterprise",
+            category=FarmEnterprise.Category.CROPS,
+        )
+        other_entry = LedgerEntry.objects.create(
+            enterprise=other_enterprise,
+            entry_type=LedgerEntry.EntryType.INCOME,
+            category="sales",
+            amount="100.00",
+            description="Synthetic other deleted sale",
+            is_deleted=True,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("smart_hasibu:entry_restore", args=[other_entry.pk])
+        )
+        self.assertEqual(response.status_code, 404)
 
     def test_enterprise_rename(self):
         self.client.force_login(self.user)
@@ -358,6 +422,106 @@ class SmartHasibuTests(TestCase):
         content = response.content.decode()
         self.assertIn("Synthetic export sale", content)
         self.assertIn("321.00", content)
+
+    def test_category_filter_narrows_entries_and_summary(self):
+        self.client.force_login(self.user)
+        LedgerEntry.objects.create(
+            enterprise=self.enterprise,
+            entry_type=LedgerEntry.EntryType.INCOME,
+            category="sales",
+            amount="200.00",
+            description="Synthetic produce sale",
+        )
+        LedgerEntry.objects.create(
+            enterprise=self.enterprise,
+            entry_type=LedgerEntry.EntryType.EXPENSE,
+            category="inputs",
+            amount="50.00",
+            description="Synthetic seed cost",
+        )
+
+        response = self.client.get(self.dashboard_url, {"category": "inputs"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Synthetic seed cost")
+        self.assertNotContains(response, "Synthetic produce sale")
+        self.assertEqual(response.context["expense_total"], Decimal("50.00"))
+        self.assertEqual(response.context["income_total"], Decimal("0.00"))
+
+        invalid_response = self.client.get(self.dashboard_url, {"category": "not-a-category"})
+        self.assertEqual(invalid_response.status_code, 400)
+
+    def test_search_filters_by_description_and_counterparty(self):
+        self.client.force_login(self.user)
+        LedgerEntry.objects.create(
+            enterprise=self.enterprise,
+            entry_type=LedgerEntry.EntryType.INCOME,
+            category="sales",
+            amount="300.00",
+            description="Synthetic maize sale",
+            counterparty="Synthetic Buyer Co",
+        )
+        LedgerEntry.objects.create(
+            enterprise=self.enterprise,
+            entry_type=LedgerEntry.EntryType.INCOME,
+            category="sales",
+            amount="150.00",
+            description="Synthetic bean sale",
+            counterparty="Different Trader",
+        )
+
+        by_description = self.client.get(self.dashboard_url, {"q": "maize"})
+        self.assertContains(by_description, "Synthetic maize sale")
+        self.assertNotContains(by_description, "Synthetic bean sale")
+
+        by_counterparty = self.client.get(self.dashboard_url, {"q": "Buyer Co"})
+        self.assertContains(by_counterparty, "Synthetic maize sale")
+        self.assertNotContains(by_counterparty, "Synthetic bean sale")
+
+    def test_category_and_enterprise_breakdown_totals(self):
+        self.client.force_login(self.user)
+        second_enterprise = FarmEnterprise.objects.create(
+            owner=self.user,
+            name="Synthetic Second Enterprise",
+            category=FarmEnterprise.Category.LIVESTOCK,
+        )
+        LedgerEntry.objects.create(
+            enterprise=self.enterprise,
+            entry_type=LedgerEntry.EntryType.INCOME,
+            category="sales",
+            amount="100.00",
+            description="Synthetic sale one",
+        )
+        LedgerEntry.objects.create(
+            enterprise=self.enterprise,
+            entry_type=LedgerEntry.EntryType.INCOME,
+            category="sales",
+            amount="50.00",
+            description="Synthetic sale two",
+        )
+        LedgerEntry.objects.create(
+            enterprise=second_enterprise,
+            entry_type=LedgerEntry.EntryType.EXPENSE,
+            category="inputs",
+            amount="40.00",
+            description="Synthetic input cost",
+        )
+
+        response = self.client.get(self.dashboard_url)
+
+        category_rows = {
+            (row["entry_type"], row["category"]): row["total"]
+            for row in response.context["category_breakdown"]
+        }
+        self.assertEqual(category_rows[(LedgerEntry.EntryType.INCOME, "sales")], Decimal("150.00"))
+        self.assertEqual(category_rows[(LedgerEntry.EntryType.EXPENSE, "inputs")], Decimal("40.00"))
+
+        enterprise_rows = {
+            row["enterprise__name"]: row for row in response.context["enterprise_breakdown"]
+        }
+        self.assertEqual(enterprise_rows["Synthetic Tomato Plot"]["income"], Decimal("150.00"))
+        self.assertEqual(enterprise_rows["Synthetic Second Enterprise"]["expenses"], Decimal("40.00"))
+        self.assertEqual(enterprise_rows["Synthetic Second Enterprise"]["net"], Decimal("-40.00"))
 
     def test_dashboard_paginates_beyond_fifty_entries(self):
         self.client.force_login(self.user)

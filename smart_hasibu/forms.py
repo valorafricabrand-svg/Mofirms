@@ -179,7 +179,9 @@ class CreditSettlementForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.lang = lang
         self.fields["entry"].queryset = (
-            LedgerEntry.objects.filter(enterprise__owner=user, is_credit=True)
+            LedgerEntry.objects.filter(
+                enterprise__owner=user, is_credit=True, is_deleted=False
+            )
             .annotate(
                 settled=Coalesce(Sum("settlements__amount"), Decimal("0.00"))
             )

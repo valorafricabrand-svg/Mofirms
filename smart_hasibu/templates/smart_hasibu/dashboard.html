@@ -14,8 +14,10 @@
       <label for="id_month">{% t 'sh.dashboard.summary_month' %}</label>
       <input id="id_month" type="month" name="month" value="{{ month }}">
       {% if selected_enterprise %}<input type="hidden" name="enterprise" value="{{ selected_enterprise.pk }}">{% endif %}
+      {% if category_value %}<input type="hidden" name="category" value="{{ category_value }}">{% endif %}
+      {% if search_value %}<input type="hidden" name="q" value="{{ search_value }}">{% endif %}
       <button class="opt" type="submit">{% t 'sh.dashboard.view_button' %}</button>
-      <a class="opt" href="{% url 'smart_hasibu:export_entries' %}?month={{ month }}{% if selected_enterprise %}&enterprise={{ selected_enterprise.pk }}{% endif %}">{% t 'sh.dashboard.export_csv' %}</a>
+      <a class="opt" href="{% url 'smart_hasibu:export_entries' %}?month={{ month }}{% if selected_enterprise %}&enterprise={{ selected_enterprise.pk }}{% endif %}{% if category_value %}&category={{ category_value }}{% endif %}{% if search_value %}&q={{ search_value|urlencode }}{% endif %}">{% t 'sh.dashboard.export_csv' %}</a>
     </form>
   </div>
 
@@ -32,9 +34,35 @@
         <option value="{{ enterprise.pk }}"{% if selected_enterprise.pk == enterprise.pk %} selected{% endif %}>{{ enterprise.name }}</option>
       {% endfor %}
     </select>
+    <label for="id_category_filter">{% t 'sh.dashboard.category_filter_label' %}</label>
+    <select id="id_category_filter" name="category">
+      <option value="">{% t 'sh.dashboard.all_categories' %}</option>
+      {% for value, label in category_choices %}
+        <option value="{{ value }}"{% if category_value == value %} selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <label for="id_search">{% t 'sh.dashboard.search_label' %}</label>
+    <input id="id_search" type="search" name="q" value="{{ search_value }}">
     <button class="opt" type="submit">{% t 'sh.dashboard.filter_button' %}</button>
-    {% if selected_enterprise %}<a class="opt" href="?month={{ month }}">{% t 'sh.dashboard.clear_button' %}</a>{% endif %}
+    {% if selected_enterprise or category_value or search_value %}<a class="opt" href="?month={{ month }}">{% t 'sh.dashboard.clear_button' %}</a>{% endif %}
   </form>
+
+  {% if deleted_entries %}
+  <aside class="card sh-deleted">
+    <h2>{% t 'sh.dashboard.recently_deleted_heading' %}</h2>
+    <p class="sh-hint">{% t 'sh.dashboard.recently_deleted_hint' %}</p>
+    <ul class="sh-enterprise-list">
+      {% for entry in deleted_entries %}
+      <li>
+        <span>{{ entry.occurred_on }} · {{ entry.description }} · KSh {{ entry.amount|floatformat:2|intcomma }}</span>
+        <form method="post" action="{% url 'smart_hasibu:entry_restore' entry.pk %}">
+          {% csrf_token %}<button class="opt" type="submit">{% t 'sh.dashboard.restore_link' %}</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  </aside>
+  {% endif %}
 
   {% if not enterprises %}
   <div class="card sh-empty">
@@ -50,6 +78,36 @@
     <article class="card"><span>{% t 'sh.dashboard.summary_receivable' %}</span><strong>KSh {{ receivable_total|floatformat:2|intcomma }}</strong></article>
     <article class="card"><span>{% t 'sh.dashboard.summary_payable' %}</span><strong>KSh {{ payable_total|floatformat:2|intcomma }}</strong></article>
   </div>
+
+  {% if entries %}
+  <div class="sh-breakdowns">
+    <section class="card sh-breakdown">
+      <h2>{% t 'sh.dashboard.breakdown_category_title' %}</h2>
+      {% if category_breakdown %}
+      <ul class="sh-breakdown-list">
+        {% for row in category_breakdown %}
+        <li><span>{% choice_label row.category "choice.ledger_category" %} <small>({% choice_label row.entry_type "choice.entry_type" %})</small></span><strong>KSh {{ row.total|floatformat:2|intcomma }}</strong></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p>{% t 'sh.dashboard.breakdown_empty' %}</p>
+      {% endif %}
+    </section>
+    {% if enterprise_breakdown|length > 1 %}
+    <section class="card sh-breakdown">
+      <h2>{% t 'sh.dashboard.breakdown_enterprise_title' %}</h2>
+      <div class="sh-table-wrap"><table class="sh-table">
+        <thead><tr><th>{% t 'sh.dashboard.table_enterprise' %}</th><th>{% t 'sh.dashboard.breakdown_income_header' %}</th><th>{% t 'sh.dashboard.breakdown_expense_header' %}</th><th>{% t 'sh.dashboard.breakdown_net_header' %}</th></tr></thead>
+        <tbody>
+        {% for row in enterprise_breakdown %}
+          <tr><td>{{ row.enterprise__name }}</td><td>KSh {{ row.income|floatformat:2|intcomma }}</td><td>KSh {{ row.expenses|floatformat:2|intcomma }}</td><td>KSh {{ row.net|floatformat:2|intcomma }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </section>
+    {% endif %}
+  </div>
+  {% endif %}
 
   <div class="sh-columns">
     <section class="card sh-panel">
@@ -135,11 +193,11 @@
       {% if entries.has_other_pages %}
       <nav class="sh-pagination" aria-label="Entry pages">
         {% if entries.has_previous %}
-          <a class="opt" href="?month={{ month }}{% if selected_enterprise %}&enterprise={{ selected_enterprise.pk }}{% endif %}&page={{ entries.previous_page_number }}">{% t 'sh.dashboard.newer_link' %}</a>
+          <a class="opt" href="?month={{ month }}{% if selected_enterprise %}&enterprise={{ selected_enterprise.pk }}{% endif %}{% if category_value %}&category={{ category_value }}{% endif %}{% if search_value %}&q={{ search_value|urlencode }}{% endif %}&page={{ entries.previous_page_number }}">{% t 'sh.dashboard.newer_link' %}</a>
         {% endif %}
         <span>{% t 'sh.dashboard.page_of' %} {{ entries.number }} {% t 'sh.dashboard.of_word' %} {{ entries.paginator.num_pages }} · {{ entry_count }} {% t 'sh.common.entries_word' %}</span>
         {% if entries.has_next %}
-          <a class="opt" href="?month={{ month }}{% if selected_enterprise %}&enterprise={{ selected_enterprise.pk }}{% endif %}&page={{ entries.next_page_number }}">{% t 'sh.dashboard.older_link' %}</a>
+          <a class="opt" href="?month={{ month }}{% if selected_enterprise %}&enterprise={{ selected_enterprise.pk }}{% endif %}{% if category_value %}&category={{ category_value }}{% endif %}{% if search_value %}&q={{ search_value|urlencode }}{% endif %}&page={{ entries.next_page_number }}">{% t 'sh.dashboard.older_link' %}</a>
         {% endif %}
       </nav>
       {% endif %}

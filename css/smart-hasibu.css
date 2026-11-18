@@ -38,4 +38,11 @@
 .sh-enterprise-list li{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.5rem .65rem;border:1px solid #e4e9e5;border-radius:.5rem;flex-wrap:wrap}
 .sh-enterprise-list small{display:block;color:#53645a}
 .sh-pagination{display:flex;align-items:center;gap:1rem;margin-top:1rem;flex-wrap:wrap}
+.sh-breakdowns{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;margin:1.5rem 0}
+.sh-breakdown{padding:1.1rem}
+.sh-breakdown-list{list-style:none;margin:.75rem 0 0;padding:0;display:grid;gap:.4rem}
+.sh-breakdown-list li{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.45rem 0;border-bottom:1px solid #e4e9e5}
+.sh-breakdown-list small{color:#53645a}
+.sh-deleted{padding:1rem;margin:0 0 1.25rem;border:1px solid #e9d8a6;background:#fdf8ec}
+.sh-hint{margin:.25rem 0 0;color:#53645a;font-size:.9rem}
 @media(max-width:760px){.sh-heading{align-items:stretch;flex-direction:column}.sh-columns{grid-template-columns:1fr}}

@@ -50,6 +50,36 @@ STRINGS = {
     },
     "sh.dashboard.filter_button": {"en": "Filter", "sw": "Chuja"},
     "sh.dashboard.clear_button": {"en": "Clear", "sw": "Futa"},
+    "sh.dashboard.category_filter_label": {"en": "Category", "sw": "Aina ya muamala"},
+    "sh.dashboard.all_categories": {"en": "All categories", "sw": "Aina zote"},
+    "sh.dashboard.search_label": {
+        "en": "Search description or name",
+        "sw": "Tafuta maelezo au jina",
+    },
+    "sh.dashboard.breakdown_category_title": {
+        "en": "By category",
+        "sw": "Kwa aina ya muamala",
+    },
+    "sh.dashboard.breakdown_enterprise_title": {
+        "en": "By enterprise",
+        "sw": "Kwa shughuli",
+    },
+    "sh.dashboard.breakdown_income_header": {"en": "Income", "sw": "Mapato"},
+    "sh.dashboard.breakdown_expense_header": {"en": "Expenses", "sw": "Gharama"},
+    "sh.dashboard.breakdown_net_header": {"en": "Net", "sw": "Jumla halisi"},
+    "sh.dashboard.breakdown_empty": {
+        "en": "No entries match this view yet.",
+        "sw": "Hakuna maingizo yanayolingana na mtazamo huu bado.",
+    },
+    "sh.dashboard.recently_deleted_heading": {
+        "en": "Recently deleted",
+        "sw": "Zilizofutwa karibuni",
+    },
+    "sh.dashboard.recently_deleted_hint": {
+        "en": "Deleted entries stay here for 24 hours in case you need them back.",
+        "sw": "Maingizo yaliyofutwa hubaki hapa kwa saa 24 iwapo utayahitaji tena.",
+    },
+    "sh.dashboard.restore_link": {"en": "Restore", "sw": "Rejesha"},
     "sh.dashboard.empty_title": {
         "en": "Start with one farm activity",
         "sw": "Anza na shughuli moja ya shambani",
@@ -106,8 +136,8 @@ STRINGS = {
     "sh.dashboard.rename_link": {"en": "Rename", "sw": "Badilisha jina"},
     "sh.dashboard.delete_link": {"en": "Delete", "sw": "Futa"},
     "sh.dashboard.delete_entry_confirm": {
-        "en": "Delete this entry? This cannot be undone.",
-        "sw": "Ufute muamala huu? Hili haliwezi kutenduliwa.",
+        "en": "Delete this entry? You can restore it from “Recently deleted” for 24 hours.",
+        "sw": "Ufute muamala huu? Unaweza kuurejesha kutoka “Zilizofutwa karibuni” kwa saa 24.",
     },
     "sh.dashboard.delete_enterprise_confirm": {
         "en": "Delete this enterprise? This only works if it has no recorded entries.",
@@ -379,6 +409,10 @@ STRINGS = {
         "en": "Choose a valid enterprise.",
         "sw": "Chagua shughuli sahihi ya biashara.",
     },
+    "err.invalid_category": {
+        "en": "Choose a valid category.",
+        "sw": "Chagua aina sahihi ya muamala.",
+    },
     "err.invalid_action": {
         "en": "Choose a valid cashbook action.",
         "sw": "Chagua kitendo sahihi cha kitabu cha fedha.",
@@ -409,6 +443,7 @@ STRINGS = {
     },
     "msg.entry_updated": {"en": "Entry updated.", "sw": "Muamala umesasishwa."},
     "msg.entry_deleted": {"en": "Entry deleted.", "sw": "Muamala umefutwa."},
+    "msg.entry_restored": {"en": "Entry restored.", "sw": "Muamala umerejeshwa."},
     "msg.enterprise_updated": {"en": "Enterprise updated.", "sw": "Shughuli imesasishwa."},
     "msg.enterprise_deleted": {"en": "Enterprise deleted.", "sw": "Shughuli imefutwa."},
 

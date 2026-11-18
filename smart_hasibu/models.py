@@ -92,6 +92,8 @@ class LedgerEntry(models.Model):
         default=False,
         help_text="Tick if the full amount has not yet been paid.",
     )
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
 
     class Meta:
@@ -99,6 +101,7 @@ class LedgerEntry(models.Model):
         indexes = [
             models.Index(fields=["enterprise", "occurred_on"]),
             models.Index(fields=["enterprise", "entry_type", "is_credit"]),
+            models.Index(fields=["enterprise", "is_deleted"]),
         ]
 
     def __str__(self):

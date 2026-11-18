@@ -1,7 +1,7 @@
 import csv
 import hashlib
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from django.contrib import messages
@@ -18,7 +18,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
-from farmers.templatetags.custom_i18n import current_lang, translate
+from farmers.templatetags.custom_i18n import current_lang, localize_choices, translate
 from .forms import (
     CreditSettlementForm,
     FarmerSignupForm,
@@ -143,6 +143,7 @@ def dashboard(request):
         enterprise__owner=request.user,
         occurred_on__gte=start_date,
         occurred_on__lt=end_date,
+        is_deleted=False,
     ).select_related("enterprise")
     enterprise_value = request.GET.get("enterprise", "")
     selected_enterprise = None
@@ -157,6 +158,19 @@ def dashboard(request):
             owner=request.user,
         )
         entries = entries.filter(enterprise=selected_enterprise)
+
+    category_value = request.GET.get("category", "")
+    if category_value:
+        if category_value not in LedgerEntry.Category.values:
+            return HttpResponseBadRequest(translate("err.invalid_category", lang))
+        entries = entries.filter(category=category_value)
+
+    search_value = request.GET.get("q", "").strip()
+    if search_value:
+        entries = entries.filter(
+            Q(description__icontains=search_value)
+            | Q(counterparty__icontains=search_value)
+        )
 
     summary = entries.aggregate(
         income=Coalesce(
@@ -177,6 +191,7 @@ def dashboard(request):
     credit_entries = LedgerEntry.objects.filter(
         enterprise__owner=request.user,
         is_credit=True,
+        is_deleted=False,
     )
     if selected_enterprise:
         credit_entries = credit_entries.filter(enterprise=selected_enterprise)
@@ -192,6 +207,34 @@ def dashboard(request):
             credit_entry.amount - credit_entry.settled,
             Decimal("0.00"),
         )
+
+    category_breakdown = list(
+        entries.values("entry_type", "category")
+        .annotate(total=Sum("amount"))
+        .order_by("entry_type", "-total")
+    )
+    enterprise_breakdown = list(
+        entries.values("enterprise_id", "enterprise__name")
+        .annotate(
+            income=Coalesce(
+                Sum("amount", filter=Q(entry_type=LedgerEntry.EntryType.INCOME)),
+                Decimal("0.00"),
+            ),
+            expenses=Coalesce(
+                Sum("amount", filter=Q(entry_type=LedgerEntry.EntryType.EXPENSE)),
+                Decimal("0.00"),
+            ),
+        )
+        .order_by("enterprise__name")
+    )
+    for row in enterprise_breakdown:
+        row["net"] = row["income"] - row["expenses"]
+
+    deleted_entries = LedgerEntry.objects.filter(
+        enterprise__owner=request.user,
+        is_deleted=True,
+        deleted_at__gte=timezone.now() - timedelta(hours=24),
+    ).select_related("enterprise").order_by("-deleted_at")[:20]
 
     enterprise_form = FarmEnterpriseForm(lang=lang)
     entry_form = LedgerEntryForm(user=request.user, lang=lang)
@@ -265,6 +308,14 @@ def dashboard(request):
             "entry_count": summary["count"],
             "receivable_total": balances[LedgerEntry.EntryType.INCOME],
             "payable_total": balances[LedgerEntry.EntryType.EXPENSE],
+            "category_value": category_value,
+            "search_value": search_value,
+            "category_choices": localize_choices(
+                LedgerEntry.Category.choices, lang, "choice.ledger_category"
+            ),
+            "category_breakdown": category_breakdown,
+            "enterprise_breakdown": enterprise_breakdown,
+            "deleted_entries": deleted_entries,
             "enterprise_form": enterprise_form,
             "entry_form": entry_form,
             "settlement_form": settlement_form,
@@ -276,7 +327,9 @@ def dashboard(request):
 @require_http_methods(["GET", "POST"])
 def entry_edit(request, pk):
     lang = current_lang(request)
-    entry = get_object_or_404(LedgerEntry, pk=pk, enterprise__owner=request.user)
+    entry = get_object_or_404(
+        LedgerEntry, pk=pk, enterprise__owner=request.user, is_deleted=False
+    )
     if request.method == "POST":
         form = LedgerEntryForm(request.POST, instance=entry, user=request.user, lang=lang)
         if form.is_valid():
@@ -293,9 +346,26 @@ def entry_edit(request, pk):
 @login_required(login_url="smart_hasibu:login")
 @require_POST
 def entry_delete(request, pk):
-    entry = get_object_or_404(LedgerEntry, pk=pk, enterprise__owner=request.user)
-    entry.delete()
+    entry = get_object_or_404(
+        LedgerEntry, pk=pk, enterprise__owner=request.user, is_deleted=False
+    )
+    entry.is_deleted = True
+    entry.deleted_at = timezone.now()
+    entry.save(update_fields=["is_deleted", "deleted_at"])
     messages.success(request, translate("msg.entry_deleted", current_lang(request)))
+    return redirect("smart_hasibu:dashboard")
+
+
+@login_required(login_url="smart_hasibu:login")
+@require_POST
+def entry_restore(request, pk):
+    entry = get_object_or_404(
+        LedgerEntry, pk=pk, enterprise__owner=request.user, is_deleted=True
+    )
+    entry.is_deleted = False
+    entry.deleted_at = None
+    entry.save(update_fields=["is_deleted", "deleted_at"])
+    messages.success(request, translate("msg.entry_restored", current_lang(request)))
     return redirect("smart_hasibu:dashboard")
 
 
@@ -331,7 +401,7 @@ def enterprise_edit(request, pk):
 def enterprise_delete(request, pk):
     lang = current_lang(request)
     enterprise = get_object_or_404(FarmEnterprise, pk=pk, owner=request.user)
-    if enterprise.entries.exists():
+    if enterprise.entries.filter(is_deleted=False).exists():
         messages.error(request, translate("err.enterprise_has_entries", lang))
     else:
         enterprise.delete()
@@ -352,6 +422,7 @@ def export_entries(request):
         enterprise__owner=request.user,
         occurred_on__gte=start_date,
         occurred_on__lt=end_date,
+        is_deleted=False,
     ).select_related("enterprise")
 
     enterprise_value = request.GET.get("enterprise", "")
@@ -362,6 +433,19 @@ def export_entries(request):
             return HttpResponseBadRequest(translate("err.invalid_enterprise", lang))
         get_object_or_404(FarmEnterprise, pk=enterprise_id, owner=request.user)
         entries = entries.filter(enterprise_id=enterprise_id)
+
+    category_value = request.GET.get("category", "")
+    if category_value:
+        if category_value not in LedgerEntry.Category.values:
+            return HttpResponseBadRequest(translate("err.invalid_category", lang))
+        entries = entries.filter(category=category_value)
+
+    search_value = request.GET.get("q", "").strip()
+    if search_value:
+        entries = entries.filter(
+            Q(description__icontains=search_value)
+            | Q(counterparty__icontains=search_value)
+        )
 
     entries = entries.annotate(
         settled=Coalesce(Sum("settlements__amount"), Decimal("0.00"))
