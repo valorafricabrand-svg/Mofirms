@@ -330,7 +330,11 @@ def ask_assistant(request):
         {
             "contents": contents,
             "systemInstruction": {"parts": [{"text": GEMINI_SYSTEM_PROMPT}]},
-            "generationConfig": {"maxOutputTokens": 400, "temperature": 0.4},
+            "generationConfig": {
+                "maxOutputTokens": 400,
+                "temperature": 0.4,
+                "thinkingConfig": {"thinkingBudget": 0},
+            },
         }
     ).encode("utf-8")
     url = (
@@ -341,7 +345,7 @@ def ask_assistant(request):
         url, data=body, headers={"Content-Type": "application/json"}, method="POST"
     )
     try:
-        with urllib.request.urlopen(http_request, timeout=20) as response:
+        with urllib.request.urlopen(http_request, timeout=25) as response:
             data = json.loads(response.read().decode("utf-8"))
     except (urllib.error.URLError, TimeoutError) as exc:
         detail = exc.read().decode("utf-8", "ignore")[:500] if isinstance(exc, urllib.error.HTTPError) else str(exc)
