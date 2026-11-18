@@ -338,36 +338,45 @@ def ask_assistant(request):
             },
         }
     ).encode("utf-8")
-    url = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{settings.GEMINI_MODEL}:generateContent?key={settings.GEMINI_API_KEY}"
-    )
+    models_to_try = [settings.GEMINI_MODEL] + [
+        model for model in settings.GEMINI_FALLBACK_MODELS if model != settings.GEMINI_MODEL
+    ]
     started = time.monotonic()
     data = None
-    attempts = 3
-    for attempt in range(1, attempts + 1):
-        http_request = urllib.request.Request(
-            url, data=body, headers={"Content-Type": "application/json"}, method="POST"
+    for model_index, model in enumerate(models_to_try):
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model}:generateContent?key={settings.GEMINI_API_KEY}"
         )
-        try:
-            with urllib.request.urlopen(http_request, timeout=15) as response:
-                data = json.loads(response.read().decode("utf-8"))
+        attempts = 2 if model_index == 0 else 1
+        for attempt in range(1, attempts + 1):
+            http_request = urllib.request.Request(
+                url, data=body, headers={"Content-Type": "application/json"}, method="POST"
+            )
+            try:
+                with urllib.request.urlopen(http_request, timeout=15) as response:
+                    data = json.loads(response.read().decode("utf-8"))
+                break
+            except (urllib.error.URLError, TimeoutError) as exc:
+                detail = exc.read().decode("utf-8", "ignore")[:500] if isinstance(exc, urllib.error.HTTPError) else str(exc)
+                elapsed = time.monotonic() - started
+                logger.warning(
+                    "Gemini assistant request failed on model %s attempt %d after %.1fs (%s): %s",
+                    model, attempt, elapsed, type(exc).__name__, detail,
+                )
+                is_retryable = (
+                    not isinstance(exc, urllib.error.HTTPError)
+                    or exc.code in (429, 503)
+                )
+                if attempt < attempts and is_retryable:
+                    time.sleep(attempt)
+                    continue
+                data = None
+                break
+        if data is not None:
             break
-        except (urllib.error.URLError, TimeoutError) as exc:
-            detail = exc.read().decode("utf-8", "ignore")[:500] if isinstance(exc, urllib.error.HTTPError) else str(exc)
-            elapsed = time.monotonic() - started
-            logger.warning(
-                "Gemini assistant request failed on attempt %d after %.1fs (%s): %s",
-                attempt, elapsed, type(exc).__name__, detail,
-            )
-            is_retryable = (
-                not isinstance(exc, urllib.error.HTTPError)
-                or exc.code in (429, 503)
-            )
-            if attempt < attempts and is_retryable:
-                time.sleep(attempt)
-                continue
-            return JsonResponse({"error": translate("assistant.unavailable", lang)}, status=502)
+    if data is None:
+        return JsonResponse({"error": translate("assistant.unavailable", lang)}, status=502)
     logger.info("Gemini assistant request succeeded after %.1fs", time.monotonic() - started)
 
     try:
