@@ -213,11 +213,23 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .whatsapp-float:hover,.whatsapp-link:hover{background:#0d756a}
 @media(max-width:760px){.two,.newsletter-layout{grid-template-columns:1fr}#burger{display:block}#menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--bg);padding:16px;border-bottom:1px solid var(--line)}#menu.open{display:flex}section{padding:44px 0}}
 @media(min-width:761px) and (max-width:900px){#menu{gap:15px}}
-@media(max-width:760px){.stats{gap:14px;padding-top:14px}}
-@media(max-width:1079px){
+@media(max-width:900px){
   .hero{padding:16px 0 16px}
-  .hero-layout{--hero-scale:min(1,calc((100vw - 40px)/1040));overflow:hidden}
-  .hero-carousel{width:1040px;max-width:none;min-height:0;transform-origin:top left;transform:scale(var(--hero-scale));margin:0 0 calc((1040px/2.2) * (var(--hero-scale) - 1))}
+  .hero-layout{gap:14px}
+  .hero-carousel{aspect-ratio:auto;min-height:0;height:min(560px,72vh);border-radius:20px}
+  .carousel-slide{grid-template-columns:1fr}
+  .carousel-photo::after{inset:30% 0 0;background:linear-gradient(180deg,rgba(7,26,16,0) 0%,rgba(7,26,16,.45) 55%,rgba(7,26,16,.92) 100%)}
+  .carousel-copy{position:absolute;left:0;right:0;bottom:0;max-width:none;padding:0 20px 92px}
+  .carousel-copy h1,.carousel-copy h2{font-size:clamp(1.7rem,7.5vw,2.3rem);max-width:none}
+  .carousel-copy>p:not(.carousel-kicker){font-size:.95rem;max-width:none;line-height:1.55}
+  .carousel-kicker{margin-bottom:10px}
+  .hero .cta{gap:8px;margin-top:14px}
+  .hero .cta .btn{padding:10px 16px;font-size:.9rem}
+  .photo-caption{top:14px;left:14px}
+  .carousel-controls{right:16px;bottom:16px;gap:6px}
+  .carousel-arrow{width:36px;height:36px}
+  .carousel-progress{width:38px}
+  .stats{gap:14px;padding-top:14px}
 }
 @media(max-width:560px){.service-card{flex-basis:calc(100vw - 56px);width:calc(100vw - 56px);min-height:0;padding:20px}.service-controls{justify-content:flex-start}}
 @media(max-width:760px){.online-services{padding:40px 0}.online-services-heading{align-items:flex-start;flex-direction:column;gap:14px}.online-services-count{margin:0}.online-service-controls{justify-content:flex-start}.contact-section{gap:16px;padding-top:36px;padding-bottom:36px}}
