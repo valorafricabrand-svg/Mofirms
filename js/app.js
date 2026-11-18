@@ -88,7 +88,7 @@ burger.onclick=()=>{
 };
 menu.addEventListener("click",event=>{if(event.target.closest("a"))closeMenu()});
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&menu.classList.contains("open"))closeMenu(true)});
-window.addEventListener("resize",()=>{if(window.innerWidth>980)closeMenu()});
+window.addEventListener("resize",()=>{if(window.innerWidth>1180)closeMenu()});
 $("#pv").onclick=()=>{const notice=$("#privacy");notice.hidden=!notice.hidden;$("#pv").setAttribute("aria-expanded",String(!notice.hidden))};
 /* agriculture story carousel */
 const carousel=$("#agriCarousel");
