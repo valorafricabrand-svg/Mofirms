@@ -154,6 +154,9 @@ $("#feat").innerHTML=FEATS.map(f=>`<li>${f}</li>`).join("");
 const ONLINE_SERVICE_ACTIONS=["Register as a farmer","Register as a partner","Request financial analysis","Request an assessment","Apply as a researcher"];
 const onlineServiceCards=ONLINE_SERVICES.map((service,i)=>`<li><h3>${service[0]}</h3><p>${service[1]}</p><a class="btn sm" href="${service[2]}">${ONLINE_SERVICE_ACTIONS[i]}</a></li>`).join("");
 $("#onlineServices").innerHTML=onlineServiceCards;
+const onlineServiceViewport=$("#onlineServicesViewport");
+$("#onlineServicesPrevious").onclick=()=>onlineServiceViewport.scrollBy({left:-onlineServiceViewport.clientWidth*.8,behavior:reducedMotion.matches?"auto":"smooth"});
+$("#onlineServicesNext").onclick=()=>onlineServiceViewport.scrollBy({left:onlineServiceViewport.clientWidth*.8,behavior:reducedMotion.matches?"auto":"smooth"});
 document.querySelectorAll("[data-cat]").forEach(a=>a.addEventListener("click",()=>{const option=[...$("#cat").options].find(item=>item.textContent===a.dataset.cat);if(option)$("#cat").value=option.value}));
 /* change calculator */
 const calc=()=>{const c=(+$("#paid").value||0)-(+$("#amt").value||0);$("#chg").textContent=c<0?"Customer owes KSh "+(-c).toLocaleString():"Change: KSh "+c.toLocaleString()};

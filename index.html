@@ -10,8 +10,8 @@
 <meta property="og:description" content="Practical advice for sustainable farms and growing enterprises.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
 <link rel="preload" as="image" href="{% static 'images/climate-smart-farming.webp' %}" imagesrcset="{% static 'images/climate-smart-farming-480.webp' %} 480w, {% static 'images/climate-smart-farming.webp' %} 736w" imagesizes="(min-width: 901px) 540px, calc(100vw - 40px)" fetchpriority="high">
-<link rel="stylesheet" href="{% static 'css/style.css' %}?v=online-services-grid-2026-11">
-<script src="{% static 'js/app.js' %}?v=online-services-grid-2026-11" defer></script>
+<link rel="stylesheet" href="{% static 'css/style.css' %}?v=online-services-carousel-2026-11">
+<script src="{% static 'js/app.js' %}?v=online-services-carousel-2026-11" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -192,7 +192,14 @@
       </div>
       <span class="online-services-count">5 ways to get started</span>
     </div>
-    <ol class="online-service-grid" id="onlineServices" aria-label="Choose an online service"></ol>
+    <div class="online-service-controls" role="group" aria-label="Online service controls">
+      <button class="online-service-arrow" id="onlineServicesPrevious" type="button" aria-label="Show previous online services">←</button>
+      <button class="online-service-arrow" id="onlineServicesNext" type="button" aria-label="Show next online services">→</button>
+    </div>
+    <div class="online-service-viewport" id="onlineServicesViewport" role="region" aria-label="Choose an online service" tabindex="0">
+      <ol class="online-service-set" id="onlineServices" aria-label="Choose an online service"></ol>
+    </div>
+    <p class="online-services-hint">Use the arrows, swipe or scroll horizontally to see all five services.</p>
     <p class="online-services-note"><strong>What to expect:</strong> Specialist work starts only after the scope and fee are agreed. A request is not approval, funding, or a guarantee of service. Research participation is separate and voluntary.</p>
   </div>
 </section>
