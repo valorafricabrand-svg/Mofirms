@@ -13,6 +13,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from PIL import Image, ImageOps, UnidentifiedImageError
 
+from .templatetags.custom_i18n import localize_choices, translate
 from .models import (
     ACTIVITY_CHOICES,
     COUNTIES,
@@ -193,23 +194,99 @@ class FarmerRegistrationForm(forms.ModelForm):
             "additional_notes": "Do not include ID numbers, PINs, account numbers, or passwords.",
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, lang="en", **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["registration_type"].choices = FarmerProfile.RegistrationType.choices
-        self.fields["county"].choices = [("", "Select a county")] + [
+        self.lang = lang
+        self.fields["activities"].label = translate("field.farmer.activities", lang)
+        self.fields["activities"].choices = localize_choices(ACTIVITY_CHOICES, lang, "choice.activity")
+        self.fields["water_sources"].label = translate("field.farmer.water_sources", lang)
+        self.fields["water_sources"].choices = localize_choices(
+            FarmerProfile.WaterSource.choices, lang, "choice.water_source"
+        )
+        self.fields["sales_channels"].label = translate("field.farmer.sales_channels", lang)
+        self.fields["sales_channels"].choices = localize_choices(
+            self.fields["sales_channels"].choices, lang, "choice.sales_channel"
+        )
+        self.fields["challenges"].label = translate("field.farmer.challenges", lang)
+        self.fields["challenges"].choices = localize_choices(
+            self.fields["challenges"].choices, lang, "choice.farmer_challenge"
+        )
+        self.fields["support_interests"].label = translate("field.farmer.support_interests", lang)
+        self.fields["support_interests"].choices = localize_choices(
+            SUPPORT_CHOICES, lang, "choice.support"
+        )
+        self.fields["privacy_consent"].label = translate("field.farmer.privacy_consent", lang)
+        self.fields["research_invite_consent"].label = translate(
+            "field.farmer.research_invite_consent", lang
+        )
+        self.fields["group_authorization_confirmed"].label = translate(
+            "field.farmer.group_authorization_confirmed", lang
+        )
+        self.fields["create_account"].label = translate("field.farmer.create_account", lang)
+        self.fields["password1"].label = translate("field.farmer.password1", lang)
+        self.fields["password1"].help_text = translate("help.farmer.password1", lang)
+        self.fields["password2"].label = translate("field.farmer.password2", lang)
+        self.fields["group_registration_number"].help_text = translate(
+            "help.farmer.group_registration_number", lang
+        )
+        self.fields["farm_size"].help_text = translate("help.farmer.farm_size", lang)
+        self.fields["production_summary"].help_text = translate(
+            "help.farmer.production_summary", lang
+        )
+        self.fields["sales_band"].help_text = translate("help.farmer.sales_band", lang)
+        self.fields["operating_cost_band"].help_text = translate(
+            "help.farmer.operating_cost_band", lang
+        )
+        self.fields["additional_notes"].help_text = translate(
+            "help.farmer.additional_notes", lang
+        )
+        self.fields["registration_type"].choices = localize_choices(
+            FarmerProfile.RegistrationType.choices, lang, "choice.registration_type"
+        )
+        self.fields["county"].choices = [("", translate("choice.select_county", lang))] + [
             (county, county) for county in COUNTIES
         ]
         self.fields["group_type"].required = False
         self.fields["group_registration_status"].required = False
-        self.fields["group_name"].label = "Group or association name *"
-        self.fields["group_type"].label = "Organisation type *"
-        self.fields["group_registration_status"].choices = [("", "Choose one (optional)")] + [
-            choice
-            for choice in FarmerProfile.RegistrationStatus.choices
-            if choice[0] != FarmerProfile.RegistrationStatus.NOT_APPLICABLE
-        ]
-        self.fields["preferred_language"].label = "Preferred language"
+        self.fields["group_name"].label = translate("field.farmer.group_name", lang)
+        self.fields["group_type"].label = translate("field.farmer.group_type", lang)
+        self.fields["group_type"].choices = localize_choices(
+            FarmerProfile.GroupType.choices, lang, "choice.group_type"
+        )
+        self.fields["group_registration_status"].choices = [
+            ("", translate("choice.registration_status.choose_optional", lang))
+        ] + localize_choices(
+            [
+                choice
+                for choice in FarmerProfile.RegistrationStatus.choices
+                if choice[0] != FarmerProfile.RegistrationStatus.NOT_APPLICABLE
+            ],
+            lang,
+            "choice.registration_status",
+        )
+        self.fields["preferred_contact"].choices = localize_choices(
+            FarmerProfile.ContactPreference.choices, lang, "choice.contact_preference"
+        )
+        self.fields["preferred_language"].label = translate(
+            "field.farmer.preferred_language", lang
+        )
         self.fields["farm_size_unit"].required = False
+        self.fields["farm_size_unit"].choices = localize_choices(
+            FarmerProfile.AreaUnit.choices, lang, "choice.area_unit"
+        )
+        self.fields["land_access"].choices = localize_choices(
+            FarmerProfile.LandAccess.choices, lang, "choice.land_access"
+        )
+        self.fields["years_farming"].choices = localize_choices(
+            FarmerProfile.Experience.choices, lang, "choice.experience"
+        )
+        for field_name in ("sales_band", "operating_cost_band", "finance_need_band"):
+            self.fields[field_name].choices = localize_choices(
+                FarmerProfile.FinancialBand.choices, lang, "choice.financial_band"
+            )
+        self.fields["record_keeping"].choices = localize_choices(
+            FarmerProfile.RecordKeeping.choices, lang, "choice.record_keeping"
+        )
         if not self.is_bound:
             self.initial["group_registration_status"] = ""
 
@@ -219,11 +296,11 @@ class FarmerRegistrationForm(forms.ModelForm):
         if registration_type == FarmerProfile.RegistrationType.GROUP:
             for field in ("group_name", "group_type"):
                 if not cleaned_data.get(field):
-                    self.add_error(field, "This field is required for a group registration.")
+                    self.add_error(field, translate("err.farmer.group_field_required", self.lang))
             if not cleaned_data.get("group_authorization_confirmed"):
                 self.add_error(
                     "group_authorization_confirmed",
-                    "Confirm that you are authorised to register this group.",
+                    translate("err.farmer.group_authorization_required", self.lang),
                 )
             if not cleaned_data.get("group_registration_status"):
                 cleaned_data["group_registration_status"] = (
@@ -252,30 +329,30 @@ class FarmerRegistrationForm(forms.ModelForm):
         preferred_contact = cleaned_data.get("preferred_contact")
         if preferred_contact == FarmerProfile.ContactPreference.EMAIL:
             if not cleaned_data.get("email"):
-                self.add_error("email", "Enter an email address if you prefer email contact.")
+                self.add_error("email", translate("err.farmer.email_required_for_contact", self.lang))
         elif preferred_contact in {
             FarmerProfile.ContactPreference.PHONE,
             FarmerProfile.ContactPreference.WHATSAPP,
         } and not cleaned_data.get("phone"):
-            self.add_error("phone", "Enter a phone number for your preferred contact method.")
+            self.add_error("phone", translate("err.farmer.phone_required_for_contact", self.lang))
 
         if cleaned_data.get("farm_size") and not cleaned_data.get("farm_size_unit"):
-            self.add_error("farm_size_unit", "Choose acres or hectares.")
+            self.add_error("farm_size_unit", translate("err.farmer.farm_size_unit_required", self.lang))
 
         if cleaned_data.get("create_account"):
             email = cleaned_data.get("email", "").strip().lower()
             password1 = cleaned_data.get("password1")
             password2 = cleaned_data.get("password2")
             if not email:
-                self.add_error("email", "Enter an email address to create an account.")
+                self.add_error("email", translate("err.farmer.account_email_required", self.lang))
             elif get_user_model().objects.filter(email__iexact=email).exists():
-                self.add_error("email", "An account already uses this email address.")
+                self.add_error("email", translate("err.farmer.account_email_taken", self.lang))
             if not password1:
-                self.add_error("password1", "Choose a password for your account.")
+                self.add_error("password1", translate("err.farmer.password_required", self.lang))
             if not password2:
-                self.add_error("password2", "Confirm your chosen password.")
+                self.add_error("password2", translate("err.farmer.password_confirm_required", self.lang))
             if password1 and password2 and password1 != password2:
-                self.add_error("password2", "The passwords do not match.")
+                self.add_error("password2", translate("err.farmer.passwords_mismatch", self.lang))
             if password1 and email:
                 candidate = get_user_model()(username=email, email=email)
                 try:
@@ -284,7 +361,7 @@ class FarmerRegistrationForm(forms.ModelForm):
                     self.add_error("password1", error)
 
         if cleaned_data.get("website"):
-            raise ValidationError("The registration could not be submitted. Please try again.")
+            raise ValidationError(translate("err.farmer.submission_failed", self.lang))
         return cleaned_data
 
     def save(self, commit=True):
@@ -305,6 +382,9 @@ class FarmerRegistrationForm(forms.ModelForm):
 
 
 class FarmerDocumentForm(forms.Form):
+    document_type_choice_prefix = "choice.farmer_document_type"
+    document_type_label_key = "field.document.type"
+
     document_type = forms.ChoiceField(
         choices=FarmerDocument.DocumentType.choices,
         label="Evidence type",
@@ -321,15 +401,26 @@ class FarmerDocumentForm(forms.Form):
         widget=forms.ClearableFileInput(attrs={"accept": ".pdf,.jpg,.jpeg,.png"}),
     )
 
+    def __init__(self, *args, lang="en", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lang = lang
+        self.fields["document_type"].label = translate(self.document_type_label_key, lang)
+        self.fields["document_type"].choices = localize_choices(
+            self.fields["document_type"].choices, lang, self.document_type_choice_prefix
+        )
+        self.fields["description"].label = translate("field.document.description", lang)
+        self.fields["description"].help_text = translate("help.document.description", lang)
+        self.fields["file"].label = translate("field.document.file", lang)
+
     def clean_file(self):
         uploaded = self.cleaned_data.get("file")
         if not uploaded:
             return None
         suffix = Path(uploaded.name).suffix.lower()
         if suffix not in {".pdf", ".jpg", ".jpeg", ".png"}:
-            raise ValidationError("Upload a PDF, JPG, or PNG file.")
+            raise ValidationError(translate("err.document.invalid_type", self.lang))
         if uploaded.size > MAX_DOCUMENT_SIZE:
-            raise ValidationError("Each document must be no larger than 5 MB.")
+            raise ValidationError(translate("err.document.too_large", self.lang))
 
         uploaded.seek(0)
         header = uploaded.read(8)
@@ -341,16 +432,16 @@ class FarmerDocumentForm(forms.Form):
         else:
             valid = header.startswith(b"\x89PNG\r\n\x1a\n")
         if not valid:
-            raise ValidationError("The file contents do not match the selected file type.")
+            raise ValidationError(translate("err.document.content_mismatch", self.lang))
 
         if suffix in {".jpg", ".jpeg", ".png"}:
             try:
                 with Image.open(uploaded) as image:
                     if image.width * image.height > Image.MAX_IMAGE_PIXELS:
-                        raise ValidationError("The image dimensions are too large.")
+                        raise ValidationError(translate("err.document.dimensions_too_large", self.lang))
                     image.verify()
             except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
-                raise ValidationError("The image could not be safely read.") from exc
+                raise ValidationError(translate("err.document.unreadable_image", self.lang)) from exc
             finally:
                 uploaded.seek(0)
         if settings.ANTIVIRUS_ENABLED:
@@ -365,21 +456,21 @@ class FarmerDocumentForm(forms.Form):
             except (OSError, subprocess.TimeoutExpired) as exc:
                 logger.exception("The document malware scanner could not complete.")
                 raise ValidationError(
-                    "The evidence could not be scanned. Please try again later."
+                    translate("err.document.scan_failed", self.lang)
                 ) from exc
             finally:
                 uploaded.seek(0)
             if result.returncode != 0:
                 logger.warning("A registration portal upload was rejected by the malware scanner.")
                 raise ValidationError(
-                    "The evidence could not be accepted. Check the file and try again."
+                    translate("err.document.rejected_by_scanner", self.lang)
                 )
         return uploaded
 
     def clean(self):
         cleaned_data = super().clean()
         if not cleaned_data.get("file") and cleaned_data.get("description", "").strip():
-            self.add_error("file", "Choose a file or clear the description.")
+            self.add_error("file", translate("err.document.choose_file_or_clear", self.lang))
         return cleaned_data
 
 
@@ -570,18 +661,72 @@ class PartnerRegistrationForm(forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, lang="en", **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["county"].choices = [("", "Select a county")] + [
+        self.lang = lang
+        self.fields["roles"].label = translate("field.partner.roles", lang)
+        self.fields["roles"].choices = localize_choices(PARTNER_ROLE_CHOICES, lang, "choice.partner_role")
+        self.fields["operating_counties"].label = translate("field.partner.operating_counties", lang)
+        self.fields["delivery_methods"].label = translate("field.partner.delivery_methods", lang)
+        self.fields["delivery_methods"].choices = localize_choices(
+            PARTNER_DELIVERY_CHOICES, lang, "choice.partner_delivery"
+        )
+        self.fields["offer_categories"].label = translate("field.partner.offer_categories", lang)
+        self.fields["offer_categories"].choices = localize_choices(
+            PARTNER_OFFER_CHOICES, lang, "choice.partner_offer"
+        )
+        self.fields["produce_categories"].label = translate("field.partner.produce_categories", lang)
+        self.fields["produce_categories"].choices = localize_choices(
+            PRODUCE_CATEGORY_CHOICES, lang, "choice.produce_category"
+        )
+        self.fields["sourcing_counties"].label = translate("field.partner.sourcing_counties", lang)
+        self.fields["engagement_interests"].label = translate(
+            "field.partner.engagement_interests", lang
+        )
+        self.fields["engagement_interests"].choices = localize_choices(
+            self.fields["engagement_interests"].choices, lang, "choice.partner_engagement"
+        )
+        self.fields["challenges"].label = translate("field.partner.challenges", lang)
+        self.fields["challenges"].choices = localize_choices(
+            self.fields["challenges"].choices, lang, "choice.partner_challenge"
+        )
+        self.fields["privacy_consent"].label = translate("field.partner.privacy_consent", lang)
+        self.fields["listing_consent"].label = translate("field.partner.listing_consent", lang)
+        self.fields["research_invite_consent"].label = translate(
+            "field.partner.research_invite_consent", lang
+        )
+        self.fields["registration_number"].help_text = translate(
+            "help.partner.registration_number", lang
+        )
+        self.fields["website"].help_text = translate("help.partner.website", lang)
+        self.fields["business_size"].help_text = translate("help.partner.business_size", lang)
+        self.fields["staff_band"].help_text = translate("help.partner.staff_band", lang)
+        self.fields["prices_and_terms"].help_text = translate(
+            "help.partner.prices_and_terms", lang
+        )
+        self.fields["clients_and_references"].help_text = translate(
+            "help.partner.clients_and_references", lang
+        )
+        self.fields["licences_and_standards"].help_text = translate(
+            "help.partner.licences_and_standards", lang
+        )
+        self.fields["additional_notes"].help_text = translate(
+            "help.partner.additional_notes", lang
+        )
+        self.fields["county"].choices = [("", translate("choice.select_county", lang))] + [
             (county, county) for county in COUNTIES
         ]
-        self.fields["applicant_type"].choices = PartnerProfile.ApplicantType.choices
-        self.fields["applicant_type"].label = "Who does this profile represent?"
-        self.fields["business_name"].label = "Legal or registered business name"
+        self.fields["applicant_type"].choices = localize_choices(
+            PartnerProfile.ApplicantType.choices, lang, "choice.applicant_type.partner"
+        )
+        self.fields["applicant_type"].label = translate("field.partner.applicant_type", lang)
+        self.fields["business_name"].label = translate("field.partner.business_name", lang)
         self.fields["registration_status"].required = False
-        self.fields["registration_status"].choices = [("", "Choose one (optional)")] + [
-            choice for choice in PartnerProfile.RegistrationStatus.choices
-        ]
+        self.fields["registration_status"].choices = [
+            ("", translate("choice.registration_status.choose_optional", lang))
+        ] + localize_choices(
+            PartnerProfile.RegistrationStatus.choices, lang, "choice.registration_status"
+        )
         self.fields["business_size"].required = False
         self.fields["staff_band"].required = False
         self.fields["buyer_capacity"].required = False
@@ -595,7 +740,7 @@ class PartnerRegistrationForm(forms.ModelForm):
         if applicant_type == PartnerProfile.ApplicantType.BUSINESS and not cleaned_data.get(
             "business_name", ""
         ).strip():
-            self.add_error("business_name", "Enter the name the organisation trades or registers under.")
+            self.add_error("business_name", translate("err.partner.business_name_required", self.lang))
         if not cleaned_data.get("registration_status"):
             cleaned_data["registration_status"] = PartnerProfile.RegistrationStatus.NOT_REGISTERED
 
@@ -604,7 +749,7 @@ class PartnerRegistrationForm(forms.ModelForm):
             preferred_contact == PartnerProfile.ContactPreference.EMAIL
             and not cleaned_data.get("email")
         ):
-            self.add_error("email", "Enter an email address for your preferred contact method.")
+            self.add_error("email", translate("err.partner.email_required_for_contact", self.lang))
         elif (
             preferred_contact in {
                 PartnerProfile.ContactPreference.PHONE,
@@ -612,29 +757,29 @@ class PartnerRegistrationForm(forms.ModelForm):
             }
             and not cleaned_data.get("phone")
         ):
-            self.add_error("phone", "Enter a phone number for your preferred contact method.")
+            self.add_error("phone", translate("err.partner.phone_required_for_contact", self.lang))
 
         if "supplier" in roles:
             if not cleaned_data.get("offer_categories"):
-                self.add_error("offer_categories", "Select at least one product or service you provide.")
+                self.add_error("offer_categories", translate("err.partner.offer_categories_required", self.lang))
             if not cleaned_data.get("offer_details", "").strip():
-                self.add_error("offer_details", "Briefly describe what you supply and your availability.")
+                self.add_error("offer_details", translate("err.partner.offer_details_required", self.lang))
         if "buyer" in roles:
             if not cleaned_data.get("produce_categories"):
-                self.add_error("produce_categories", "Select at least one type of produce you buy.")
+                self.add_error("produce_categories", translate("err.partner.produce_categories_required", self.lang))
             if not cleaned_data.get("produce_details", "").strip():
-                self.add_error("produce_details", "Describe the produce you buy and any key specifications.")
+                self.add_error("produce_details", translate("err.partner.produce_details_required", self.lang))
         if (
             "service_provider" in roles
             and not cleaned_data.get("service_description", "").strip()
         ):
             self.add_error(
                 "service_description",
-                "Describe your services and the people or areas you serve.",
+                translate("err.partner.service_description_required", self.lang),
             )
 
         if cleaned_data.get("website_trap"):
-            raise ValidationError("The registration could not be submitted. Please try again.")
+            raise ValidationError(translate("err.partner.submission_failed", self.lang))
         return cleaned_data
 
     def save(self, commit=True):
@@ -661,6 +806,8 @@ class PartnerRegistrationForm(forms.ModelForm):
 
 
 class PartnerDocumentForm(FarmerDocumentForm):
+    document_type_choice_prefix = "choice.partner_document_type"
+
     document_type = forms.ChoiceField(
         choices=PartnerDocument.DocumentType.choices,
         label="Evidence type",
@@ -749,9 +896,41 @@ class FinancialAnalysisRequestForm(forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, lang="en", **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["county"].choices = [("", "Select a county")] + [
+        self.lang = lang
+        self.fields["services_requested"].label = translate(
+            "field.financial.services_requested", lang
+        )
+        self.fields["services_requested"].choices = localize_choices(
+            self.fields["services_requested"].choices, lang, "choice.financial_service"
+        )
+        self.fields["records_available"].label = translate(
+            "field.financial.records_available", lang
+        )
+        self.fields["records_available"].choices = localize_choices(
+            self.fields["records_available"].choices, lang, "choice.records_available"
+        )
+        self.fields["privacy_consent"].label = translate("field.financial.privacy_consent", lang)
+        self.fields["financial_period"].help_text = translate(
+            "help.financial.financial_period", lang
+        )
+        self.fields["accounting_software"].help_text = translate(
+            "help.financial.accounting_software", lang
+        )
+        self.fields["annual_revenue_band"].help_text = translate(
+            "help.financial.annual_revenue_band", lang
+        )
+        self.fields["funding_need_band"].help_text = translate(
+            "help.financial.funding_need_band", lang
+        )
+        self.fields["request_summary"].help_text = translate(
+            "help.financial.request_summary", lang
+        )
+        self.fields["applicant_type"].choices = localize_choices(
+            FinancialAnalysisRequest.ApplicantType.choices, lang, "choice.applicant_type.general"
+        )
+        self.fields["county"].choices = [("", translate("choice.select_county", lang))] + [
             (county, county) for county in COUNTIES
         ]
         self.fields["business_name"].required = False
@@ -767,7 +946,7 @@ class FinancialAnalysisRequestForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         if cleaned_data.get("website_trap"):
-            raise ValidationError("The request could not be submitted. Please try again.")
+            raise ValidationError(translate("err.financial.submission_failed", self.lang))
         return cleaned_data
 
     def save(self, commit=True):
@@ -846,8 +1025,9 @@ class BusinessReadinessForm(forms.ModelForm):
             "seasonality_notes": "Optional: note months when sales, production, or costs change.",
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, lang="en", **kwargs):
         super().__init__(*args, **kwargs)
+        self.lang = lang
         self.instance.request_type = (
             FinancialAnalysisRequest.RequestType.BUSINESS_READINESS
         )
@@ -856,7 +1036,43 @@ class BusinessReadinessForm(forms.ModelForm):
             "cash_flow",
             "funding_readiness",
         ]
-        self.fields["county"].choices = [("", "Select a county")] + [
+        self.fields["records_available"].label = translate(
+            "field.business_readiness.records_available", lang
+        )
+        self.fields["records_available"].choices = localize_choices(
+            self.fields["records_available"].choices, lang, "choice.records_available"
+        )
+        self.fields["privacy_consent"].label = translate(
+            "field.business_readiness.privacy_consent", lang
+        )
+        self.fields["average_monthly_sales"].label = translate(
+            "field.business_readiness.average_monthly_sales", lang
+        )
+        self.fields["average_monthly_sales"].help_text = translate(
+            "help.business_readiness.average_monthly_sales", lang
+        )
+        self.fields["average_monthly_costs"].label = translate(
+            "field.business_readiness.average_monthly_costs", lang
+        )
+        self.fields["average_monthly_costs"].help_text = translate(
+            "help.business_readiness.average_monthly_costs", lang
+        )
+        self.fields["financial_period"].help_text = translate(
+            "help.business_readiness.financial_period", lang
+        )
+        self.fields["business_goal"].help_text = translate(
+            "help.business_readiness.business_goal", lang
+        )
+        self.fields["current_challenge"].help_text = translate(
+            "help.business_readiness.current_challenge", lang
+        )
+        self.fields["seasonality_notes"].help_text = translate(
+            "help.business_readiness.seasonality_notes", lang
+        )
+        self.fields["applicant_type"].choices = localize_choices(
+            FinancialAnalysisRequest.ApplicantType.choices, lang, "choice.applicant_type.general"
+        )
+        self.fields["county"].choices = [("", translate("choice.select_county", lang))] + [
             (county, county) for county in COUNTIES
         ]
         for field_name in ("business_name", "phone", "email", "sector"):
@@ -865,20 +1081,20 @@ class BusinessReadinessForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         if cleaned_data.get("website_trap"):
-            raise ValidationError("The request could not be submitted. Please try again.")
+            raise ValidationError(translate("err.business_readiness.submission_failed", self.lang))
         if (
             "none" in cleaned_data.get("records_available", [])
             and len(cleaned_data["records_available"]) > 1
         ):
             self.add_error(
                 "records_available",
-                "Choose 'I do not have formal records yet' by itself.",
+                translate("err.business_readiness.records_none_alone", self.lang),
             )
         sales = cleaned_data.get("average_monthly_sales")
         costs = cleaned_data.get("average_monthly_costs")
         if (sales is None) != (costs is None):
             raise ValidationError(
-                "Enter both monthly sales and monthly costs, or leave both blank."
+                translate("err.business_readiness.sales_costs_both_or_neither", self.lang)
             )
         return cleaned_data
 
@@ -903,6 +1119,9 @@ class BusinessReadinessForm(forms.ModelForm):
 
 
 class FinancialAnalysisDocumentForm(FarmerDocumentForm):
+    document_type_choice_prefix = "choice.financial_document_type"
+    document_type_label_key = "field.document.type_financial"
+
     document_type = forms.ChoiceField(
         choices=FinancialAnalysisDocument.DocumentType.choices,
         label="Document type",
@@ -1006,9 +1225,37 @@ class RiskAssessmentRequestForm(forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, lang="en", **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["county"].choices = [("", "Select a county")] + [
+        self.lang = lang
+        self.fields["assessment_areas"].label = translate("field.risk.assessment_areas", lang)
+        self.fields["assessment_areas"].choices = localize_choices(
+            self.fields["assessment_areas"].choices, lang, "choice.assessment_area"
+        )
+        self.fields["risk_priorities"].label = translate("field.risk.risk_priorities", lang)
+        self.fields["risk_priorities"].choices = localize_choices(
+            self.fields["risk_priorities"].choices, lang, "choice.risk_priority"
+        )
+        self.fields["opportunity_priorities"].label = translate(
+            "field.risk.opportunity_priorities", lang
+        )
+        self.fields["opportunity_priorities"].choices = localize_choices(
+            self.fields["opportunity_priorities"].choices, lang, "choice.opportunity_priority"
+        )
+        self.fields["privacy_consent"].label = translate("field.risk.privacy_consent", lang)
+        self.fields["business_name"].help_text = translate("help.risk.business_name", lang)
+        self.fields["sector"].help_text = translate("help.risk.sector", lang)
+        self.fields["request_summary"].help_text = translate("help.risk.request_summary", lang)
+        self.fields["applicant_type"].choices = localize_choices(
+            RiskAssessmentRequest.ApplicantType.choices, lang, "choice.applicant_type.general"
+        )
+        self.fields["enterprise_stage"].choices = localize_choices(
+            RiskAssessmentRequest.EnterpriseStage.choices, lang, "choice.enterprise_stage"
+        )
+        self.fields["time_horizon"].choices = localize_choices(
+            RiskAssessmentRequest.TimeHorizon.choices, lang, "choice.time_horizon"
+        )
+        self.fields["county"].choices = [("", translate("choice.select_county", lang))] + [
             (county, county) for county in COUNTIES
         ]
         self.fields["business_name"].required = False
@@ -1020,7 +1267,7 @@ class RiskAssessmentRequestForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         if cleaned_data.get("website_trap"):
-            raise ValidationError("The request could not be submitted. Please try again.")
+            raise ValidationError(translate("err.risk.submission_failed", self.lang))
         return cleaned_data
 
     def save(self, commit=True):
@@ -1034,6 +1281,9 @@ class RiskAssessmentRequestForm(forms.ModelForm):
 
 
 class RiskAssessmentDocumentForm(FarmerDocumentForm):
+    document_type_choice_prefix = "choice.risk_document_type"
+    document_type_label_key = "field.document.type_financial"
+
     document_type = forms.ChoiceField(
         choices=RiskAssessmentDocument.DocumentType.choices,
         label="Document type",
@@ -1087,6 +1337,24 @@ class ResearcherApplicationForm(forms.Form):
         )
     )
 
+    def __init__(self, *args, lang="en", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lang = lang
+        self.fields["email"].label = translate("field.researcher.email", lang)
+        self.fields["password1"].label = translate("field.researcher.password1", lang)
+        self.fields["password1"].help_text = translate("help.researcher.password1", lang)
+        self.fields["password2"].label = translate("field.researcher.password2", lang)
+        self.fields["applicant_type"].choices = localize_choices(
+            ResearcherApplication.ApplicantType.choices, lang, "choice.researcher_applicant_type"
+        )
+        self.fields["research_purpose"].help_text = translate(
+            "help.researcher.research_purpose", lang
+        )
+        self.fields["methods_summary"].help_text = translate(
+            "help.researcher.methods_summary", lang
+        )
+        self.fields["consent"].label = translate("field.researcher.consent", lang)
+
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
         user_model = get_user_model()
@@ -1094,7 +1362,7 @@ class ResearcherApplicationForm(forms.Form):
             user_model.objects.filter(email__iexact=email).exists()
             or user_model.objects.filter(username__iexact=email).exists()
         ):
-            raise ValidationError("An account using this email already exists.")
+            raise ValidationError(translate("err.researcher.email_taken", self.lang))
         return email
 
     def clean(self):
@@ -1102,18 +1370,18 @@ class ResearcherApplicationForm(forms.Form):
         password1 = cleaned_data.get("password1")
         password2 = cleaned_data.get("password2")
         if password1 and password2 and password1 != password2:
-            self.add_error("password2", "The passwords do not match.")
+            self.add_error("password2", translate("err.researcher.passwords_mismatch", self.lang))
 
         if (
             cleaned_data.get("applicant_type") == ResearcherApplication.ApplicantType.STUDENT
             and not cleaned_data.get("supervisor_name")
         ):
-            self.add_error("supervisor_name", "Student applications require a supervisor.")
+            self.add_error("supervisor_name", translate("err.researcher.supervisor_name_required", self.lang))
         if (
             cleaned_data.get("applicant_type") == ResearcherApplication.ApplicantType.STUDENT
             and not cleaned_data.get("supervisor_email")
         ):
-            self.add_error("supervisor_email", "Provide the supervisor's institutional email.")
+            self.add_error("supervisor_email", translate("err.researcher.supervisor_email_required", self.lang))
         password1 = cleaned_data.get("password1")
         password2 = cleaned_data.get("password2")
         email = cleaned_data.get("email")
@@ -1245,6 +1513,17 @@ class ConsultationLeadForm(forms.ModelForm):
     )
     website = forms.CharField(required=False, widget=forms.HiddenInput)
 
+    def __init__(self, *args, lang="en", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lang = lang
+        self.fields["privacy_consent"].label = translate("field.consultation.privacy_consent", lang)
+        self.fields["preferred_contact"].choices = localize_choices(
+            ConsultationLead.PreferredContact.choices, lang, "choice.preferred_contact_short"
+        )
+        self.fields["category"].choices = localize_choices(
+            ConsultationLead.Category.choices, lang, "choice.consultation_category"
+        )
+
     class Meta:
         model = ConsultationLead
         fields = (
@@ -1271,7 +1550,7 @@ class ConsultationLeadForm(forms.ModelForm):
     def clean_website(self):
         website = self.cleaned_data["website"]
         if website:
-            raise ValidationError("Unable to submit this request.")
+            raise ValidationError(translate("err.honeypot.unable_to_submit", self.lang))
         return website
 
 
@@ -1293,13 +1572,24 @@ class NewsletterSubscriptionForm(forms.Form):
     )
     website = forms.CharField(required=False, widget=forms.HiddenInput)
 
+    def __init__(self, *args, lang="en", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lang = lang
+        self.fields["topics"].label = translate("field.newsletter.topics", lang)
+        self.fields["topics"].choices = localize_choices(
+            NewsletterSubscription.Topic.choices, lang, "choice.newsletter_topic"
+        )
+        self.fields["marketing_consent"].label = translate(
+            "field.newsletter.marketing_consent", lang
+        )
+
     def clean_email(self):
         return self.cleaned_data["email"].strip().lower()
 
     def clean_website(self):
         website = self.cleaned_data["website"]
         if website:
-            raise ValidationError("Unable to submit this request.")
+            raise ValidationError(translate("err.honeypot.unable_to_submit", self.lang))
         return website
 
 

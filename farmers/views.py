@@ -14,6 +14,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 from django.contrib.admin.views.decorators import staff_member_required
 
+from .templatetags.custom_i18n import current_lang, translate
 from .forms import (
     BusinessReadinessForm,
     ConsultationLeadForm,
@@ -65,12 +66,13 @@ def newsletter_signups_enabled():
 
 @require_http_methods(["GET"])
 def home(request):
+    lang = current_lang(request)
     return render(
         request,
         "index.html",
         {
-            "consultation_form": ConsultationLeadForm(),
-            "newsletter_form": NewsletterSubscriptionForm(),
+            "consultation_form": ConsultationLeadForm(lang=lang),
+            "newsletter_form": NewsletterSubscriptionForm(lang=lang),
             "consultation_enabled": not settings.DEMO_MODE,
             "newsletter_enabled": newsletter_signups_enabled(),
         },
@@ -79,15 +81,16 @@ def home(request):
 
 @require_http_methods(["POST"])
 def submit_consultation_lead(request):
-    form = ConsultationLeadForm(request.POST)
+    lang = current_lang(request)
+    form = ConsultationLeadForm(request.POST, lang=lang)
     if _rate_limit_reached(request, "consultation"):
-        form.add_error(None, "Too many requests. Please try again later.")
+        form.add_error(None, translate("err.view.too_many_requests", lang))
         return render(
             request,
             "index.html",
             {
                 "consultation_form": form,
-                "newsletter_form": NewsletterSubscriptionForm(),
+                "newsletter_form": NewsletterSubscriptionForm(lang=lang),
                 "consultation_enabled": not settings.DEMO_MODE,
                 "newsletter_enabled": newsletter_signups_enabled(),
             },
@@ -110,7 +113,7 @@ def submit_consultation_lead(request):
         "index.html",
         {
             "consultation_form": form,
-            "newsletter_form": NewsletterSubscriptionForm(),
+            "newsletter_form": NewsletterSubscriptionForm(lang=lang),
             "consultation_enabled": not settings.DEMO_MODE,
             "newsletter_enabled": newsletter_signups_enabled(),
         },
@@ -120,20 +123,21 @@ def submit_consultation_lead(request):
 
 @require_http_methods(["POST"])
 def subscribe_newsletter(request):
+    lang = current_lang(request)
     if not newsletter_signups_enabled():
         return HttpResponseNotAllowed(
             ["GET"],
             "Newsletter signups are not currently available.",
         )
 
-    form = NewsletterSubscriptionForm(request.POST)
+    form = NewsletterSubscriptionForm(request.POST, lang=lang)
     if _rate_limit_reached(request, "newsletter"):
-        form.add_error(None, "Too many requests. Please try again later.")
+        form.add_error(None, translate("err.view.too_many_requests", lang))
         return render(
             request,
             "index.html",
             {
-                "consultation_form": ConsultationLeadForm(),
+                "consultation_form": ConsultationLeadForm(lang=lang),
                 "newsletter_form": form,
                 "consultation_enabled": not settings.DEMO_MODE,
                 "newsletter_enabled": newsletter_signups_enabled(),
@@ -146,7 +150,7 @@ def subscribe_newsletter(request):
             request,
             "index.html",
             {
-                "consultation_form": ConsultationLeadForm(),
+                "consultation_form": ConsultationLeadForm(lang=lang),
                 "newsletter_form": form,
                 "consultation_enabled": not settings.DEMO_MODE,
                 "newsletter_enabled": newsletter_signups_enabled(),
@@ -177,12 +181,12 @@ def subscribe_newsletter(request):
             subscription.save(update_fields=update_fields)
     except DatabaseError:
         logger.exception("Could not save MoFirms newsletter subscription.")
-        form.add_error(None, "We couldn’t save your subscription. Please try again later.")
+        form.add_error(None, translate("err.view.newsletter_save_failed", lang))
         return render(
             request,
             "index.html",
             {
-                "consultation_form": ConsultationLeadForm(),
+                "consultation_form": ConsultationLeadForm(lang=lang),
                 "newsletter_form": form,
                 "consultation_enabled": not settings.DEMO_MODE,
                 "newsletter_enabled": newsletter_signups_enabled(),
@@ -254,6 +258,7 @@ def _rate_limit_reached(request, portal):
 
 @require_http_methods(["GET", "POST"])
 def register_farmer(request):
+    lang = current_lang(request)
     if request.method == "POST" and _rate_limit_reached(request, "farmer"):
         return render(
             request,
@@ -269,11 +274,13 @@ def register_farmer(request):
             if request.method == "GET"
             else None
         ),
+        lang=lang,
     )
     document_formset = FarmerDocumentFormSet(
         request.POST if request.method == "POST" else None,
         request.FILES if request.method == "POST" else None,
         prefix="documents",
+        form_kwargs={"lang": lang},
     )
     upload_errors = []
 
@@ -288,14 +295,14 @@ def register_farmer(request):
                     uploads.append(uploaded)
 
         if sum(upload.size for upload in uploads) > MAX_REGISTRATION_UPLOAD_SIZE:
-            upload_errors.append("The combined upload size must not exceed 100 MB.")
+            upload_errors.append(translate("err.view.upload_too_large", lang))
             documents_valid = False
 
         has_documents = bool(uploads)
         document_consent = request.POST.get("document_consent") == "on"
         if has_documents and not document_consent:
             upload_errors.append(
-                "Please agree to the one-year document retention notice before uploading evidence.",
+                translate("err.view.document_consent_required_evidence", lang),
             )
             documents_valid = False
 
@@ -343,7 +350,7 @@ def register_farmer(request):
                 logger.exception("Could not store a farmer registration upload.")
                 form.add_error(
                     None,
-                    "The registration could not be saved because a file could not be stored. Please try again.",
+                    translate("err.view.registration_save_failed", lang),
                 )
             else:
                 if new_account_user is not None:
@@ -418,6 +425,7 @@ def farmer_dashboard(request):
 
 @require_http_methods(["GET", "POST"])
 def register_partner(request):
+    lang = current_lang(request)
     if request.method == "POST" and _rate_limit_reached(request, "partner"):
         return render(
             request,
@@ -426,11 +434,12 @@ def register_partner(request):
             status=429,
         )
 
-    form = PartnerRegistrationForm(request.POST if request.method == "POST" else None)
+    form = PartnerRegistrationForm(request.POST if request.method == "POST" else None, lang=lang)
     document_formset = PartnerDocumentFormSet(
         request.POST if request.method == "POST" else None,
         request.FILES if request.method == "POST" else None,
         prefix="documents",
+        form_kwargs={"lang": lang},
     )
     upload_errors = []
 
@@ -445,14 +454,14 @@ def register_partner(request):
                     uploads.append(uploaded)
 
         if sum(upload.size for upload in uploads) > MAX_REGISTRATION_UPLOAD_SIZE:
-            upload_errors.append("The combined upload size must not exceed 100 MB.")
+            upload_errors.append(translate("err.view.upload_too_large", lang))
             documents_valid = False
 
         has_documents = bool(uploads)
         document_consent = request.POST.get("document_consent") == "on"
         if has_documents and not document_consent:
             upload_errors.append(
-                "Please agree to the one-year document retention notice before uploading evidence."
+                translate("err.view.document_consent_required_evidence", lang)
             )
             documents_valid = False
 
@@ -488,7 +497,7 @@ def register_partner(request):
                 logger.exception("Could not store a partner registration upload.")
                 form.add_error(
                     None,
-                    "The registration could not be saved because a file could not be stored. Please try again.",
+                    translate("err.view.registration_save_failed", lang),
                 )
             else:
                 return redirect(
@@ -545,6 +554,7 @@ def request_business_readiness(request):
 def _submit_financial_analysis_request(
     request, *, form_class, request_type, success_view, template, rate_key
 ):
+    lang = current_lang(request)
     if request.method == "POST" and _rate_limit_reached(request, rate_key):
         return render(
             request,
@@ -554,12 +564,14 @@ def _submit_financial_analysis_request(
         )
 
     form = form_class(
-        request.POST if request.method == "POST" else None
+        request.POST if request.method == "POST" else None,
+        lang=lang,
     )
     document_formset = FinancialAnalysisDocumentFormSet(
         request.POST if request.method == "POST" else None,
         request.FILES if request.method == "POST" else None,
         prefix="documents",
+        form_kwargs={"lang": lang},
     )
     upload_errors = []
 
@@ -575,13 +587,13 @@ def _submit_financial_analysis_request(
             ]
 
         if sum(upload.size for upload in uploads) > MAX_REGISTRATION_UPLOAD_SIZE:
-            upload_errors.append("The combined upload size must not exceed 100 MB.")
+            upload_errors.append(translate("err.view.upload_too_large", lang))
             documents_valid = False
 
         has_documents = bool(uploads)
         if has_documents and request.POST.get("document_consent") != "on":
             upload_errors.append(
-                "Please agree to the one-year document retention notice before uploading files."
+                translate("err.view.document_consent_required_files", lang)
             )
             documents_valid = False
 
@@ -614,7 +626,7 @@ def _submit_financial_analysis_request(
                 logger.exception("Could not store a financial analysis upload.")
                 form.add_error(
                     None,
-                    "The request could not be saved because a file could not be stored. Please try again.",
+                    translate("err.view.request_save_failed", lang),
                 )
             else:
                 return redirect(
@@ -654,6 +666,7 @@ def business_readiness_success(request, reference):
 
 @require_http_methods(["GET", "POST"])
 def request_risk_assessment(request):
+    lang = current_lang(request)
     if request.method == "POST" and _rate_limit_reached(request, "risk-assessment"):
         return render(
             request,
@@ -662,11 +675,12 @@ def request_risk_assessment(request):
             status=429,
         )
 
-    form = RiskAssessmentRequestForm(request.POST if request.method == "POST" else None)
+    form = RiskAssessmentRequestForm(request.POST if request.method == "POST" else None, lang=lang)
     document_formset = RiskAssessmentDocumentFormSet(
         request.POST if request.method == "POST" else None,
         request.FILES if request.method == "POST" else None,
         prefix="documents",
+        form_kwargs={"lang": lang},
     )
     upload_errors = []
 
@@ -682,13 +696,13 @@ def request_risk_assessment(request):
             ]
 
         if sum(upload.size for upload in uploads) > MAX_REGISTRATION_UPLOAD_SIZE:
-            upload_errors.append("The combined upload size must not exceed 100 MB.")
+            upload_errors.append(translate("err.view.upload_too_large", lang))
             documents_valid = False
 
         has_documents = bool(uploads)
         if has_documents and request.POST.get("document_consent") != "on":
             upload_errors.append(
-                "Please agree to the one-year document retention notice before uploading files."
+                translate("err.view.document_consent_required_files", lang)
             )
             documents_valid = False
 
@@ -720,7 +734,7 @@ def request_risk_assessment(request):
                 logger.exception("Could not store a risk assessment upload.")
                 form.add_error(
                     None,
-                    "The request could not be saved because a file could not be stored. Please try again.",
+                    translate("err.view.request_save_failed", lang),
                 )
             else:
                 return redirect(
@@ -751,6 +765,7 @@ def risk_assessment_success(request, reference):
 
 
 def register_researcher(request):
+    lang = current_lang(request)
     if request.method == "POST" and _rate_limit_reached(request, "researcher-application"):
         return render(
             request,
@@ -759,7 +774,7 @@ def register_researcher(request):
             status=429,
         )
 
-    form = ResearcherApplicationForm(request.POST or None)
+    form = ResearcherApplicationForm(request.POST or None, lang=lang)
     if request.method == "POST" and form.is_valid():
         try:
             with transaction.atomic():
@@ -793,7 +808,7 @@ def register_researcher(request):
             logger.exception("Could not save a Portal E researcher application.")
             form.add_error(
                 None,
-                "The application could not be saved. Please try again or contact MoFirms.",
+                translate("err.researcher.application_failed", lang),
             )
         else:
             return redirect("researcher_application_received")
