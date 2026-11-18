@@ -698,6 +698,7 @@ STRINGS = {
         ),
     },
     "home.contact.email_label": {"en": "Email:", "sw": "Barua pepe:"},
+    "home.contact.call_label": {"en": "Call:", "sw": "Piga simu:"},
     "home.contact.whatsapp_chat": {"en": "Chat with MoFirms on WhatsApp", "sw": "Zungumza na MoFirms kwa WhatsApp"},
     "home.contact.whatsapp_note": {
         "en": "WhatsApp opens an external chat. Please don’t send IDs or other sensitive information;",
