@@ -158,6 +158,14 @@ footer{background:#10231a;color:#cfe3d6;padding:0;font-size:.9rem}footer a{color
 .choice-grid .choice:has(input:checked) input,.checkbox-grid .choice:has(input:checked) input{accent-color:#fff}
 .registration-form>button[type=submit]{display:block;width:100%;margin-top:24px;padding:14px 22px;font-size:1.05rem;text-align:center}
 .field-label{display:block;margin:10px 0 6px;font-weight:600;font-size:.9rem}
+.multiselect{margin-top:2px}
+.multiselect-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);cursor:pointer;list-style:none;font:inherit}
+.multiselect-summary::-webkit-details-marker{display:none}
+.multiselect-summary-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.multiselect-caret{flex:0 0 auto;color:var(--mut);font-size:.8rem;transition:transform .15s ease}
+.multiselect[open] .multiselect-caret{transform:rotate(180deg)}
+.multiselect[open] .multiselect-summary{border-color:var(--g)}
+.multiselect .checkbox-grid{margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--sand)}
 .form-hint{margin:0 0 10px;color:var(--mut);font-size:.9rem}
 .inline-fields{display:grid;grid-template-columns:1fr 130px;gap:8px}.consent{margin:0}
 .notice-warning{margin:24px 0;padding:16px 20px;border:1px solid #d5bd79;border-left:5px solid #8a5a2b;border-radius:12px;background:var(--sand)}

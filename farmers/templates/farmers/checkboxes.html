@@ -1,8 +1,15 @@
+{% load custom_i18n %}
 <span class="field-label">{{ field.label }}{% if field.field.required %} *{% endif %}</span>
-<div class="checkbox-grid">
-{% for checkbox in field %}
-  <label class="choice">{{ checkbox.tag }} {{ checkbox.choice_label }}</label>
-{% endfor %}
-</div>
+<details class="multiselect">
+  <summary class="multiselect-summary">
+    <span class="multiselect-summary-text" data-placeholder="{% t 'common.multiselect_placeholder' %}" data-count-template="{% t 'common.multiselect_count' %}">{% t 'common.multiselect_placeholder' %}</span>
+    <span class="multiselect-caret" aria-hidden="true">&#9662;</span>
+  </summary>
+  <div class="checkbox-grid">
+  {% for checkbox in field %}
+    <label class="choice">{{ checkbox.tag }} {{ checkbox.choice_label }}</label>
+  {% endfor %}
+  </div>
+</details>
 {% if field.help_text %}<p class="form-hint">{{ field.help_text }}</p>{% endif %}
 {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}

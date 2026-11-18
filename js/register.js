@@ -81,3 +81,18 @@ if (documentRows && documentRows.querySelectorAll(".document-row").length === 0)
   addDocumentRow();
 }
 renumberDocumentRows();
+
+document.querySelectorAll(".multiselect").forEach((details) => {
+  const summaryText = details.querySelector(".multiselect-summary-text");
+  const placeholder = summaryText.dataset.placeholder;
+  const countTemplate = summaryText.dataset.countTemplate;
+  const checkboxes = [...details.querySelectorAll('input[type="checkbox"]')];
+  function updateSummary() {
+    const selected = checkboxes.filter((c) => c.checked).map((c) => c.closest(".choice").textContent.trim());
+    if (selected.length === 0) summaryText.textContent = placeholder;
+    else if (selected.length <= 2) summaryText.textContent = selected.join(", ");
+    else summaryText.textContent = countTemplate.replace("{count}", String(selected.length));
+  }
+  checkboxes.forEach((c) => c.addEventListener("change", updateSummary));
+  updateSummary();
+});

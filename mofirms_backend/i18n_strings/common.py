@@ -27,4 +27,12 @@ STRINGS = {
         "en": "MoFirms website",
         "sw": "Tovuti ya MoFirms",
     },
+    "common.multiselect_placeholder": {
+        "en": "Tap to choose options",
+        "sw": "Gusa kuchagua chaguo",
+    },
+    "common.multiselect_count": {
+        "en": "{count} selected",
+        "sw": "{count} zimechaguliwa",
+    },
 }
