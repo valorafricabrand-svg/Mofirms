@@ -101,7 +101,7 @@ if(carousel){
   const progressFill=$("#carouselProgress");
   const toggle=$("#carouselToggle");
   let currentSlide=0;
-  let carouselPaused=true;
+  let carouselPaused=reducedMotion.matches;
   let carouselEngaged=false;
   let carouselTimer;
   totalDisplay.textContent=String(slides.length).padStart(2,"0");
