@@ -247,8 +247,8 @@ $("#servicesNext").onclick=()=>serviceViewport.scrollBy({left:serviceViewport.cl
 draw();
 const UI_CONCEPT=pick("Concept","Dhana"),UI_OWNER=pick("Owner:","Mmiliki:"),UI_MOFIRMS_ROLE=pick("MoFirms’ role:","Jukumu la MoFirms:"),UI_DISCUSS_PROJECT=pick("Discuss a similar project","Jadili mradi kama huu");
 $("#projGrid").innerHTML=PROJECTS.map(p=>`<article class="card project-card"><span class="tag concept">${UI_CONCEPT}</span><h3>${p.t}</h3><p><b>${UI_OWNER}</b> ${p.o}</p><p><b>${UI_MOFIRMS_ROLE}</b> ${p.r}</p><a class="project-link" href="#contact" data-cat="Project collaboration">${UI_DISCUSS_PROJECT} <span aria-hidden="true">→</span></a></article>`).join("");
-const UI_PROPOSED_TAG=pick("Proposed · not approved or funded","Imependekezwa · haijaidhinishwa wala kufadhiliwa"),UI_ACTIVITIES_LABEL=pick("Activities under consideration","Shughuli zinazozingatiwa");
-const clusterCards=VOFA_CLUSTERS.map(cluster=>`<article class="card project-card cluster-card"><span class="tag concept">${UI_PROPOSED_TAG}</span><h4>${cluster.t}</h4><ul aria-label="${UI_ACTIVITIES_LABEL}">${cluster.activities.map(activity=>`<li>${activity}</li>`).join("")}</ul><a class="project-link" href="#contact" data-cat="Project collaboration">${UI_DISCUSS_PROJECT} <span aria-hidden="true">→</span></a></article>`).join("");
+const UI_ACTIVITIES_LABEL=pick("Activities under consideration","Shughuli zinazozingatiwa");
+const clusterCards=VOFA_CLUSTERS.map(cluster=>`<article class="card project-card cluster-card"><h4>${cluster.t}</h4><ul aria-label="${UI_ACTIVITIES_LABEL}">${cluster.activities.map(activity=>`<li>${activity}</li>`).join("")}</ul><a class="project-link" href="#contact" data-cat="Project collaboration">${UI_DISCUSS_PROJECT} <span aria-hidden="true">→</span></a></article>`).join("");
 const clusterViewport=$("#clustersViewport"),clusterSet=$("#clusterGrid");
 clusterSet.innerHTML=clusterCards;
 $("#clustersPrevious").onclick=()=>clusterViewport.scrollBy({left:-clusterViewport.clientWidth*.8,behavior:reducedMotion.matches?"auto":"smooth"});
