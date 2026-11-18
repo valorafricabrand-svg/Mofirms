@@ -3,17 +3,6 @@ from django.db import migrations
 
 TESTIMONIALS = [
     {
-        "author_name": "Vofa",
-        "role": "Mushroom farmer, Valor Africa Limited",
-        "quote": (
-            "MoFirms helped us put real numbers behind our mushroom farming "
-            "venture before we committed any capital. Their financial "
-            "analysis gave Valor Africa Limited the confidence to grow from "
-            "a small trial into a proper production line."
-        ),
-        "display_order": 0,
-    },
-    {
         "author_name": "Beekeeping client",
         "role": "Beekeeper, Narok",
         "quote": (
