@@ -10,7 +10,7 @@
 <meta property="og:description" content="Practical advice for sustainable farms and growing enterprises.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
 <link rel="preload" as="image" href="{% static 'images/climate-smart-farming.webp' %}" imagesrcset="{% static 'images/climate-smart-farming-480.webp' %} 480w, {% static 'images/climate-smart-farming.webp' %} 736w" imagesizes="(min-width: 901px) 540px, calc(100vw - 40px)" fetchpriority="high">
-<link rel="stylesheet" href="{% static 'css/style.css' %}?v=ux-performance-2026-11">
+<link rel="stylesheet" href="{% static 'css/style.css' %}?v=whatsapp-farmer-contact-2026-11">
 <script src="{% static 'js/app.js' %}?v=ux-performance-2026-11" defer></script>
 </head>
 <body>
@@ -298,7 +298,9 @@
 <section id="contact" class="wrap two contact-section">
   <div><h2>Request a consultation</h2>
   <p>Tell us briefly what you need. Please don’t include ID numbers, tax PINs, land records or detailed financial information here.</p>
-  <p><b>Email:</b> <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a></p></div>
+  <p><b>Email:</b> <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a></p>
+  <p><a class="btn whatsapp-link" href="https://wa.me/254113665283?text=Hello%20MoFirms%2C%20I%20am%20a%20farmer%20and%20have%20an%20enquiry." target="_blank" rel="noopener noreferrer">Chat with MoFirms on WhatsApp</a></p>
+  <p class="note">WhatsApp opens an external chat. Please don’t send IDs or other sensitive information; <a href="/portal/register/">submit farmer registrations through the registration form</a>.</p></div>
   <form class="card contact-form" id="form" method="post" action="{% url 'consultation_lead' %}">
     {% if not consultation_enabled %}<p class="note" role="status">This live site is currently a read-only demo. Please don’t submit personal details. Contact <a href="mailto:mconceptslimited@gmail.com">MoFirms by email</a> instead.</p>{% endif %}
     <fieldset {% if not consultation_enabled %}disabled{% endif %}>
@@ -394,4 +396,5 @@
     <div id="privacy" hidden class="footer-privacy">We use consultation details to review and respond to enquiries; enquiry records are scheduled for deletion after two years without recorded contact. If you subscribe, we store your email, selected topics, and consent date to manage the newsletter. We use that address only for the selected updates and retain your unsubscribe status to avoid contacting you again. Unsubscribe using the link shown after signup or in newsletter messages. You may ask us to access, correct or delete your data by emailing <a href="mailto:mconceptslimited@gmail.com">mconceptslimited@gmail.com</a>. Newsletter emails are not currently sent automatically.</div>
   </div>
 </footer>
+<a class="whatsapp-float" href="https://wa.me/254113665283?text=Hello%20MoFirms%2C%20I%20am%20a%20farmer%20and%20have%20an%20enquiry." target="_blank" rel="noopener noreferrer" aria-label="Chat with MoFirms on WhatsApp">Chat on WhatsApp</a>
 </body></html>
