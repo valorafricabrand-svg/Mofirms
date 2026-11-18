@@ -13,6 +13,10 @@ envVarGroups:
         sync: false
       - key: MPESA_PASSKEY
         sync: false
+  - name: mofirms-assistant-secrets
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
 
 services:
   - type: web
@@ -78,6 +82,7 @@ services:
         value: https://mofirm.co.ke/internal/retention/purge/
       - fromGroup: mofirms-retention-secrets
       - fromGroup: mofirms-mpesa-secrets
+      - fromGroup: mofirms-assistant-secrets
 
   - type: keyvalue
     name: mofirms-production-redis

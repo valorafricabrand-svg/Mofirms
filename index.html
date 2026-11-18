@@ -408,4 +408,25 @@
   </div>
 </footer>
 <a class="whatsapp-float" href="https://wa.me/254140949415?text=Hello%20MoFirms%2C%20I%20am%20a%20farmer%20and%20have%20an%20enquiry." target="_blank" rel="noopener noreferrer" aria-label="{% t 'home.whatsapp_float_aria' %}">{% t 'home.whatsapp_float_text' %}</a>
+<div class="assistant-widget">
+  <button type="button" class="assistant-float" id="assistantToggle" aria-haspopup="dialog" aria-expanded="false" aria-controls="assistantPanel"><span aria-hidden="true">&#128172;</span> {% t 'assistant.button_label' %}</button>
+  <section class="assistant-panel" id="assistantPanel" role="dialog" aria-modal="false" aria-labelledby="assistantPanelTitle" hidden>
+    <header class="assistant-panel-header">
+      <div>
+        <h2 id="assistantPanelTitle">{% t 'assistant.panel_title' %}</h2>
+        <p class="assistant-panel-subtitle">{% t 'assistant.panel_subtitle' %}</p>
+      </div>
+      <button type="button" class="assistant-close" id="assistantClose" aria-label="{% t 'assistant.close_button' %}">&times;</button>
+    </header>
+    <div class="assistant-messages" id="assistantMessages" aria-live="polite">
+      <p class="assistant-message assistant-message-bot">{% t 'assistant.welcome_message' %}</p>
+    </div>
+    <form class="assistant-input-row" id="assistantForm" data-thinking-text="{% t 'assistant.thinking' %}" data-network-error-text="{% t 'assistant.unavailable' %}">
+      {% csrf_token %}
+      <label class="visually-hidden" for="assistantInput">{% t 'assistant.input_placeholder' %}</label>
+      <input type="text" id="assistantInput" placeholder="{% t 'assistant.input_placeholder' %}" autocomplete="off" maxlength="1000">
+      <button type="submit" class="btn sm">{% t 'assistant.send_button' %}</button>
+    </form>
+  </section>
+</div>
 </body></html>

@@ -6,6 +6,7 @@ from . import views
 
 urlpatterns = [
     path("consultation/", views.submit_consultation_lead, name="consultation_lead"),
+    path("assistant/ask/", views.ask_assistant, name="ask_assistant"),
     path(
         "consultation/received/<str:reference>/",
         views.consultation_lead_received,

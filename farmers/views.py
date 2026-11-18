@@ -1,5 +1,8 @@
 import hashlib
+import json
 import logging
+import urllib.error
+import urllib.request
 import uuid
 
 from django.conf import settings
@@ -7,7 +10,7 @@ from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import DatabaseError, IntegrityError, transaction
-from django.http import FileResponse, HttpResponse, HttpResponseNotAllowed
+from django.http import FileResponse, HttpResponse, HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -245,15 +248,113 @@ def _client_rate_key(request, portal):
     return f"{portal}-registration:{digest}"
 
 
-def _rate_limit_reached(request, portal):
+def _rate_limit_reached(request, portal, limit=None, period=None):
+    limit = settings.PORTAL_RATE_LIMIT if limit is None else limit
+    period = settings.PORTAL_RATE_PERIOD if period is None else period
     key = _client_rate_key(request, portal)
-    if cache.add(key, 1, settings.PORTAL_RATE_PERIOD):
+    if cache.add(key, 1, period):
         return False
     try:
         attempts = cache.incr(key)
     except ValueError:
-        return not cache.add(key, 1, settings.PORTAL_RATE_PERIOD)
-    return attempts > settings.PORTAL_RATE_LIMIT
+        return not cache.add(key, 1, period)
+    return attempts > limit
+
+
+GEMINI_SYSTEM_PROMPT = (
+    "You are the MoFirms website assistant. MoFirms (Marks Organic Farms "
+    "Concepts Limited) helps farmers, entrepreneurs and organisations in Kenya "
+    "plan agricultural businesses, assess opportunities, and grow sustainably "
+    "through financial analysis, market development and digital tools "
+    "(including the SmartHasibu bookkeeping tool). Answer questions about "
+    "MoFirms' services, farming, agribusiness planning, and general AI topics "
+    "helpfully and briefly, in a friendly and professional tone. If asked "
+    "something unrelated, harmful, or that requires MoFirms staff to answer "
+    "(legal, medical, or account-specific questions), say so and suggest "
+    "using the \"Request a consultation\" form or WhatsApp link instead. "
+    "Keep answers short and practical - a few sentences unless more detail "
+    "is clearly needed. Respond in the same language the visitor writes in."
+)
+
+
+def _assistant_capacity_reached():
+    """Soft global cap so one busy period can't burn through the free Gemini quota."""
+    key = "assistant-global-rpm"
+    if cache.add(key, 1, 60):
+        return False
+    try:
+        count = cache.incr(key)
+    except ValueError:
+        return False
+    return count > 30
+
+
+@require_POST
+def ask_assistant(request):
+    lang = current_lang(request)
+    if not settings.GEMINI_API_KEY:
+        return JsonResponse(
+            {"error": translate("assistant.not_configured", lang)}, status=503
+        )
+    if _rate_limit_reached(
+        request,
+        "assistant",
+        limit=settings.ASSISTANT_RATE_LIMIT,
+        period=settings.ASSISTANT_RATE_PERIOD,
+    ) or _assistant_capacity_reached():
+        return JsonResponse(
+            {"error": translate("assistant.too_many_requests", lang)}, status=429
+        )
+
+    try:
+        payload = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"error": translate("assistant.bad_request", lang)}, status=400)
+
+    message = (payload.get("message") or "").strip()
+    if not message or len(message) > 1000:
+        return JsonResponse({"error": translate("assistant.bad_request", lang)}, status=400)
+
+    contents = []
+    for turn in (payload.get("history") or [])[-6:]:
+        if not isinstance(turn, dict):
+            continue
+        role = turn.get("role")
+        text = (turn.get("text") or "").strip()
+        if role not in ("user", "model") or not text or len(text) > 2000:
+            continue
+        contents.append({"role": role, "parts": [{"text": text}]})
+    contents.append({"role": "user", "parts": [{"text": message}]})
+
+    body = json.dumps(
+        {
+            "contents": contents,
+            "systemInstruction": {"parts": [{"text": GEMINI_SYSTEM_PROMPT}]},
+            "generationConfig": {"maxOutputTokens": 400, "temperature": 0.4},
+        }
+    ).encode("utf-8")
+    url = (
+        "https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{settings.GEMINI_MODEL}:generateContent?key={settings.GEMINI_API_KEY}"
+    )
+    http_request = urllib.request.Request(
+        url, data=body, headers={"Content-Type": "application/json"}, method="POST"
+    )
+    try:
+        with urllib.request.urlopen(http_request, timeout=20) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError) as exc:
+        detail = exc.read().decode("utf-8", "ignore")[:500] if isinstance(exc, urllib.error.HTTPError) else str(exc)
+        logger.warning("Gemini assistant request failed: %s", detail)
+        return JsonResponse({"error": translate("assistant.unavailable", lang)}, status=502)
+
+    try:
+        reply = data["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError, TypeError):
+        logger.warning("Gemini assistant returned no usable candidate: %s", data)
+        return JsonResponse({"error": translate("assistant.unavailable", lang)}, status=502)
+
+    return JsonResponse({"reply": reply})
 
 
 @require_http_methods(["GET", "POST"])

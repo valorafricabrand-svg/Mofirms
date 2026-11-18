@@ -244,3 +244,56 @@ const UI_IN_PLACE=pick("in place","vimewekwa"),UI_WELL_PREPARED=pick("You’re w
 function ask(){if(qi>=Q.length){const sc=Q.length-gaps.length;qz.innerHTML=`<h3>${sc} ${pick("of","kati ya")} ${Q.length} ${UI_IN_PLACE}</h3><div class="bar2"><i style="width:${sc/Q.length*100}%"></i></div>${gaps.length?"<ul>"+gaps.map(g=>`<li>${TIPS[g]}</li>`).join("")+"</ul>":`<p>${UI_WELL_PREPARED}</p>`}<p class="note">${UI_INDICATION_ONLY}</p><a class="btn sm" href="#contact">${UI_TALK_TO_US}</a> <button class="opt" id="rs">${UI_RESTART}</button>`;$("#rs").onclick=()=>{qi=0;gaps=[];ask()};return}
 qz.innerHTML=`<p class="note">${UI_QUESTION} ${qi+1} ${pick("of","kati ya")} ${Q.length}</p><h3>${Q[qi][0]}</h3><button class="opt" data-a="1">${UI_YES}</button> <button class="opt" data-a="0">${UI_NOT_YET}</button>`;
 qz.querySelectorAll("button").forEach(b=>b.onclick=()=>{if(b.dataset.a=="0")gaps.push(Q[qi][1]);qi++;ask()})}ask();
+/* AI assistant widget */
+(()=>{
+  const toggle=$("#assistantToggle"),panel=$("#assistantPanel");
+  if(!toggle||!panel)return;
+  const closeBtn=$("#assistantClose"),messages=$("#assistantMessages"),form=$("#assistantForm"),input=$("#assistantInput");
+  const csrfToken=form.querySelector("[name=csrfmiddlewaretoken]").value;
+  const thinkingText=form.dataset.thinkingText,networkErrorText=form.dataset.networkErrorText;
+  let history=[],busy=false;
+  function addMessage(text,role){
+    const p=document.createElement("p");
+    p.className=`assistant-message assistant-message-${role}`;
+    p.textContent=text;
+    messages.append(p);
+    messages.scrollTop=messages.scrollHeight;
+    return p;
+  }
+  function openPanel(){panel.hidden=false;toggle.setAttribute("aria-expanded","true");input.focus()}
+  function closePanel(){panel.hidden=true;toggle.setAttribute("aria-expanded","false")}
+  toggle.onclick=()=>panel.hidden?openPanel():closePanel();
+  closeBtn.onclick=closePanel;
+  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!panel.hidden)closePanel()});
+  form.addEventListener("submit",async event=>{
+    event.preventDefault();
+    const text=input.value.trim();
+    if(!text||busy)return;
+    busy=true;
+    addMessage(text,"user");
+    const turnHistory=history.slice();
+    history.push({role:"user",text});
+    input.value="";
+    const thinking=addMessage(thinkingText,"bot");
+    try{
+      const response=await fetch("/portal/assistant/ask/",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","X-CSRFToken":csrfToken},
+        body:JSON.stringify({message:text,history:turnHistory}),
+      });
+      const data=await response.json();
+      thinking.remove();
+      if(!response.ok){
+        addMessage(data.error||networkErrorText,"error");
+      }else{
+        addMessage(data.reply,"bot");
+        history.push({role:"model",text:data.reply});
+      }
+    }catch(err){
+      thinking.remove();
+      addMessage(networkErrorText,"error");
+    }finally{
+      busy=false;
+    }
+  });
+})();
