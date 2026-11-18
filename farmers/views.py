@@ -360,8 +360,11 @@ def ask_assistant(request):
                 "Gemini assistant request failed on attempt %d after %.1fs (%s): %s",
                 attempt, elapsed, type(exc).__name__, detail,
             )
-            is_overloaded = isinstance(exc, urllib.error.HTTPError) and exc.code in (429, 503)
-            if attempt < attempts and is_overloaded:
+            is_retryable = (
+                not isinstance(exc, urllib.error.HTTPError)
+                or exc.code in (429, 503)
+            )
+            if attempt < attempts and is_retryable:
                 time.sleep(attempt)
                 continue
             return JsonResponse({"error": translate("assistant.unavailable", lang)}, status=502)
