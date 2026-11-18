@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+import time
 import urllib.error
 import urllib.request
 import uuid
@@ -344,13 +345,19 @@ def ask_assistant(request):
     http_request = urllib.request.Request(
         url, data=body, headers={"Content-Type": "application/json"}, method="POST"
     )
+    started = time.monotonic()
     try:
-        with urllib.request.urlopen(http_request, timeout=25) as response:
+        with urllib.request.urlopen(http_request, timeout=45) as response:
             data = json.loads(response.read().decode("utf-8"))
     except (urllib.error.URLError, TimeoutError) as exc:
         detail = exc.read().decode("utf-8", "ignore")[:500] if isinstance(exc, urllib.error.HTTPError) else str(exc)
-        logger.warning("Gemini assistant request failed: %s", detail)
+        elapsed = time.monotonic() - started
+        logger.warning(
+            "Gemini assistant request failed after %.1fs (%s): %s",
+            elapsed, type(exc).__name__, detail,
+        )
         return JsonResponse({"error": translate("assistant.unavailable", lang)}, status=502)
+    logger.info("Gemini assistant request succeeded after %.1fs", time.monotonic() - started)
 
     try:
         reply = data["candidates"][0]["content"]["parts"][0]["text"]
