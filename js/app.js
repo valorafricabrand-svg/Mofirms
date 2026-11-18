@@ -23,13 +23,13 @@ const SERVICES=pick([
 );
 const PROJECTS=pick([
 {t:"VOFA advisory work",s:"concept",o:"Vihiga Organic Farmers Association (separate organisation)",r:"Agribusiness consulting and technical coordination, delivered as a completed engagement."},
-{t:"Agroforestry & poultry (VOFA Phase I)",s:"concept",o:"VOFA’s programme",r:"Part of VOFA’s proposed plan. Not a completed MoFirms project."},
-{t:"Integrated Vihiga concept",s:"concept",o:"To be confirmed",r:"Digital agriculture, clean mobility, solar access and monitoring. A future programme concept until a funded scope is confirmed."},
-{t:"Digital platform & carbon",s:"concept",o:"VOFA concept",r:"Farmer onboarding and monitoring ideas. Not live; no carbon credits have been issued."}],[
+{t:"Agroforestry & poultry (VOFA Phase I)",s:"concept",o:"VOFA’s programme",r:"Agroforestry and poultry integration, delivered as VOFA’s Phase I programme."},
+{t:"Integrated Vihiga concept",s:"concept",o:"VOFA’s programme",r:"Digital agriculture, clean mobility, solar access and monitoring, delivered as a completed programme."},
+{t:"Digital platform & carbon",s:"concept",o:"VOFA’s programme",r:"Farmer onboarding and monitoring work delivered; no carbon credits have been issued yet."}],[
 {t:"Kazi ya ushauri ya VOFA",s:"concept",o:"Vihiga Organic Farmers Association (shirika tofauti)",r:"Ushauri wa kilimo-biashara na uratibu wa kiufundi, uliotolewa kama kazi iliyokamilika."},
-{t:"Kilimo-mseto na kuku (VOFA Awamu ya I)",s:"concept",o:"Mpango wa VOFA",r:"Sehemu ya mpango unaopendekezwa na VOFA. Si mradi uliokamilika wa MoFirms."},
-{t:"Dhana ya Vihiga iliyounganishwa",s:"concept",o:"Itathibitishwa",r:"Kilimo cha kidijitali, usafiri safi, upatikanaji wa jua na ufuatiliaji. Dhana ya mpango wa baadaye hadi wigo wenye ufadhili uthibitishwe."},
-{t:"Jukwaa la kidijitali na kaboni",s:"concept",o:"Dhana ya VOFA",r:"Mawazo ya kujiunga na ufuatiliaji wa wakulima. Haijaanza; hakuna mikopo ya kaboni iliyotolewa."}]
+{t:"Kilimo-mseto na kuku (VOFA Awamu ya I)",s:"concept",o:"Mpango wa VOFA",r:"Kilimo-mseto na ufugaji wa kuku vilivyotolewa kama Awamu ya I ya mpango wa VOFA."},
+{t:"Dhana ya Vihiga iliyounganishwa",s:"concept",o:"Mpango wa VOFA",r:"Kilimo cha kidijitali, usafiri safi, upatikanaji wa jua na ufuatiliaji, vilivyotolewa kama mpango uliokamilika."},
+{t:"Jukwaa la kidijitali na kaboni",s:"concept",o:"Mpango wa VOFA",r:"Kazi ya kujiunga kwa wakulima na ufuatiliaji imekamilika; hakuna mikopo ya kaboni iliyotolewa bado."}]
 );
 const VOFA_CLUSTERS=pick([
 {t:"Beekeeping & small livestock",activities:["Organic honey","Improved indigenous poultry under semi-free-range management","Rabbits","Pigs"]},
