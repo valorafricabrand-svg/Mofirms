@@ -128,7 +128,7 @@ footer{background:#10231a;color:#cfe3d6;padding:0;font-size:.9rem}footer a{color
 .testimonials-section h2{margin:6px 0 28px}
 .testimonial-carousel{position:relative;max-width:720px;margin:0 auto;outline:none}
 .testimonial-track{position:relative;min-height:170px}
-.testimonial-slide{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:32px 36px}
+.testimonial-slide{background:var(--bg);border:2px solid var(--g);border-radius:16px;padding:32px 36px}
 .testimonial-quote{margin:0 0 16px;font-size:1.15rem;line-height:1.6;color:var(--ink)}
 .testimonial-author{margin:0;font-weight:700;color:var(--g2)}
 .testimonial-author span{display:block;margin-top:2px;font-weight:400;color:var(--mut);font-size:.88rem}
