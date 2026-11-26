@@ -910,6 +910,37 @@ class WhatsAppTests(TestCase):
         self.assertEqual(self.sent.call_count, 1)
         self.assertEqual(WhatsAppContact.objects.get().flow, "")
 
+    def test_delete_request_is_acknowledged(self):
+        self.assertIn("request to delete your data", self.say("Delete my data"))
+
+    def test_deleting_a_registration_removes_its_whatsapp_record(self):
+        self.register_by_chat()
+
+        FarmerProfile.objects.get().delete()
+
+        self.assertFalse(WhatsAppContact.objects.exists())
+
+    def test_retention_removes_only_stale_unfinished_chats(self):
+        self.register_by_chat()
+        stale = WhatsAppContact.objects.create(phone="254700000001")
+        recent = WhatsAppContact.objects.create(phone="254700000002")
+        WhatsAppContact.objects.filter(pk=stale.pk).update(
+            updated_at=timezone.now() - timedelta(days=91)
+        )
+
+        call_command("purge_retained_data", "--execute", stdout=StringIO())
+
+        self.assertFalse(WhatsAppContact.objects.filter(pk=stale.pk).exists())
+        self.assertTrue(WhatsAppContact.objects.filter(pk=recent.pk).exists())
+        self.assertTrue(WhatsAppContact.objects.filter(phone=self.phone).exists())
+
+    def test_privacy_page_has_deletion_instructions(self):
+        response = self.client.get(reverse("privacy"))
+
+        self.assertContains(response, 'id="delete-your-data"')
+        self.assertContains(response, "info@mofirm.co.ke")
+        self.assertContains(self.client.get("/"), 'href="/privacy/"')
+
     def test_website_sign_in_with_phone_and_code(self):
         code, _ = self.register_by_chat()
         login_url = reverse("farmer_whatsapp_login")

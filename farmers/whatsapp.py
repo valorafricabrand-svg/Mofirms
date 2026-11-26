@@ -262,6 +262,9 @@ def handle_message(phone, text):
     elif word in CANCEL_WORDS:
         contact.flow, contact.step, contact.answers = "", "", {}
         reply = translate("wa.cancelled", contact.language)
+    elif "delete" in word or "futa" in word:
+        contact.flow, contact.step, contact.answers = "", "", {}
+        reply = translate("wa.delete_request", contact.language)
     elif word in MENU_WORDS:
         contact.flow, contact.step, contact.answers = "", "", {}
         reply = translate("wa.menu", contact.language)

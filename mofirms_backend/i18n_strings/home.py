@@ -806,6 +806,7 @@ STRINGS = {
     },
     "home.footer.talk_cta": {"en": "Request a consultation", "sw": "Omba mashauriano"},
     "home.footer.back_to_top": {"en": "Back to top", "sw": "Rudi juu"},
+    "home.footer.privacy_policy_link": {"en": "Privacy policy", "sw": "Sera ya faragha"},
     "home.footer.copyright": {
         "en": "Marks Organic Farms Concepts Limited (MoFirms). Registered in Kenya, No. PVT-5JULR6L.",
         "sw": "Marks Organic Farms Concepts Limited (MoFirms). Imesajiliwa nchini Kenya, Na. PVT-5JULR6L.",

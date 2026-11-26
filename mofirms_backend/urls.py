@@ -36,6 +36,7 @@ urlpatterns = [
     ),
     path("pricing/", pricing, name="pricing"),
     path("onboarding/", TemplateView.as_view(template_name="onboarding.html"), name="onboarding"),
+    path("privacy/", TemplateView.as_view(template_name="privacy.html"), name="privacy"),
     path("checkout/", public_checkout, name="checkout"),
     path("portal/", include("farmers.urls")),
     path("smart-hasibu/", include("smart_hasibu.urls")),

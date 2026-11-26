@@ -18,13 +18,15 @@ from farmers.models import (
     ResearchStudy,
     RiskAssessmentDocument,
     RiskAssessmentRequest,
+    WhatsAppContact,
 )
 
 
 class Command(BaseCommand):
     help = (
         "Preview or delete evidence and research data older than 365 days, plus farmer, "
-        "partner, financial, consultation, or researcher records inactive for 730 days."
+        "partner, financial, consultation, or researcher records inactive for 730 days, "
+        "and unfinished WhatsApp registrations inactive for 90 days."
     )
 
     def add_arguments(self, parser):
@@ -79,6 +81,10 @@ class Command(BaseCommand):
             | Q(farmer_profile__in=expired_profiles)
             | Q(partner_profile__in=expired_partners)
         ).distinct()
+        abandoned_whatsapp_chats = WhatsAppContact.objects.filter(
+            profile__isnull=True, updated_at__lt=now - timedelta(days=90)
+        )
+        whatsapp_count = abandoned_whatsapp_chats.count()
         document_count = (
             expired_documents.count()
             + expired_partner_documents.count()
@@ -104,7 +110,8 @@ class Command(BaseCommand):
                     f"{profile_count} profile/request(s), {consultation_lead_count} "
                     f"consultation enquiry/enquiries, {study_count} research study/studies, "
                     f"{response_count} research response(s), and {invitation_count} "
-                    f"invitation(s) are eligible "
+                    f"invitation(s) are eligible, plus {whatsapp_count} unfinished WhatsApp "
+                    f"registration(s), "
                     "for deletion. "
                     "Add --execute to delete them."
                 )
@@ -144,6 +151,7 @@ class Command(BaseCommand):
             risk_request.delete()
             deleted_profiles += 1
         deleted_consultation_leads, _ = expired_consultation_leads.delete()
+        deleted_whatsapp_chats, _ = abandoned_whatsapp_chats.delete()
         for researcher in expired_researchers.select_related("user").iterator():
             researcher.user.delete()
             deleted_profiles += 1
@@ -155,6 +163,7 @@ class Command(BaseCommand):
                 f"{deleted_consultation_leads} expired consultation enquiry/enquiries, "
                 f"{deleted_research_studies} research study record(s), "
                 f"{deleted_research_responses} research response record(s), and "
-                f"{deleted_research_invitations} invitation record(s)."
+                f"{deleted_research_invitations} invitation record(s). "
+                f"Also deleted {deleted_whatsapp_chats} unfinished WhatsApp registration(s)."
             )
         )

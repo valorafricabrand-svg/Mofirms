@@ -147,6 +147,16 @@ STRINGS = {
         "sw": "Inahitaji ufuatiliaji — timu itawasiliana nawe",
     },
     "wa.status.not_verified": {"en": "Not verified", "sw": "Haijathibitishwa"},
+    "wa.delete_request": {
+        "en": (
+            "We have received your request to delete your data. A member of the MoFirms "
+            "team will confirm it is you and reply here when your data has been deleted."
+        ),
+        "sw": (
+            "Tumepokea ombi lako la kufuta taarifa zako. Mwanatimu wa MoFirms atathibitisha "
+            "kuwa ni wewe na kukujibu hapa taarifa zako zikishafutwa."
+        ),
+    },
     "wa.unsupported": {
         "en": "Sorry, I can only read text messages. Reply MENU to see the options.",
         "sw": "Samahani, ninaweza kusoma ujumbe wa maandishi tu. Jibu MENU kuona chaguo.",
