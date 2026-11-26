@@ -30,9 +30,20 @@ MAX_CODE_ATTEMPTS = 5
 LOCK_MINUTES = 15
 UNLOCK_MINUTES = 30
 
-MENU_WORDS = {"hi", "hello", "hey", "menu", "start", "habari", "mambo", "0"}
+MENU_WORDS = {"hi", "hello", "hey", "menu", "start", "habari", "mambo"}
 CANCEL_WORDS = {"cancel", "stop", "acha", "sitisha"}
 YES_WORDS = {"yes", "y", "ndio", "ndiyo", "sawa"}
+LANGUAGE_WORDS = {"0", "language", "lugha"}
+STATUS_WORDS = {"6", "status", "hali"}
+DETAILS_WORDS = {"7", "details", "taarifa"}
+NEW_CODE_WORDS = {"8", "code", "new code", "nambari"}
+HELP_WORDS = {"9", "help", "msaada"}
+SERVICE_LINKS = {
+    "2": ("wa.service.partner", "/portal/partners/register/"),
+    "3": ("wa.service.financial", "/portal/financial-analysis/"),
+    "4": ("wa.service.risk", "/portal/risk-assessment/"),
+    "5": ("wa.service.research", "/portal/research/register/"),
+}
 
 
 def normalize_phone(raw):
@@ -253,12 +264,11 @@ def handle_message(phone, text):
     text = (text or "").strip()
     word = text.lower()
 
-    if word in {"kiswahili", "swahili"}:
-        contact.language = "sw"
-        reply = translate("wa.language_set", "sw") + "\n\n" + translate("wa.menu", "sw")
-    elif word == "english":
-        contact.language = "en"
-        reply = translate("wa.language_set", "en") + "\n\n" + translate("wa.menu", "en")
+    chosen = _language_choice(word, contact.flow == "language")
+    if chosen:
+        contact.language, contact.language_confirmed = chosen, True
+        contact.flow, contact.step, contact.answers = "", "", {}
+        reply = translate("wa.language_set", chosen) + "\n\n" + translate("wa.menu", chosen)
     elif word in CANCEL_WORDS:
         contact.flow, contact.step, contact.answers = "", "", {}
         reply = translate("wa.cancelled", contact.language)
@@ -266,17 +276,30 @@ def handle_message(phone, text):
         contact.flow, contact.step, contact.answers = "", "", {}
         contact.deletion_requested_at = timezone.now()
         reply = translate("wa.delete_request", contact.language)
+    elif word in LANGUAGE_WORDS or (
+        not contact.language_confirmed and contact.flow not in {"register", "unlock"}
+    ):
+        contact.flow, contact.step, contact.answers = "language", "", {}
+        reply = translate("wa.language_prompt", "en")
     elif word in MENU_WORDS:
         contact.flow, contact.step, contact.answers = "", "", {}
         reply = translate("wa.menu", contact.language)
     elif contact.flow == "register":
         reply = _registration_step(contact, text, contact.language)
-    elif contact.flow == "unlock" and word not in {"4", "code", "new code", "nambari"}:
+    elif contact.flow == "unlock" and word not in NEW_CODE_WORDS:
         reply = _unlock_step(contact, text, contact.language)
     else:
         reply = _menu_choice(contact, word)
     contact.save()
     return reply
+
+
+def _language_choice(word, awaiting_choice):
+    if word in {"kiswahili", "swahili"} or (awaiting_choice and word == "2"):
+        return "sw"
+    if word == "english" or (awaiting_choice and word == "1"):
+        return "en"
+    return None
 
 
 def _menu_choice(contact, word):
@@ -287,19 +310,24 @@ def _menu_choice(contact, word):
             return translate("wa.already_registered", lang, reference=contact.profile.public_reference)
         contact.flow, contact.step, contact.answers = "register", "name", {}
         return translate("wa.ask_name", lang)
-    if word in {"2", "status", "hali", "3", "details", "taarifa"}:
+    if word in SERVICE_LINKS:
+        key, path = SERVICE_LINKS[word]
+        return translate(
+            "wa.service_link", lang, service=translate(key, lang), url=f"https://mofirm.co.ke{path}"
+        )
+    if word in STATUS_WORDS | DETAILS_WORDS:
         if not contact.profile:
             return translate("wa.not_registered", lang)
-        action = "status" if word in {"2", "status", "hali"} else "details"
+        action = "status" if word in STATUS_WORDS else "details"
         if not contact.code_hash:
             code = issue_code(contact)
             return translate("wa.new_code", lang, code=code) + "\n\n" + _protected_reply(contact, action, lang)
         return _protected_reply(contact, action, lang)
-    if word in {"4", "code", "new code", "nambari"}:
+    if word in NEW_CODE_WORDS:
         if not contact.profile:
             return translate("wa.not_registered", lang)
         return translate("wa.new_code", lang, code=issue_code(contact))
-    if word in {"5", "help", "msaada"}:
+    if word in HELP_WORDS:
         contact.help_requested_at = timezone.now()
         return translate("wa.help", lang)
     return translate("wa.menu", lang)

@@ -802,6 +802,7 @@ class WhatsAppTests(TestCase):
     def register_by_chat(self):
         self.say("Hi")
         self.say("1")
+        self.say("1")
         self.say("Jane Wanjiku")
         self.say("vihiga")
         self.say("1 4")
@@ -825,8 +826,31 @@ class WhatsAppTests(TestCase):
     def test_webhook_is_off_until_configured(self):
         self.assertEqual(self.client.get(reverse("whatsapp_webhook")).status_code, 503)
 
+    def test_first_message_asks_for_language_then_shows_services(self):
+        prompt = self.say("Hello, I have an enquiry")
+        self.assertIn("1 - English", prompt)
+        self.assertIn("2 - Kiswahili", prompt)
+
+        menu = self.say("2")
+        self.assertIn("Usajili wa mkulima na kikundi", menu)
+        self.assertIn("Tathmini ya hatari na fursa", menu)
+        self.assertNotIn("Chagua lugha", self.say("Hi"))
+
+        self.assertIn("Chagua lugha", self.say("0"))
+        self.assertIn("Farmer and group registration", self.say("1"))
+
+    def test_service_options_link_to_the_right_website_forms(self):
+        self.say("Hi")
+        self.say("1")
+
+        self.assertIn("https://mofirm.co.ke/portal/partners/register/", self.say("2"))
+        self.assertIn("https://mofirm.co.ke/portal/financial-analysis/", self.say("3"))
+        self.assertIn("https://mofirm.co.ke/portal/risk-assessment/", self.say("4"))
+        self.assertIn("https://mofirm.co.ke/portal/research/register/", self.say("5"))
+
     def test_registration_by_chat_creates_reviewable_profile_and_code(self):
-        self.assertIn("1 - Register", self.say("Hi"))
+        self.say("Hi")
+        self.assertIn("1 - Farmer and group registration", self.say("1"))
         self.assertIn("full name", self.say("1"))
         self.assertIn("county", self.say("Jane Wanjiku"))
         self.assertIn("could not find", self.say("Atlantis"))
@@ -851,29 +875,29 @@ class WhatsAppTests(TestCase):
         code, _ = self.register_by_chat()
         WhatsAppContact.objects.update(unlocked_until=None)
 
-        self.assertIn("6-digit", self.say("2"))
+        self.assertIn("6-digit", self.say("6"))
         self.assertIn("not correct", self.say("000000" if code != "000000" else "111111"))
         status = self.say(code)
 
         self.assertIn(FarmerProfile.objects.get().public_reference, status)
         self.assertIn("Pending review", status)
-        self.assertIn("Jane Wanjiku", self.say("3"))
+        self.assertIn("Jane Wanjiku", self.say("7"))
 
     def test_five_wrong_codes_lock_the_account(self):
         code, _ = self.register_by_chat()
         wrong = "000000" if code != "000000" else "111111"
         WhatsAppContact.objects.update(unlocked_until=None)
 
-        self.say("2")
+        self.say("6")
         for _ in range(4):
             self.say(wrong)
         self.assertIn("Too many", self.say(wrong))
-        self.say("2")
+        self.say("6")
         self.assertIn("Too many", self.say(code))
 
     def test_new_code_replaces_old_code(self):
         old_code, _ = self.register_by_chat()
-        new_code = re.search(r"code is: (\d{6})", self.say("4")).group(1)
+        new_code = re.search(r"code is: (\d{6})", self.say("8")).group(1)
         contact = WhatsAppContact.objects.get()
 
         self.assertTrue(check_code(contact, new_code))
@@ -890,7 +914,8 @@ class WhatsAppTests(TestCase):
             privacy_consent_at=timezone.now(),
         )
 
-        reply = self.say("2")
+        self.say("English")
+        reply = self.say("6")
 
         self.assertRegex(reply, r"code is: \d{6}")
         self.assertIn("Pending review", reply)
@@ -906,7 +931,7 @@ class WhatsAppTests(TestCase):
         self.say("1", message_id="wamid.same")
 
         self.assertEqual(self.sent.call_count, 1)
-        self.assertEqual(WhatsAppContact.objects.get().flow, "")
+        self.assertEqual(WhatsAppContact.objects.get().flow, "language")
 
     def test_delete_request_is_acknowledged_and_queued_for_staff(self):
         self.assertIn("request to delete your data", self.say("Delete my data"))
@@ -914,7 +939,8 @@ class WhatsAppTests(TestCase):
         self.assertIsNotNone(WhatsAppContact.objects.get().deletion_requested_at)
 
     def test_talk_to_team_queues_a_callback_for_staff(self):
-        self.assertIn("call you back", self.say("5"))
+        self.say("English")
+        self.assertIn("call you back", self.say("9"))
         contact = WhatsAppContact.objects.get()
         self.assertIsNotNone(contact.help_requested_at)
 

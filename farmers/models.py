@@ -1736,6 +1736,7 @@ class WhatsAppContact(models.Model):
         related_name="whatsapp_contact",
     )
     language = models.CharField(max_length=2, default="en")
+    language_confirmed = models.BooleanField(default=False)
     code_hash = models.CharField(max_length=128, blank=True)
     code_set_at = models.DateTimeField(null=True, blank=True)
     failed_attempts = models.PositiveSmallIntegerField(default=0)

@@ -1,25 +1,75 @@
 STRINGS = {
-    "wa.menu": {
+    "wa.language_prompt": {
         "en": (
             "Welcome to MoFirms 🌱\n"
-            "Reply with a number:\n"
-            "1 - Register as a farmer\n"
-            "2 - Check my registration status\n"
-            "3 - See my registered details\n"
-            "4 - Get a new login code\n"
-            "5 - Talk to the MoFirms team\n"
-            "Reply KISWAHILI for Swahili. Reply CANCEL any time to stop."
+            "Choose your language / Chagua lugha:\n"
+            "1 - English\n"
+            "2 - Kiswahili"
+        ),
+    },
+    "wa.menu": {
+        "en": (
+            "How can we help you? Reply with a number:\n\n"
+            "*Our services*\n"
+            "1 - Farmer and group registration\n"
+            "2 - Supplier, buyer and service-provider registration\n"
+            "3 - Financial analysis and business planning\n"
+            "4 - Risk and opportunity assessment\n"
+            "5 - Research and questionnaires\n\n"
+            "*My account*\n"
+            "6 - Check my registration status\n"
+            "7 - See my registered details\n"
+            "8 - Get a new login code\n"
+            "9 - Talk to the MoFirms team\n"
+            "0 - Change language\n\n"
+            "Reply CANCEL any time to stop, or MENU to see this list again."
         ),
         "sw": (
-            "Karibu MoFirms 🌱\n"
-            "Jibu kwa namba:\n"
-            "1 - Jisajili kama mkulima\n"
-            "2 - Angalia hali ya usajili wangu\n"
-            "3 - Ona taarifa zangu\n"
-            "4 - Pata nambari mpya ya kuingia\n"
-            "5 - Zungumza na timu ya MoFirms\n"
-            "Jibu ENGLISH kwa Kiingereza. Jibu ACHA wakati wowote kusimamisha."
+            "Tunawezaje kukusaidia? Jibu kwa namba:\n\n"
+            "*Huduma zetu*\n"
+            "1 - Usajili wa mkulima na kikundi\n"
+            "2 - Usajili wa msambazaji, mnunuzi na mtoa huduma\n"
+            "3 - Uchambuzi wa kifedha na upangaji wa biashara\n"
+            "4 - Tathmini ya hatari na fursa\n"
+            "5 - Utafiti na hojaji\n\n"
+            "*Akaunti yangu*\n"
+            "6 - Angalia hali ya usajili wangu\n"
+            "7 - Ona taarifa zangu\n"
+            "8 - Pata nambari mpya ya kuingia\n"
+            "9 - Zungumza na timu ya MoFirms\n"
+            "0 - Badilisha lugha\n\n"
+            "Jibu ACHA wakati wowote kusimamisha, au MENU kuona orodha hii tena."
         ),
+    },
+    "wa.service_link": {
+        "en": (
+            "*{service}*\n"
+            "Start your request here: {url}\n\n"
+            "Prefer a call? Reply 9 and the MoFirms team will call you back. "
+            "Reply MENU for more options."
+        ),
+        "sw": (
+            "*{service}*\n"
+            "Anza ombi lako hapa: {url}\n\n"
+            "Ungependa kupigiwa simu? Jibu 9 na timu ya MoFirms itakupigia. "
+            "Jibu MENU kwa chaguo zaidi."
+        ),
+    },
+    "wa.service.partner": {
+        "en": "Supplier, buyer and service-provider registration",
+        "sw": "Usajili wa msambazaji, mnunuzi na mtoa huduma",
+    },
+    "wa.service.financial": {
+        "en": "Financial analysis and business planning",
+        "sw": "Uchambuzi wa kifedha na upangaji wa biashara",
+    },
+    "wa.service.risk": {
+        "en": "Risk and opportunity assessment",
+        "sw": "Tathmini ya hatari na fursa",
+    },
+    "wa.service.research": {
+        "en": "Research and questionnaires",
+        "sw": "Utafiti na hojaji",
     },
     "wa.cancelled": {
         "en": "Okay, stopped. Reply MENU to see the options again.",
@@ -40,8 +90,8 @@ STRINGS = {
         ),
     },
     "wa.already_registered": {
-        "en": "You are already registered (reference {reference}). Reply 2 to check your status.",
-        "sw": "Tayari umesajiliwa (kumbukumbu {reference}). Jibu 2 kuangalia hali yako.",
+        "en": "You are already registered (reference {reference}). Reply 6 to check your status.",
+        "sw": "Tayari umesajiliwa (kumbukumbu {reference}). Jibu 6 kuangalia hali yako.",
     },
     "wa.not_registered": {
         "en": "We could not find a registration for this number. Reply 1 to register.",
@@ -112,16 +162,16 @@ STRINGS = {
         ),
     },
     "wa.ask_code": {
-        "en": "Please reply with your 6-digit MoFirms login code. Forgot it? Reply 4 for a new one.",
-        "sw": "Tafadhali jibu kwa nambari yako ya tarakimu 6 ya MoFirms. Umeisahau? Jibu 4 upate mpya.",
+        "en": "Please reply with your 6-digit MoFirms login code. Forgot it? Reply 8 for a new one.",
+        "sw": "Tafadhali jibu kwa nambari yako ya tarakimu 6 ya MoFirms. Umeisahau? Jibu 8 upate mpya.",
     },
     "wa.wrong_code": {
-        "en": "That code is not correct. {remaining} tries left. Reply 4 for a new code.",
-        "sw": "Nambari hiyo si sahihi. Majaribio {remaining} yamebaki. Jibu 4 upate nambari mpya.",
+        "en": "That code is not correct. {remaining} tries left. Reply 8 for a new code.",
+        "sw": "Nambari hiyo si sahihi. Majaribio {remaining} yamebaki. Jibu 8 upate nambari mpya.",
     },
     "wa.locked": {
-        "en": "Too many wrong codes. Please try again in {minutes} minutes, or reply 4 for a new code.",
-        "sw": "Nambari nyingi zisizo sahihi. Jaribu tena baada ya dakika {minutes}, au jibu 4 upate mpya.",
+        "en": "Too many wrong codes. Please try again in {minutes} minutes, or reply 8 for a new code.",
+        "sw": "Nambari nyingi zisizo sahihi. Jaribu tena baada ya dakika {minutes}, au jibu 8 upate mpya.",
     },
     "wa.status": {
         "en": "Reference: {reference}\nStatus: {status}\nSubmitted: {submitted}",
@@ -131,12 +181,12 @@ STRINGS = {
         "en": (
             "Your MoFirms details:\nName: {name}\nCounty: {county}\n"
             "Farming: {activities}\nPhone: {phone}\nReference: {reference}\n"
-            "To change anything, reply 5 to talk to the team."
+            "To change anything, reply 9 to talk to the team."
         ),
         "sw": (
             "Taarifa zako za MoFirms:\nJina: {name}\nKaunti: {county}\n"
             "Kilimo: {activities}\nSimu: {phone}\nKumbukumbu: {reference}\n"
-            "Kubadilisha chochote, jibu 5 kuzungumza na timu."
+            "Kubadilisha chochote, jibu 9 kuzungumza na timu."
         ),
     },
     "wa.status.pending": {"en": "Pending review", "sw": "Inasubiri ukaguzi"},
@@ -171,11 +221,11 @@ STRINGS = {
     "farmers.wa_login.body": {
         "en": (
             "Enter the phone number you registered on WhatsApp and your 6-digit MoFirms code. "
-            "Lost your code? Send 4 to MoFirms on WhatsApp for a new one."
+            "Lost your code? Send 8 to MoFirms on WhatsApp for a new one."
         ),
         "sw": (
             "Weka namba ya simu uliyosajili kwenye WhatsApp na nambari yako ya MoFirms ya "
-            "tarakimu 6. Umepoteza nambari? Tuma 4 kwa MoFirms kwenye WhatsApp upate mpya."
+            "tarakimu 6. Umepoteza nambari? Tuma 8 kwa MoFirms kwenye WhatsApp upate mpya."
         ),
     },
     "farmers.wa_login.phone_label": {"en": "WhatsApp phone number", "sw": "Namba ya simu ya WhatsApp"},
