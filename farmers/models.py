@@ -1175,8 +1175,8 @@ class ResearcherApplication(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        verbose_name = "Portal E researcher application"
-        verbose_name_plural = "Portal E researcher applications"
+        verbose_name = "researcher application"
+        verbose_name_plural = "researcher applications"
 
     def __str__(self):
         return f"{self.organisation_name} — {self.user.email}"
@@ -1262,6 +1262,8 @@ class ResearchStudy(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        verbose_name = "research study"
+        verbose_name_plural = "research studies"
 
     def __str__(self):
         return self.title

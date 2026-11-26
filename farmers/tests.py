@@ -680,6 +680,49 @@ class FarmerProfileAdminTests(TestCase):
         )
         self.change_url = reverse("admin:farmers_farmerprofile_change", args=[self.profile.pk])
 
+    def test_admin_home_shows_review_queue_counts(self):
+        FarmerProfile.objects.create(
+            registration_type=FarmerProfile.RegistrationType.INDIVIDUAL,
+            full_name="Already Verified",
+            preferred_contact=FarmerProfile.ContactPreference.PHONE,
+            county="Vihiga",
+            privacy_consent_at=timezone.now(),
+            verification_status=FarmerProfile.VerificationStatus.VERIFIED,
+            verification_notes="Checked by phone.",
+        )
+
+        response = self.client.get(reverse("admin:index"))
+
+        self.assertContains(response, "Needs review")
+        self.assertContains(response, "1 waiting")
+        self.assertContains(
+            response,
+            reverse("admin:farmers_farmerprofile_changelist") + "?verification_status__exact=pending",
+        )
+        self.assertContains(response, "Research studies")
+        self.assertContains(response, "Researcher applications")
+        self.assertNotContains(response, "Portal E")
+
+        from .templatetags.admin_review import REVIEW_QUEUES
+
+        for model, field, value in REVIEW_QUEUES:
+            opts = model._meta
+            url = reverse(f"admin:{opts.app_label}_{opts.model_name}_changelist")
+            queue_page = self.client.get(f"{url}?{field}__exact={value}")
+            self.assertEqual(queue_page.status_code, 200, opts.model_name)
+
+    def test_review_queue_only_shows_permitted_sections(self):
+        reviewer = get_user_model().objects.create_user(
+            username="farm-reviewer", password="Farm-reviewer-pass-2026!", is_staff=True
+        )
+        reviewer.user_permissions.add(Permission.objects.get(codename="view_farmerprofile"))
+        self.client.force_login(reviewer)
+
+        response = self.client.get(reverse("admin:index"))
+
+        self.assertContains(response, "Farmer registrations")
+        self.assertNotContains(response, "Consultation leads")
+
     def test_list_shows_contact_columns_and_branding(self):
         response = self.client.get(reverse("admin:farmers_farmerprofile_changelist"))
 

@@ -36,6 +36,7 @@ from .readiness_drafting import save_readiness_draft
 admin.site.site_header = "MoFirms Admin"
 admin.site.site_title = "MoFirms Admin"
 admin.site.index_title = "Review registrations and requests"
+admin.site.index_template = "farmers/admin_index.html"
 
 
 @admin.register(NewsletterSubscription)

@@ -1,0 +1,24 @@
+{% extends "admin/index.html" %}
+{% load admin_review %}
+
+{% block content %}
+<div id="content-main">
+  {% review_queue as queue %}
+  {% if queue %}
+  <div class="module review-queue">
+    <table>
+      <caption>Needs review</caption>
+      {% for item in queue %}
+      <tr>
+        <th scope="row"><a href="{{ item.url }}">{{ item.label }}</a></th>
+        <td style="text-align:right">
+          {% if item.count %}<strong>{{ item.count }} waiting</strong>{% else %}<span style="color:var(--body-quiet-color)">All caught up</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+  {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+</div>
+{% endblock %}
