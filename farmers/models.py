@@ -1724,6 +1724,38 @@ class NewsletterSubscription(models.Model):
         super().save(*args, **kwargs)
 
 
+class WhatsAppContact(models.Model):
+    phone = models.CharField(
+        max_length=20, unique=True, help_text="International format without +, e.g. 254712345678."
+    )
+    profile = models.OneToOneField(
+        FarmerProfile,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="whatsapp_contact",
+    )
+    language = models.CharField(max_length=2, default="en")
+    code_hash = models.CharField(max_length=128, blank=True)
+    code_set_at = models.DateTimeField(null=True, blank=True)
+    failed_attempts = models.PositiveSmallIntegerField(default=0)
+    locked_until = models.DateTimeField(null=True, blank=True)
+    unlocked_until = models.DateTimeField(null=True, blank=True)
+    flow = models.CharField(max_length=16, blank=True)
+    step = models.CharField(max_length=24, blank=True)
+    answers = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+        verbose_name = "WhatsApp contact"
+        verbose_name_plural = "WhatsApp contacts"
+
+    def __str__(self):
+        return f"+{self.phone}"
+
+
 class Testimonial(models.Model):
     author_name = models.CharField(max_length=120)
     role = models.CharField(max_length=160, help_text="e.g. 'Mushroom farmer, Valor Africa Limited'")

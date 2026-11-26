@@ -1,0 +1,37 @@
+{% load static custom_i18n %}
+<!DOCTYPE html>
+<html lang="{% current_language_code %}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% t 'farmers.wa_login.title' %} | MoFirms</title>
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<a class="skip" href="#main">{% t 'common.skip_to_content' %}</a>
+<header class="nav"><div class="wrap bar">
+  <a class="logo" href="/"><span>Mo</span>Firms</a>
+  {% include "farmers/_lang_switch.html" %}
+  <a class="btn sm" href="/">{% t 'farmers.common.back_to_mofirms' %}</a>
+</div></header>
+<main id="main"><section class="wrap registration">
+  <div class="card registration-form">
+    <p class="eyebrow">{% t 'farmers.wa_login.eyebrow' %}</p>
+    <h1>{% t 'farmers.wa_login.title' %}</h1>
+    <p>{% t 'farmers.wa_login.body' %}</p>
+    {% if error %}<div class="err-box" role="alert">{{ error }}</div>{% endif %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "farmers/field.html" with field=form.phone %}
+      {% include "farmers/field.html" with field=form.code %}
+      <button class="btn" type="submit">{% t 'common.sign_in' %}</button>
+    </form>
+    <p><a href="{% url 'farmer_login' %}">{% t 'farmers.wa_login.password_link' %}</a></p>
+    <p><a href="{% url 'register_farmer' %}">{% t 'farmers.common.register_as_farmer_link' %}</a></p>
+  </div>
+</section></main>
+<footer><div class="wrap">
+  <p>© <span id="yr"></span> {% t 'farmers.common.company_name' %} <a href="/">{% t 'farmers.common.main_website_link' %}</a></p>
+</div></footer>
+</body>
+</html>

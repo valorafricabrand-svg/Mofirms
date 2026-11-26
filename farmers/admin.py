@@ -29,6 +29,7 @@ from .models import (
     ResearcherApplication,
     ServicePlan,
     Testimonial,
+    WhatsAppContact,
 )
 from .readiness_drafting import save_readiness_draft
 
@@ -1563,3 +1564,27 @@ class TestimonialAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
+
+
+@admin.register(WhatsAppContact)
+class WhatsAppContactAdmin(admin.ModelAdmin):
+    list_display = ("__str__", "profile", "language", "has_code", "locked_until", "updated_at")
+    search_fields = ("phone", "profile__full_name", "profile__reference")
+    fields = (
+        "phone", "profile", "language", "has_code", "code_set_at",
+        "failed_attempts", "locked_until", "flow", "step", "created_at", "updated_at",
+    )
+    readonly_fields = fields
+    actions = ("clear_lockout",)
+
+    @admin.display(boolean=True, description="Login code set")
+    def has_code(self, obj):
+        return bool(obj.code_hash)
+
+    @admin.action(description="Clear wrong-code lockout")
+    def clear_lockout(self, request, queryset):
+        updated = queryset.update(failed_attempts=0, locked_until=None)
+        self.message_user(request, f"Cleared the lockout for {updated} contact(s).")
+
+    def has_add_permission(self, request):
+        return False

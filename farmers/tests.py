@@ -1,7 +1,12 @@
+import hashlib
+import hmac
+import json
+import re
 from datetime import timedelta
 from decimal import Decimal
 from html.parser import HTMLParser
 from io import BytesIO, StringIO
+from unittest.mock import patch
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -34,6 +39,7 @@ from .models import (
     ResearchResponse,
     ResearchStudy,
     ResearcherApplication,
+    WhatsAppContact,
 )
 from .readiness_drafting import (
     build_ai_draft_context,
@@ -750,6 +756,177 @@ class FarmerProfileAdminTests(TestCase):
         self.assertEqual(self.profile.activities, [self.activity_value])
         self.assertEqual(sorted(self.profile.challenges), ["finance", "markets"])
         self.assertEqual(self.profile.reviewed_by, self.staff)
+
+
+WHATSAPP_TEST_SETTINGS = {
+    "WHATSAPP_ACCESS_TOKEN": "test-token",
+    "WHATSAPP_PHONE_NUMBER_ID": "123456",
+    "WHATSAPP_APP_SECRET": "test-app-secret",
+    "WHATSAPP_VERIFY_TOKEN": "test-verify-token",
+}
+
+
+@override_settings(**WHATSAPP_TEST_SETTINGS)
+class WhatsAppTests(TestCase):
+    phone = "254712345678"
+
+    def setUp(self):
+        cache.clear()
+        patcher = patch("farmers.whatsapp.send_text")
+        self.sent = patcher.start()
+        self.addCleanup(patcher.stop)
+        self.message_number = 0
+
+    def webhook_post(self, body, signature=None):
+        if signature is None:
+            signature = "sha256=" + hmac.new(b"test-app-secret", body, hashlib.sha256).hexdigest()
+        return self.client.post(
+            reverse("whatsapp_webhook"),
+            body,
+            content_type="application/json",
+            HTTP_X_HUB_SIGNATURE_256=signature,
+        )
+
+    def say(self, text, phone=None, message_id=None):
+        self.message_number += 1
+        body = json.dumps(
+            {"entry": [{"changes": [{"value": {"messages": [{
+                "id": message_id or f"wamid.test.{self.message_number}",
+                "from": phone or self.phone,
+                "type": "text",
+                "text": {"body": text},
+            }]}}]}]}
+        ).encode("utf-8")
+        response = self.webhook_post(body)
+        self.assertEqual(response.status_code, 200)
+        return self.sent.call_args.args[1]
+
+    def register_by_chat(self):
+        self.say("Hi")
+        self.say("1")
+        self.say("Jane Wanjiku")
+        self.say("vihiga")
+        self.say("1 4")
+        reply = self.say("YES")
+        return re.search(r"code is: (\d{6})", reply).group(1), reply
+
+    def test_meta_verification_handshake(self):
+        url = reverse("whatsapp_webhook")
+        ok = self.client.get(url, {"hub.mode": "subscribe", "hub.verify_token": "test-verify-token", "hub.challenge": "42"})
+        self.assertEqual(ok.content, b"42")
+        bad = self.client.get(url, {"hub.mode": "subscribe", "hub.verify_token": "wrong", "hub.challenge": "42"})
+        self.assertEqual(bad.status_code, 403)
+
+    def test_unsigned_messages_are_rejected(self):
+        response = self.webhook_post(b'{"entry": []}', signature="sha256=forged")
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(WhatsAppContact.objects.exists())
+
+    @override_settings(WHATSAPP_APP_SECRET="")
+    def test_webhook_is_off_until_configured(self):
+        self.assertEqual(self.client.get(reverse("whatsapp_webhook")).status_code, 503)
+
+    def test_registration_by_chat_creates_reviewable_profile_and_code(self):
+        self.assertIn("1 - Register", self.say("Hi"))
+        self.assertIn("full name", self.say("1"))
+        self.assertIn("county", self.say("Jane Wanjiku"))
+        self.assertIn("could not find", self.say("Atlantis"))
+        self.assertIn("1 - Crops", self.say("vihiga"))
+        self.assertIn("Reply YES", self.say("1 4"))
+        reply = self.say("yes")
+
+        profile = FarmerProfile.objects.get()
+        self.assertIn(profile.public_reference, reply)
+        code = re.search(r"code is: (\d{6})", reply).group(1)
+        self.assertEqual(profile.full_name, "Jane Wanjiku")
+        self.assertEqual(profile.county, "Vihiga")
+        self.assertEqual(profile.activities, ["crops", "poultry"])
+        self.assertEqual(profile.phone, "+254712345678")
+        self.assertEqual(profile.preferred_contact, FarmerProfile.ContactPreference.WHATSAPP)
+        self.assertEqual(profile.verification_status, FarmerProfile.VerificationStatus.PENDING)
+        contact = WhatsAppContact.objects.get()
+        self.assertEqual(contact.profile, profile)
+        self.assertNotIn(code, contact.code_hash)
+
+    def test_status_needs_the_code_after_session_expires(self):
+        code, _ = self.register_by_chat()
+        WhatsAppContact.objects.update(unlocked_until=None)
+
+        self.assertIn("6-digit", self.say("2"))
+        self.assertIn("not correct", self.say("000000" if code != "000000" else "111111"))
+        status = self.say(code)
+
+        self.assertIn(FarmerProfile.objects.get().public_reference, status)
+        self.assertIn("Pending review", status)
+        self.assertIn("Jane Wanjiku", self.say("3"))
+
+    def test_five_wrong_codes_lock_the_account(self):
+        code, _ = self.register_by_chat()
+        wrong = "000000" if code != "000000" else "111111"
+        WhatsAppContact.objects.update(unlocked_until=None)
+
+        self.say("2")
+        for _ in range(4):
+            self.say(wrong)
+        self.assertIn("Too many", self.say(wrong))
+        self.say("2")
+        self.assertIn("Too many", self.say(code))
+
+    def test_new_code_replaces_old_code(self):
+        old_code, _ = self.register_by_chat()
+        new_code = re.search(r"code is: (\d{6})", self.say("4")).group(1)
+        contact = WhatsAppContact.objects.get()
+
+        self.assertTrue(check_code(contact, new_code))
+        if new_code != old_code:
+            self.assertFalse(check_code(contact, old_code))
+
+    def test_existing_website_registration_is_linked_by_phone(self):
+        FarmerProfile.objects.create(
+            registration_type=FarmerProfile.RegistrationType.INDIVIDUAL,
+            full_name="Web Farmer",
+            phone="0712 345 678",
+            preferred_contact=FarmerProfile.ContactPreference.PHONE,
+            county="Bungoma",
+            privacy_consent_at=timezone.now(),
+        )
+
+        reply = self.say("2")
+
+        self.assertRegex(reply, r"code is: \d{6}")
+        self.assertIn("Pending review", reply)
+        self.assertEqual(WhatsAppContact.objects.get().profile.full_name, "Web Farmer")
+
+    def test_swahili_conversation(self):
+        self.say("kiswahili")
+
+        self.assertIn("Jina lako kamili", self.say("1"))
+
+    def test_repeated_delivery_is_processed_once(self):
+        self.say("Hi", message_id="wamid.same")
+        self.say("1", message_id="wamid.same")
+
+        self.assertEqual(self.sent.call_count, 1)
+        self.assertEqual(WhatsAppContact.objects.get().flow, "")
+
+    def test_website_sign_in_with_phone_and_code(self):
+        code, _ = self.register_by_chat()
+        login_url = reverse("farmer_whatsapp_login")
+
+        wrong = self.client.post(login_url, {"phone": "0712345678", "code": "999999" if code != "999999" else "888888"})
+        self.assertContains(wrong, "did not match")
+        response = self.client.post(login_url, {"phone": "0712 345 678", "code": code})
+
+        self.assertRedirects(response, reverse("farmer_dashboard"))
+        self.assertContains(self.client.get(reverse("farmer_dashboard")), "Jane Wanjiku")
+        self.assertIsNotNone(FarmerProfile.objects.get().user)
+
+
+def check_code(contact, code):
+    from django.contrib.auth.hashers import check_password
+
+    return check_password(code, contact.code_hash)
 
 
 class PartnerRegistrationTests(TestCase):

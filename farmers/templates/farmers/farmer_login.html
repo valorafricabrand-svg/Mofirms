@@ -27,6 +27,7 @@
       {% include "farmers/field.html" with field=form.password %}
       <button class="btn" type="submit">{% t 'common.sign_in' %}</button>
     </form>
+    <p><a href="{% url 'farmer_whatsapp_login' %}">{% t 'farmers.wa_login.link' %}</a></p>
     <p><a href="{% url 'register_farmer' %}">{% t 'farmers.common.register_as_farmer_link' %}</a></p>
   </div>
 </section></main>

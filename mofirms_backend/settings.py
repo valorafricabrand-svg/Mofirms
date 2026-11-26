@@ -225,6 +225,11 @@ GEMINI_FALLBACK_MODELS = [
     for model in os.environ.get("GEMINI_FALLBACK_MODELS", "").split(",")
     if model.strip()
 ]
+WHATSAPP_ACCESS_TOKEN = os.environ.get("WHATSAPP_ACCESS_TOKEN", "").strip()
+WHATSAPP_PHONE_NUMBER_ID = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "").strip()
+WHATSAPP_APP_SECRET = os.environ.get("WHATSAPP_APP_SECRET", "").strip()
+WHATSAPP_VERIFY_TOKEN = os.environ.get("WHATSAPP_VERIFY_TOKEN", "").strip()
+WHATSAPP_GRAPH_VERSION = os.environ.get("WHATSAPP_GRAPH_VERSION", "v23.0").strip()
 ASSISTANT_RATE_LIMIT = 20
 ASSISTANT_RATE_PERIOD = 10 * 60
 MPESA_TRANSACTION_TYPE = os.environ.get(

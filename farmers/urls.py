@@ -2,6 +2,7 @@ from django.urls import path
 
 from . import billing
 from . import views
+from . import whatsapp
 
 
 urlpatterns = [
@@ -20,6 +21,8 @@ urlpatterns = [
     path("register/", views.register_farmer, name="register_farmer"),
     path("registered/<str:reference>/", views.registration_success, name="registration_success"),
     path("login/", views.farmer_login, name="farmer_login"),
+    path("login/whatsapp/", whatsapp.whatsapp_login, name="farmer_whatsapp_login"),
+    path("whatsapp/webhook/", whatsapp.webhook, name="whatsapp_webhook"),
     path("logout/", views.farmer_logout, name="farmer_logout"),
     path("dashboard/", views.farmer_dashboard, name="farmer_dashboard"),
     path("partners/register/", views.register_partner, name="register_partner"),
