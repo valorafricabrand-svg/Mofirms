@@ -709,13 +709,11 @@ class FarmerProfileAdminTests(TestCase):
         self.assertContains(response, "Researcher applications")
         self.assertNotContains(response, "Portal E")
 
-        from .templatetags.admin_review import REVIEW_QUEUES
+        from .templatetags.admin_review import REVIEW_QUEUES, queue_url
 
-        for model, field, value in REVIEW_QUEUES:
-            opts = model._meta
-            url = reverse(f"admin:{opts.app_label}_{opts.model_name}_changelist")
-            queue_page = self.client.get(f"{url}?{field}__exact={value}")
-            self.assertEqual(queue_page.status_code, 200, opts.model_name)
+        for model, lookup, value, _label in REVIEW_QUEUES:
+            queue_page = self.client.get(queue_url(model, lookup, value))
+            self.assertEqual(queue_page.status_code, 200, lookup)
 
     def test_review_queue_only_shows_permitted_sections(self):
         reviewer = get_user_model().objects.create_user(
@@ -910,8 +908,26 @@ class WhatsAppTests(TestCase):
         self.assertEqual(self.sent.call_count, 1)
         self.assertEqual(WhatsAppContact.objects.get().flow, "")
 
-    def test_delete_request_is_acknowledged(self):
+    def test_delete_request_is_acknowledged_and_queued_for_staff(self):
         self.assertIn("request to delete your data", self.say("Delete my data"))
+
+        self.assertIsNotNone(WhatsAppContact.objects.get().deletion_requested_at)
+
+    def test_talk_to_team_queues_a_callback_for_staff(self):
+        self.assertIn("call you back", self.say("5"))
+        contact = WhatsAppContact.objects.get()
+        self.assertIsNotNone(contact.help_requested_at)
+
+        staff = get_user_model().objects.create_superuser(
+            username="callback-staff", email="cb@example.com", password="Callback-pass-2026!"
+        )
+        self.client.force_login(staff)
+        home = self.client.get(reverse("admin:index"))
+        self.assertContains(home, "WhatsApp callback requests")
+        listing = self.client.get(
+            reverse("admin:farmers_whatsappcontact_changelist") + "?help_requested_at__isnull=False"
+        )
+        self.assertContains(listing, "+254712345678")
 
     def test_deleting_a_registration_removes_its_whatsapp_record(self):
         self.register_by_chat()

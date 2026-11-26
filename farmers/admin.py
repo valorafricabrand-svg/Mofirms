@@ -1568,14 +1568,27 @@ class TestimonialAdmin(admin.ModelAdmin):
 
 @admin.register(WhatsAppContact)
 class WhatsAppContactAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "profile", "language", "has_code", "locked_until", "updated_at")
+    list_display = (
+        "__str__", "profile", "help_requested_at", "deletion_requested_at",
+        "has_code", "locked_until", "updated_at",
+    )
+    list_filter = (
+        ("help_requested_at", admin.EmptyFieldListFilter),
+        ("deletion_requested_at", admin.EmptyFieldListFilter),
+    )
     search_fields = ("phone", "profile__full_name", "profile__reference")
     fields = (
-        "phone", "profile", "language", "has_code", "code_set_at",
-        "failed_attempts", "locked_until", "flow", "step", "created_at", "updated_at",
+        "phone", "profile", "language", "help_requested_at", "deletion_requested_at",
+        "has_code", "code_set_at", "failed_attempts", "locked_until", "flow", "step",
+        "created_at", "updated_at",
     )
     readonly_fields = fields
-    actions = ("clear_lockout",)
+    actions = ("mark_callback_done", "clear_lockout")
+
+    @admin.action(description="Mark callback done")
+    def mark_callback_done(self, request, queryset):
+        updated = queryset.update(help_requested_at=None)
+        self.message_user(request, f"Marked {updated} callback request(s) as done.")
 
     @admin.display(boolean=True, description="Login code set")
     def has_code(self, obj):

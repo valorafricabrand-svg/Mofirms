@@ -1744,6 +1744,8 @@ class WhatsAppContact(models.Model):
     flow = models.CharField(max_length=16, blank=True)
     step = models.CharField(max_length=24, blank=True)
     answers = models.JSONField(default=dict, blank=True)
+    help_requested_at = models.DateTimeField(null=True, blank=True)
+    deletion_requested_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 

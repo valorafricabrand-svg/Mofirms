@@ -264,6 +264,7 @@ def handle_message(phone, text):
         reply = translate("wa.cancelled", contact.language)
     elif "delete" in word or "futa" in word:
         contact.flow, contact.step, contact.answers = "", "", {}
+        contact.deletion_requested_at = timezone.now()
         reply = translate("wa.delete_request", contact.language)
     elif word in MENU_WORDS:
         contact.flow, contact.step, contact.answers = "", "", {}
@@ -299,6 +300,7 @@ def _menu_choice(contact, word):
             return translate("wa.not_registered", lang)
         return translate("wa.new_code", lang, code=issue_code(contact))
     if word in {"5", "help", "msaada"}:
+        contact.help_requested_at = timezone.now()
         return translate("wa.help", lang)
     return translate("wa.menu", lang)
 

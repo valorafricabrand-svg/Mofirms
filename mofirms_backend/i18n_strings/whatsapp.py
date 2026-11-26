@@ -31,12 +31,12 @@ STRINGS = {
     },
     "wa.help": {
         "en": (
-            "A member of the MoFirms team will reply to you here. "
+            "Thank you. We have asked the MoFirms team to call you back on this number. "
             "You can also call +254 140 949 415 or email info@mofirm.co.ke."
         ),
         "sw": (
-            "Mwanatimu wa MoFirms atakujibu hapa. Unaweza pia kupiga "
-            "+254 140 949 415 au kutuma barua pepe info@mofirm.co.ke."
+            "Asante. Tumeiomba timu ya MoFirms ikupigie simu kwa namba hii. "
+            "Unaweza pia kupiga +254 140 949 415 au kutuma barua pepe info@mofirm.co.ke."
         ),
     },
     "wa.already_registered": {
@@ -150,11 +150,13 @@ STRINGS = {
     "wa.delete_request": {
         "en": (
             "We have received your request to delete your data. A member of the MoFirms "
-            "team will confirm it is you and reply here when your data has been deleted."
+            "team will contact you on this number to confirm it is you, and let you know "
+            "when your data has been deleted."
         ),
         "sw": (
-            "Tumepokea ombi lako la kufuta taarifa zako. Mwanatimu wa MoFirms atathibitisha "
-            "kuwa ni wewe na kukujibu hapa taarifa zako zikishafutwa."
+            "Tumepokea ombi lako la kufuta taarifa zako. Mwanatimu wa MoFirms atawasiliana "
+            "nawe kwa namba hii kuthibitisha kuwa ni wewe, na kukujulisha taarifa zako "
+            "zikishafutwa."
         ),
     },
     "wa.unsupported": {
