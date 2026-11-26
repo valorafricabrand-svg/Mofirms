@@ -5,7 +5,10 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.urls import reverse
 
+from .forms import FarmerRegistrationForm
 from .models import (
+    ACTIVITY_CHOICES,
+    SUPPORT_CHOICES,
     BusinessReadinessDraft,
     ConsultationLead,
     FarmerDocument,
@@ -28,6 +31,11 @@ from .models import (
     Testimonial,
 )
 from .readiness_drafting import save_readiness_draft
+
+
+admin.site.site_header = "MoFirms Admin"
+admin.site.site_title = "MoFirms Admin"
+admin.site.index_title = "Review registrations and requests"
 
 
 @admin.register(NewsletterSubscription)
@@ -165,21 +173,72 @@ class BetaInviteAdminForm(forms.ModelForm):
             )
 
 
+FARMER_MULTI_CHOICES = {
+    "activities": ACTIVITY_CHOICES,
+    "water_sources": FarmerProfile.WaterSource.choices,
+    "sales_channels": FarmerRegistrationForm.base_fields["sales_channels"].choices,
+    "challenges": FarmerRegistrationForm.base_fields["challenges"].choices,
+    "support_interests": SUPPORT_CHOICES,
+}
+
+
+class FarmerProfileAdminForm(forms.ModelForm):
+    class Meta:
+        model = FarmerProfile
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, choices in FARMER_MULTI_CHOICES.items():
+            if name not in self.fields:
+                continue
+            known = list(choices)
+            known_values = {value for value, _ in known}
+            stored = getattr(self.instance, name, None) or []
+            known += [(value, value) for value in stored if value not in known_values]
+            self.fields[name] = forms.MultipleChoiceField(
+                choices=known,
+                required=False,
+                widget=forms.CheckboxSelectMultiple,
+                label=self.fields[name].label,
+            )
+
+
+class FarmerDocumentInline(admin.TabularInline):
+    model = FarmerDocument
+    extra = 0
+    can_delete = False
+    show_change_link = True
+    fields = ("document_type", "description", "review_status", "uploaded_at", "secure_download")
+    readonly_fields = fields
+
+    @admin.display(description="File")
+    def secure_download(self, obj):
+        if not obj.pk or not obj.file:
+            return "No file"
+        return format_html(
+            '<a href="{}">Download</a>', reverse("download_document", args=[obj.pk])
+        )
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(FarmerProfile)
 class FarmerProfileAdmin(admin.ModelAdmin):
+    form = FarmerProfileAdminForm
+    inlines = (FarmerDocumentInline,)
     list_display = (
         "public_reference",
         "full_name",
         "registration_type",
-        "group_name",
         "county",
+        "phone",
+        "preferred_contact",
         "verification_status",
-        "identity_review_status",
-        "group_review_status",
-        "farm_review_status",
         "created_at",
     )
-
+    list_display_links = ("public_reference", "full_name")
 
     list_filter = (
         "registration_type",
@@ -240,7 +299,8 @@ class FarmerProfileAdmin(admin.ModelAdmin):
                 "preferred_language",
             )
         }),
-        ("Group or association", {
+        ("Group or association (group registrations only)", {
+            "classes": ("collapse",),
             "fields": (
                 "group_name",
                 "group_type",
@@ -281,6 +341,7 @@ class FarmerProfileAdmin(admin.ModelAdmin):
             )
         }),
         ("Consent, retention, and contact history", {
+            "classes": ("collapse",),
             "fields": (
                 "privacy_consent_at",
                 "research_invite_consent_at",

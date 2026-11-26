@@ -1,5 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
+from html.parser import HTMLParser
 from io import BytesIO, StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -16,6 +17,7 @@ from django.utils import timezone
 from PIL import Image, PngImagePlugin
 
 from .models import (
+    ACTIVITY_CHOICES,
     BusinessReadinessDraft,
     ConsultationLead,
     FarmerDocument,
@@ -45,6 +47,94 @@ def png_upload(name="proof.png", metadata=None):
     image = Image.new("RGB", (20, 20), color="green")
     image.save(buffer, format="PNG", pnginfo=metadata)
     return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/png")
+
+
+class RenderedFormParser(HTMLParser):
+    """Collects the fields a browser would submit from the first <form method="post">."""
+
+    def __init__(self, form_id=None):
+        super().__init__()
+        self.form_id = form_id
+        self.in_form = False
+        self.template_depth = 0
+        self.current_select = None
+        self.current_textarea = None
+        self.fields = []
+        self.options = {}
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "form" and attrs.get("method", "").lower() == "post" and not self.fields:
+            if self.form_id is None or attrs.get("id") == self.form_id:
+                self.in_form = True
+            return
+        if not self.in_form:
+            return
+        if tag == "template":
+            self.template_depth += 1
+            return
+        if self.template_depth:
+            return
+        name = attrs.get("name")
+        if tag == "input" and name:
+            kind = attrs.get("type", "text").lower()
+            self.fields.append(
+                {
+                    "kind": kind,
+                    "name": name,
+                    "value": attrs.get("value", "on" if kind in {"checkbox", "radio"} else ""),
+                    "checked": "checked" in attrs,
+                }
+            )
+        elif tag == "select" and name:
+            self.current_select = name
+            self.options[name] = []
+            self.fields.append({"kind": "select", "name": name})
+        elif tag == "option" and self.current_select:
+            self.options[self.current_select].append(
+                (attrs.get("value", ""), "selected" in attrs)
+            )
+        elif tag == "textarea" and name:
+            self.current_textarea = {"kind": "textarea", "name": name, "value": ""}
+            self.fields.append(self.current_textarea)
+
+    def handle_endtag(self, tag):
+        if tag == "template" and self.template_depth:
+            self.template_depth -= 1
+        elif tag == "select":
+            self.current_select = None
+        elif tag == "textarea":
+            self.current_textarea = None
+        elif tag == "form" and self.in_form:
+            self.in_form = False
+
+    def handle_data(self, data):
+        if self.current_textarea is not None:
+            self.current_textarea["value"] += data
+
+    def browser_payload(self):
+        """Return {name: [values]} exactly as an untouched browser form would submit."""
+        payload = {}
+        for field in self.fields:
+            name = field["name"]
+            if field["kind"] in {"checkbox", "radio"}:
+                if field["checked"]:
+                    payload.setdefault(name, []).append(field["value"])
+            elif field["kind"] == "select":
+                options = self.options[name]
+                chosen = [value for value, selected in options if selected]
+                payload[name] = chosen[:1] or [options[0][0]] if options else [""]
+            elif field["kind"] in {"submit", "button", "file"}:
+                continue
+            else:
+                payload[name] = [field["value"]]
+        return payload
+
+    def choice_values(self, name):
+        """Option/checkbox/radio values the rendered page actually offers for a field."""
+        if name in self.options:
+            return [value for value, _ in self.options[name] if value]
+        return [f["value"] for f in self.fields if f["name"] == name and f["kind"] in {"checkbox", "radio"}]
 
 
 class FarmerRegistrationTests(TestCase):
@@ -411,6 +501,212 @@ class FarmerAccountTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("farmer_dashboard"))
+
+
+class FarmerRegistrationEndToEndTests(TestCase):
+    """Submits the registration form exactly as rendered, like a browser would."""
+
+    def setUp(self):
+        cache.clear()
+        self.private_files = TemporaryDirectory()
+        self.addCleanup(self.private_files.cleanup)
+        self.settings_override = override_settings(
+            MEDIA_ROOT=self.private_files.name,
+            PRIVATE_UPLOAD_ROOT=self.private_files.name,
+            ANTIVIRUS_ENABLED=False,
+        )
+        self.settings_override.enable()
+        self.addCleanup(self.settings_override.disable)
+        self.client = self.client_class(enforce_csrf_checks=True)
+        self.url = reverse("register_farmer")
+
+    def load_form(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        parser = RenderedFormParser()
+        parser.feed(response.content.decode())
+        payload = parser.browser_payload()
+        self.assertIn("csrfmiddlewaretoken", payload)
+        self.assertIn("documents-TOTAL_FORMS", payload)
+        return parser, payload
+
+    def pick(self, parser, name, count=1):
+        values = parser.choice_values(name)
+        self.assertGreaterEqual(len(values), count, f"form offers no choices for {name}")
+        return values[:count]
+
+    def test_individual_registration_round_trip_saves_every_section(self):
+        parser, payload = self.load_form()
+        selections = {
+            "activities": self.pick(parser, "activities", 2),
+            "water_sources": self.pick(parser, "water_sources"),
+            "sales_channels": self.pick(parser, "sales_channels", 2),
+            "challenges": self.pick(parser, "challenges", 2),
+            "support_interests": self.pick(parser, "support_interests", 2),
+        }
+        self.assertIn("individual", parser.choice_values("registration_type"))
+        self.assertIn("Vihiga", parser.choice_values("county"))
+        payload.update(
+            {
+                "registration_type": ["individual"],
+                "full_name": ["End To End Farmer"],
+                "phone": ["0712345678"],
+                "preferred_contact": ["phone"],
+                "county": ["Vihiga"],
+                "main_products": ["Tomatoes and kale"],
+                "farm_size": ["2.5"],
+                "farm_size_unit": self.pick(parser, "farm_size_unit"),
+                "privacy_consent": ["on"],
+                **selections,
+            }
+        )
+
+        response = self.client.post(self.url, payload, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        final_url, _ = response.redirect_chain[-1]
+        self.assertRegex(final_url, r"^/portal/registered/[A-F0-9]{8}/$")
+        profile = FarmerProfile.objects.get()
+        self.assertContains(response, profile.public_reference)
+        self.assertEqual(profile.full_name, "End To End Farmer")
+        self.assertEqual(profile.county, "Vihiga")
+        self.assertEqual(profile.farm_size, Decimal("2.5"))
+        for field, chosen in selections.items():
+            self.assertEqual(getattr(profile, field), chosen, field)
+        self.assertIsNone(profile.user)
+        self.assertEqual(profile.verification_status, FarmerProfile.VerificationStatus.PENDING)
+
+        staff = get_user_model().objects.create_superuser(
+            username="reviewer", email="reviewer@example.com", password="Reviewer-pass-2026!"
+        )
+        self.client.force_login(staff)
+        changelist = self.client.get(reverse("admin:farmers_farmerprofile_changelist"))
+        self.assertContains(changelist, "End To End Farmer")
+        detail = self.client.get(reverse("admin:farmers_farmerprofile_change", args=[profile.pk]))
+        self.assertEqual(detail.status_code, 200)
+
+    def test_group_registration_with_account_lands_on_dashboard(self):
+        parser, payload = self.load_form()
+        payload.update(
+            {
+                "registration_type": ["group"],
+                "group_name": ["End To End Growers"],
+                "group_type": self.pick(parser, "group_type"),
+                "group_authorization_confirmed": ["on"],
+                "full_name": ["Group Representative"],
+                "phone": ["0712345678"],
+                "email": ["group.rep@example.com"],
+                "preferred_contact": ["email"],
+                "county": ["Kisumu"],
+                "create_account": ["on"],
+                "password1": ["a-strong-unique-pass1"],
+                "password2": ["a-strong-unique-pass1"],
+                "privacy_consent": ["on"],
+            }
+        )
+
+        response = self.client.post(self.url, payload, follow=True)
+
+        self.assertEqual(response.redirect_chain[-1][0], reverse("farmer_dashboard"))
+        self.assertContains(response, "Group Representative")
+        profile = FarmerProfile.objects.get()
+        self.assertEqual(profile.group_name, "End To End Growers")
+        self.assertEqual(profile.group_review_status, FarmerProfile.EvidenceStatus.PENDING)
+        self.assertEqual(profile.user.email, "group.rep@example.com")
+
+    def test_swahili_registration_round_trip(self):
+        self.client.get(reverse("set_language"), {"lang": "sw", "next": self.url})
+        parser, payload = self.load_form()
+        payload.update(
+            {
+                "registration_type": ["individual"],
+                "full_name": ["Mkulima wa Majaribio"],
+                "phone": ["0712345678"],
+                "preferred_contact": ["whatsapp"],
+                "county": ["Narok"],
+                "activities": self.pick(parser, "activities"),
+                "privacy_consent": ["on"],
+            }
+        )
+
+        response = self.client.post(self.url, payload, follow=True)
+
+        self.assertRegex(response.redirect_chain[-1][0], r"^/portal/registered/")
+        self.assertContains(response, 'lang="sw"')
+        self.assertEqual(FarmerProfile.objects.get().full_name, "Mkulima wa Majaribio")
+
+    def test_missing_consent_rerenders_with_input_kept(self):
+        parser, payload = self.load_form()
+        chosen_challenges = self.pick(parser, "challenges", 2)
+        payload.update(
+            {
+                "registration_type": ["individual"],
+                "full_name": ["Forgetful Farmer"],
+                "phone": ["0712345678"],
+                "preferred_contact": ["phone"],
+                "county": ["Vihiga"],
+                "challenges": chosen_challenges,
+            }
+        )
+
+        response = self.client.post(self.url, payload)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(FarmerProfile.objects.count(), 0)
+        self.assertContains(response, "field-error")
+        retry = RenderedFormParser()
+        retry.feed(response.content.decode())
+        resubmit = retry.browser_payload()
+        self.assertEqual(resubmit["full_name"], ["Forgetful Farmer"])
+        self.assertEqual(resubmit["challenges"], chosen_challenges)
+
+
+class FarmerProfileAdminTests(TestCase):
+    def setUp(self):
+        self.staff = get_user_model().objects.create_superuser(
+            username="reviewer", email="reviewer@example.com", password="Reviewer-pass-2026!"
+        )
+        self.client.force_login(self.staff)
+        self.activity_value, self.activity_label = ACTIVITY_CHOICES[0]
+        self.profile = FarmerProfile.objects.create(
+            registration_type=FarmerProfile.RegistrationType.INDIVIDUAL,
+            full_name="Admin Review Farmer",
+            phone="0712345678",
+            preferred_contact=FarmerProfile.ContactPreference.PHONE,
+            county="Bungoma",
+            privacy_consent_at=timezone.now(),
+            activities=[self.activity_value],
+            challenges=["finance", "markets"],
+        )
+        self.change_url = reverse("admin:farmers_farmerprofile_change", args=[self.profile.pk])
+
+    def test_list_shows_contact_columns_and_branding(self):
+        response = self.client.get(reverse("admin:farmers_farmerprofile_changelist"))
+
+        self.assertContains(response, "MoFirms Admin")
+        self.assertContains(response, "Admin Review Farmer")
+        self.assertContains(response, "0712345678")
+
+    def test_change_page_shows_readable_answers_and_saves_review_without_data_loss(self):
+        response = self.client.get(self.change_url)
+
+        self.assertContains(response, self.activity_label)
+        self.assertContains(response, "Access to finance")
+        parser = RenderedFormParser(form_id="farmerprofile_form")
+        parser.feed(response.content.decode())
+        payload = parser.browser_payload()
+        self.assertEqual(payload["activities"], [self.activity_value])
+        self.assertEqual(sorted(payload["challenges"]), ["finance", "markets"])
+
+        payload["verification_status"] = ["in_review"]
+        save = self.client.post(self.change_url, payload)
+
+        self.assertEqual(save.status_code, 302)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.verification_status, "in_review")
+        self.assertEqual(self.profile.activities, [self.activity_value])
+        self.assertEqual(sorted(self.profile.challenges), ["finance", "markets"])
+        self.assertEqual(self.profile.reviewed_by, self.staff)
 
 
 class PartnerRegistrationTests(TestCase):
