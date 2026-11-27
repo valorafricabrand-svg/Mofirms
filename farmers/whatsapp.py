@@ -24,6 +24,7 @@ from .models import ACTIVITY_CHOICES, COUNTIES, ConsultationLead, FarmerProfile,
 from .templatetags.custom_i18n import current_lang, translate
 from .views import _rate_limit_reached
 from .whatsapp_details import farm_details_step, start_farm_details
+from .whatsapp_forms import form_step, start_form
 
 logger = logging.getLogger(__name__)
 
@@ -39,15 +40,14 @@ STATUS_WORDS = {"6", "status", "hali"}
 DETAILS_WORDS = {"7", "details", "taarifa"}
 NEW_CODE_WORDS = {"8", "code", "new code", "nambari"}
 HELP_WORDS = {"9", "help", "msaada"}
-FREE_TEXT_FLOWS = {"consult", "farm"}
+FORM_FLOWS = {"2": "partner", "3": "finance"}
+FREE_TEXT_FLOWS = {"consult", "farm", *FORM_FLOWS.values()}
 CONSULT_WORDS ={"10", "consult", "consultation", "ushauri"}
 SKIP_WORDS = {"skip", "ruka"}
 MAX_CONSULTATIONS_PER_DAY = 3
 MIN_MESSAGE_LENGTH = 10
 MAX_MESSAGE_LENGTH = ConsultationLead._meta.get_field("message").max_length
 SERVICE_LINKS = {
-    "2": ("wa.service.partner", "/portal/partners/register/"),
-    "3": ("wa.service.financial", "/portal/financial-analysis/"),
     "4": ("wa.service.risk", "/portal/risk-assessment/"),
     "5": ("wa.service.research", "/portal/research/register/"),
 }
@@ -398,7 +398,7 @@ def handle_message(phone, text):
         contact.deletion_requested_at = timezone.now()
         reply = translate("wa.delete_request", contact.language)
     elif word in LANGUAGE_WORDS or (
-        not contact.language_confirmed and contact.flow not in {"register", "unlock", "consult", "farm"}
+        not contact.language_confirmed and contact.flow not in {"register", "unlock"} | FREE_TEXT_FLOWS
     ):
         contact.flow, contact.step, contact.answers = "language", "", {}
         reply = translate("wa.language_prompt", "en")
@@ -407,6 +407,8 @@ def handle_message(phone, text):
         reply = translate("wa.menu", contact.language)
     elif contact.flow == "register":
         reply = _registration_step(contact, text, contact.language)
+    elif contact.flow in FORM_FLOWS.values():
+        reply = form_step(contact, text, contact.language)
     elif contact.flow == "farm":
         reply = farm_details_step(contact, text, contact.language)
     elif contact.flow == "consult":
@@ -443,6 +445,8 @@ def _menu_choice(contact, word):
             return _account_action(contact, "farm", lang)
         contact.flow, contact.step, contact.answers = "register", "name", {}
         return translate("wa.ask_name", lang)
+    if word in FORM_FLOWS:
+        return start_form(contact, FORM_FLOWS[word], lang)
     if word in SERVICE_LINKS:
         key, path = SERVICE_LINKS[word]
         return translate(

@@ -175,6 +175,10 @@ STRINGS = {
         "en": "(Reply SKIP to leave this as it is)",
         "sw": "(Jibu RUKA kuacha hili kama lilivyo)",
     },
+    "wa.ff.skip_hint": {
+        "en": "(Optional: reply SKIP to leave this out)",
+        "sw": "(Si lazima: jibu RUKA kuruka swali hili)",
+    },
     "wa.fd.registration_type": {
         "en": "Are you registering as an individual or for a group? Reply with a number:",
         "sw": "Unajisajili kama mtu binafsi au kwa niaba ya kikundi? Jibu kwa namba:",
@@ -326,6 +330,458 @@ STRINGS = {
     "wa.fd.yes_or_no": {
         "en": "Please reply YES or NO.",
         "sw": "Tafadhali jibu NDIO au HAPANA.",
+    },
+    "wa.form_limit": {
+        "en": "You have already sent several requests today. The team will reply soon. For anything urgent, call +254 140 949 415.",
+        "sw": "Tayari umetuma maombi kadhaa leo. Timu itakujibu hivi karibuni. Kwa jambo la dharura, piga +254 140 949 415.",
+    },
+    "wa.ff.invalid_counties": {
+        "en": "We couldn't match all of those counties. Type county names separated by commas, e.g. Kisumu, Vihiga, Kakamega, or SKIP.",
+        "sw": "Hatukupata kaunti zote hizo. Andika majina ya kaunti ukitenganisha kwa koma, mfano Kisumu, Vihiga, Kakamega, au RUKA.",
+    },
+    "wa.ff.invalid_year": {
+        "en": "Please reply with a year between {low} and {high}, or SKIP.",
+        "sw": "Tafadhali jibu kwa mwaka kati ya {low} na {high}, au RUKA.",
+    },
+    "wa.ff.invalid_url": {
+        "en": "That doesn't look like a website address, e.g. www.example.co.ke. Try again or SKIP.",
+        "sw": "Hiyo haionekani kama anwani ya tovuti, mfano www.example.co.ke. Jaribu tena au RUKA.",
+    },
+    "wa.pf.intro": {
+        "en": "*Supplier, buyer and service-provider registration*\nAnswer one question at a time. Reply SKIP for optional questions, or CANCEL to stop. Nothing is sent until you agree at the end. About 5–10 minutes.",
+        "sw": "*Usajili wa msambazaji, mnunuzi na mtoa huduma*\nJibu swali moja baada ya jingine. Jibu RUKA kwa maswali yasiyo ya lazima, au ACHA kusimamisha. Hakuna kinachotumwa hadi ukubali mwishoni. Kama dakika 5–10.",
+    },
+    "wa.pf.section.about": {
+        "en": "About you",
+        "sw": "Kuhusu wewe",
+    },
+    "wa.pf.section.business": {
+        "en": "Your business",
+        "sw": "Biashara yako",
+    },
+    "wa.pf.section.location": {
+        "en": "Where you work",
+        "sw": "Mahali unapofanya kazi",
+    },
+    "wa.pf.section.supplier": {
+        "en": "What you supply",
+        "sw": "Unachosambaza",
+    },
+    "wa.pf.section.buyer": {
+        "en": "What you buy",
+        "sw": "Unachonunua",
+    },
+    "wa.pf.section.service": {
+        "en": "Your services",
+        "sw": "Huduma zako",
+    },
+    "wa.pf.section.goals": {
+        "en": "Track record and goals",
+        "sw": "Uzoefu na malengo",
+    },
+    "wa.pf.section.consent": {
+        "en": "Permissions",
+        "sw": "Ruhusa",
+    },
+    "wa.pf.applicant_type": {
+        "en": "Are you registering as: Reply with a number:",
+        "sw": "Unajisajili kama: Jibu kwa namba:",
+    },
+    "wa.pf.contact_name": {
+        "en": "What is your full name?",
+        "sw": "Jina lako kamili ni nani?",
+    },
+    "wa.pf.business_name": {
+        "en": "What is the business or organisation name?",
+        "sw": "Jina la biashara au shirika ni nini?",
+    },
+    "wa.pf.trading_name": {
+        "en": "Trading name, if different?",
+        "sw": "Jina la kibiashara, kama ni tofauti?",
+    },
+    "wa.pf.business_description": {
+        "en": "Briefly describe your business.",
+        "sw": "Eleza biashara yako kwa ufupi.",
+    },
+    "wa.pf.roles": {
+        "en": "How would you like to work with MoFirms? Reply with one or more numbers, e.g. 1 3",
+        "sw": "Ungependa kufanya kazi na MoFirms vipi? Jibu kwa namba moja au zaidi, mfano 1 3",
+    },
+    "wa.pf.email": {
+        "en": "Business email address?",
+        "sw": "Barua pepe ya biashara?",
+    },
+    "wa.pf.website": {
+        "en": "Business website? (public site only)",
+        "sw": "Tovuti ya biashara? (tovuti ya umma tu)",
+    },
+    "wa.pf.registration_status": {
+        "en": "Is the business officially registered? Reply with a number:",
+        "sw": "Je, biashara imesajiliwa rasmi? Jibu kwa namba:",
+    },
+    "wa.pf.registration_number": {
+        "en": "Business registration number? Only the business number, not a personal ID or KRA PIN.",
+        "sw": "Namba ya usajili wa biashara? Namba ya biashara tu, si kitambulisho au PIN ya KRA.",
+    },
+    "wa.pf.year_established": {
+        "en": "What year was the business started? e.g. 2018",
+        "sw": "Biashara ilianzishwa mwaka gani? mfano 2018",
+    },
+    "wa.pf.years_experience": {
+        "en": "How many years of experience in this work? Reply with a number:",
+        "sw": "Una uzoefu wa miaka mingapi katika kazi hii? Jibu kwa namba:",
+    },
+    "wa.pf.business_size": {
+        "en": "How big is the business? Reply with a number:",
+        "sw": "Biashara ni kubwa kiasi gani? Jibu kwa namba:",
+    },
+    "wa.pf.staff_band": {
+        "en": "How many people work in the business? Reply with a number:",
+        "sw": "Watu wangapi wanafanya kazi katika biashara? Jibu kwa namba:",
+    },
+    "wa.pf.county": {
+        "en": "Which county is the business based in? e.g. Kisumu",
+        "sw": "Biashara iko katika kaunti gani? mfano Kisumu",
+    },
+    "wa.pf.sub_county": {
+        "en": "Which sub-county?",
+        "sw": "Kaunti ndogo gani?",
+    },
+    "wa.pf.ward": {
+        "en": "Which ward?",
+        "sw": "Wadi gani?",
+    },
+    "wa.pf.operating_counties": {
+        "en": "Which counties do you operate or deliver in? Type county names separated by commas, e.g. Kisumu, Vihiga, Kakamega",
+        "sw": "Unafanya kazi au kusambaza katika kaunti zipi? Andika majina ya kaunti ukitenganisha kwa koma, mfano Kisumu, Vihiga, Kakamega",
+    },
+    "wa.pf.delivery_methods": {
+        "en": "How do you deliver or collect? Reply with one or more numbers, e.g. 1 3",
+        "sw": "Unasambaza au kukusanya vipi? Jibu kwa namba moja au zaidi, mfano 1 3",
+    },
+    "wa.pf.offer_categories": {
+        "en": "What goods or services do you supply? Reply with one or more numbers, e.g. 1 3",
+        "sw": "Unasambaza bidhaa au huduma gani? Jibu kwa namba moja au zaidi, mfano 1 3",
+    },
+    "wa.pf.offer_details": {
+        "en": "Describe what you supply.",
+        "sw": "Eleza unachosambaza.",
+    },
+    "wa.pf.brands_or_products": {
+        "en": "Main brands or products?",
+        "sw": "Chapa au bidhaa kuu?",
+    },
+    "wa.pf.service_area": {
+        "en": "Which area do you serve?",
+        "sw": "Unahudumia eneo gani?",
+    },
+    "wa.pf.lead_time": {
+        "en": "Usual delivery time? e.g. 3 days",
+        "sw": "Muda wa kawaida wa kufikisha? mfano siku 3",
+    },
+    "wa.pf.minimum_order": {
+        "en": "Minimum order, if any?",
+        "sw": "Oda ya chini kabisa, kama ipo?",
+    },
+    "wa.pf.prices_and_terms": {
+        "en": "Indicative prices and terms? No confidential contract or bank details.",
+        "sw": "Bei na masharti kwa makadirio? Bila mikataba ya siri au taarifa za benki.",
+    },
+    "wa.pf.produce_categories": {
+        "en": "What produce are you looking to buy? Reply with one or more numbers, e.g. 1 3",
+        "sw": "Unatafuta kununua mazao gani? Jibu kwa namba moja au zaidi, mfano 1 3",
+    },
+    "wa.pf.produce_details": {
+        "en": "Describe the produce, quantities and seasons you buy.",
+        "sw": "Eleza mazao, kiasi na misimu unayonunua.",
+    },
+    "wa.pf.sourcing_counties": {
+        "en": "Where are you looking to source produce? Type county names separated by commas, e.g. Kisumu, Vihiga, Kakamega",
+        "sw": "Unatafuta mazao kutoka wapi? Andika majina ya kaunti ukitenganisha kwa koma, mfano Kisumu, Vihiga, Kakamega",
+    },
+    "wa.pf.buyer_capacity": {
+        "en": "How much can you buy? Reply with a number:",
+        "sw": "Unaweza kununua kiasi gani? Jibu kwa namba:",
+    },
+    "wa.pf.buying_frequency": {
+        "en": "How often do you buy? e.g. weekly",
+        "sw": "Unanunua mara ngapi? mfano kila wiki",
+    },
+    "wa.pf.quality_requirements": {
+        "en": "Any quality requirements?",
+        "sw": "Kuna masharti ya ubora?",
+    },
+    "wa.pf.payment_terms": {
+        "en": "Usual payment terms? e.g. cash on delivery, 14 days",
+        "sw": "Masharti ya kawaida ya malipo? mfano pesa taslimu, siku 14",
+    },
+    "wa.pf.service_description": {
+        "en": "Describe the services you offer.",
+        "sw": "Eleza huduma unazotoa.",
+    },
+    "wa.pf.service_capacity": {
+        "en": "What is your service capacity? Reply with a number:",
+        "sw": "Uwezo wako wa kutoa huduma ni upi? Jibu kwa namba:",
+    },
+    "wa.pf.staff_qualifications": {
+        "en": "Key staff qualifications?",
+        "sw": "Sifa kuu za wafanyakazi?",
+    },
+    "wa.pf.clients_and_references": {
+        "en": "Clients or references? Only share names you have permission to share.",
+        "sw": "Wateja au marejeo? Taja majina uliyoruhusiwa kutaja tu.",
+    },
+    "wa.pf.licences_and_standards": {
+        "en": "Relevant licences or standards, and who issued them?",
+        "sw": "Leseni au viwango husika, na nani alivitoa?",
+    },
+    "wa.pf.engagement_interests": {
+        "en": "What would you like from a MoFirms partnership? Reply with one or more numbers, e.g. 1 3",
+        "sw": "Ungependa nini kutoka kwa ushirikiano na MoFirms? Jibu kwa namba moja au zaidi, mfano 1 3",
+    },
+    "wa.pf.challenges": {
+        "en": "What challenges would a partnership help address? Reply with one or more numbers, e.g. 1 3",
+        "sw": "Ushirikiano ungesaidia changamoto gani? Jibu kwa namba moja au zaidi, mfano 1 3",
+    },
+    "wa.pf.partnership_goals": {
+        "en": "What are your partnership goals?",
+        "sw": "Malengo yako ya ushirikiano ni yapi?",
+    },
+    "wa.pf.additional_notes": {
+        "en": "Anything else? Please don't include ID numbers, tax PINs, bank details or passwords.",
+        "sw": "Kuna jingine? Tafadhali usiweke namba za kitambulisho, PIN ya KRA, taarifa za benki au nenosiri.",
+    },
+    "wa.pf.listing_consent": {
+        "en": "May MoFirms share relevant details from your business profile directly with potential farmer or business partners for a referral? This does not publish your contact details. Reply YES or NO.",
+        "sw": "MoFirms inaweza kushiriki taarifa husika za biashara yako moja kwa moja na wakulima au biashara zinazoweza kushirikiana nawe? Hii haichapishi mawasiliano yako. Jibu NDIO au HAPANA.",
+    },
+    "wa.pf.research_invite": {
+        "en": "May MoFirms contact you about research surveys? This does not enrol you or share your contact details with researchers. Reply YES or NO.",
+        "sw": "MoFirms inaweza kuwasiliana nawe kuhusu tafiti? Hii haikusajili wala haitoi mawasiliano yako kwa watafiti. Jibu NDIO au HAPANA.",
+    },
+    "wa.pf.consent": {
+        "en": "Last step: MoFirms will review this registration and contact you about your business, offerings, buying needs and relevant partnership enquiries. Reply YES to agree and send, or CANCEL to stop.",
+        "sw": "Hatua ya mwisho: MoFirms itakagua usajili huu na kuwasiliana nawe kuhusu biashara yako, bidhaa, mahitaji ya ununuzi na fursa za ushirikiano. Jibu NDIO kukubali na kutuma, au ACHA kusimamisha.",
+    },
+    "wa.pf.received": {
+        "en": "✅ Thank you! Your registration has been sent. Reference: {reference}.\nA MoFirms reviewer will contact you here on WhatsApp. If they need licences or certificates, they will tell you how to share them. Reply MENU for more options.",
+        "sw": "✅ Asante! Usajili wako umetumwa. Kumbukumbu: {reference}.\nMkaguzi wa MoFirms atawasiliana nawe hapa kwenye WhatsApp. Wakihitaji leseni au vyeti, watakueleza jinsi ya kuvituma. Jibu MENU kwa chaguo zaidi.",
+    },
+    "wa.ff.intro": {
+        "en": "*Financial analysis and business planning*\nTell us what you need and MoFirms will review it and send a fee quote. Reply SKIP for optional questions, or CANCEL to stop. Nothing is sent until you agree at the end.",
+        "sw": "*Uchambuzi wa kifedha na upangaji wa biashara*\nTueleze unachohitaji na MoFirms italikagua na kukutumia makadirio ya gharama. Jibu RUKA kwa maswali yasiyo ya lazima, au ACHA kusimamisha. Hakuna kinachotumwa hadi ukubali mwishoni.",
+    },
+    "wa.ff.section.about": {
+        "en": "About you",
+        "sw": "Kuhusu wewe",
+    },
+    "wa.ff.section.request": {
+        "en": "Your request",
+        "sw": "Ombi lako",
+    },
+    "wa.ff.section.consent": {
+        "en": "Send",
+        "sw": "Tuma",
+    },
+    "wa.ff.applicant_type": {
+        "en": "Is this request for: Reply with a number:",
+        "sw": "Ombi hili ni kwa: Jibu kwa namba:",
+    },
+    "wa.ff.contact_name": {
+        "en": "What is your full name?",
+        "sw": "Jina lako kamili ni nani?",
+    },
+    "wa.ff.business_name": {
+        "en": "What is the business, group or organisation name?",
+        "sw": "Jina la biashara, kikundi au shirika ni nini?",
+    },
+    "wa.ff.email": {
+        "en": "Email address?",
+        "sw": "Barua pepe?",
+    },
+    "wa.ff.county": {
+        "en": "Which county are you in? e.g. Kisumu",
+        "sw": "Uko katika kaunti gani? mfano Kisumu",
+    },
+    "wa.ff.sector": {
+        "en": "What sector? e.g. dairy, horticulture, agro-processing",
+        "sw": "Sekta gani? mfano maziwa, kilimo cha bustani, usindikaji",
+    },
+    "wa.ff.services_requested": {
+        "en": "What financial support do you need? Reply with one or more numbers, e.g. 1 3",
+        "sw": "Unahitaji msaada gani wa kifedha? Jibu kwa namba moja au zaidi, mfano 1 3",
+    },
+    "wa.ff.financial_period": {
+        "en": "Which period should we look at? e.g. January–December 2025",
+        "sw": "Tuangalie kipindi gani? mfano Januari–Desemba 2025",
+    },
+    "wa.ff.records_available": {
+        "en": "Which records do you have? Reply with one or more numbers, e.g. 1 3",
+        "sw": "Una kumbukumbu zipi? Jibu kwa namba moja au zaidi, mfano 1 3",
+    },
+    "wa.ff.accounting_software": {
+        "en": "Accounting software used, if any? Don't send account names or passwords.",
+        "sw": "Programu ya uhasibu unayotumia, kama ipo? Usitume majina ya akaunti au nenosiri.",
+    },
+    "wa.ff.annual_revenue_band": {
+        "en": "Approximate yearly revenue? Reply with a number:",
+        "sw": "Mapato ya mwaka kwa makadirio? Jibu kwa namba:",
+    },
+    "wa.ff.funding_need_band": {
+        "en": "Funding needed, if any? This is not a loan application. Reply with a number:",
+        "sw": "Ufadhili unaohitajika, kama upo? Hii si maombi ya mkopo. Jibu kwa namba:",
+    },
+    "wa.ff.timeline": {
+        "en": "When do you need it? Reply with a number:",
+        "sw": "Unahitaji lini? Jibu kwa namba:",
+    },
+    "wa.ff.request_summary": {
+        "en": "Describe the decision or output you need. Please don't include ID numbers, tax PINs, bank details or passwords.",
+        "sw": "Eleza uamuzi au matokeo unayohitaji. Tafadhali usiweke namba za kitambulisho, PIN ya KRA, taarifa za benki au nenosiri.",
+    },
+    "wa.ff.consent": {
+        "en": "Last step: MoFirms will review this request and contact you about its scope and a possible fee quote. Reply YES to agree and send, or CANCEL to stop.",
+        "sw": "Hatua ya mwisho: MoFirms itakagua ombi hili na kuwasiliana nawe kuhusu wigo wake na makadirio ya gharama. Jibu NDIO kukubali na kutuma, au ACHA kusimamisha.",
+    },
+    "wa.ff.received": {
+        "en": "✅ Thank you! Your request has been sent. Reference: {reference}.\nMoFirms will review it and reply here on WhatsApp with next steps and a fee quote. A quote is not a payment request. Reply MENU for more options.",
+        "sw": "✅ Asante! Ombi lako limetumwa. Kumbukumbu: {reference}.\nMoFirms italikagua na kukujibu hapa kwenye WhatsApp kuhusu hatua zinazofuata na makadirio ya gharama. Makadirio si ombi la malipo. Jibu MENU kwa chaguo zaidi.",
+    },
+    "choice.business_size.micro": {
+        "en": "Micro or sole operator",
+        "sw": "Ndogo sana au mtu mmoja",
+    },
+    "choice.business_size.small": {
+        "en": "Small business",
+        "sw": "Biashara ndogo",
+    },
+    "choice.business_size.medium": {
+        "en": "Medium business",
+        "sw": "Biashara ya kati",
+    },
+    "choice.business_size.large": {
+        "en": "Large business",
+        "sw": "Biashara kubwa",
+    },
+    "choice.business_size.cooperative": {
+        "en": "Cooperative or member organisation",
+        "sw": "Chama cha ushirika au shirika la wanachama",
+    },
+    "choice.business_size.prefer_not": {
+        "en": "Prefer not to say",
+        "sw": "Sipendi kusema",
+    },
+    "choice.staff_band.solo": {
+        "en": "Sole operator",
+        "sw": "Mtu mmoja",
+    },
+    "choice.staff_band.2_5": {
+        "en": "2–5 people",
+        "sw": "Watu 2–5",
+    },
+    "choice.staff_band.6_20": {
+        "en": "6–20 people",
+        "sw": "Watu 6–20",
+    },
+    "choice.staff_band.21_50": {
+        "en": "21–50 people",
+        "sw": "Watu 21–50",
+    },
+    "choice.staff_band.over_50": {
+        "en": "More than 50 people",
+        "sw": "Zaidi ya watu 50",
+    },
+    "choice.staff_band.prefer_not": {
+        "en": "Prefer not to say",
+        "sw": "Sipendi kusema",
+    },
+    "choice.capacity_band.starting": {
+        "en": "New or pilot capacity",
+        "sw": "Uwezo mpya au wa majaribio",
+    },
+    "choice.capacity_band.small": {
+        "en": "Small or local capacity",
+        "sw": "Uwezo mdogo au wa eneo",
+    },
+    "choice.capacity_band.medium": {
+        "en": "Growing or multi-county capacity",
+        "sw": "Uwezo unaokua au wa kaunti kadhaa",
+    },
+    "choice.capacity_band.large": {
+        "en": "Large or national capacity",
+        "sw": "Uwezo mkubwa au wa kitaifa",
+    },
+    "choice.capacity_band.variable": {
+        "en": "Varies by season or contract",
+        "sw": "Hubadilika kwa msimu au mkataba",
+    },
+    "choice.capacity_band.prefer_not": {
+        "en": "Prefer not to say",
+        "sw": "Sipendi kusema",
+    },
+    "choice.revenue_band.pre_revenue": {
+        "en": "Not yet generating revenue",
+        "sw": "Bado haijaanza kupata mapato",
+    },
+    "choice.revenue_band.under_500k": {
+        "en": "Under KSh 500,000 per year",
+        "sw": "Chini ya KSh 500,000 kwa mwaka",
+    },
+    "choice.revenue_band.500k_2m": {
+        "en": "KSh 500,000–2 million per year",
+        "sw": "KSh 500,000–milioni 2 kwa mwaka",
+    },
+    "choice.revenue_band.2m_10m": {
+        "en": "KSh 2–10 million per year",
+        "sw": "KSh milioni 2–10 kwa mwaka",
+    },
+    "choice.revenue_band.over_10m": {
+        "en": "Over KSh 10 million per year",
+        "sw": "Zaidi ya KSh milioni 10 kwa mwaka",
+    },
+    "choice.revenue_band.prefer_not": {
+        "en": "Prefer not to say",
+        "sw": "Sipendi kusema",
+    },
+    "choice.funding_need.none": {
+        "en": "No funding request",
+        "sw": "Sihitaji ufadhili",
+    },
+    "choice.funding_need.under_500k": {
+        "en": "Under KSh 500,000",
+        "sw": "Chini ya KSh 500,000",
+    },
+    "choice.funding_need.500k_2m": {
+        "en": "KSh 500,000–2 million",
+        "sw": "KSh 500,000–milioni 2",
+    },
+    "choice.funding_need.2m_10m": {
+        "en": "KSh 2–10 million",
+        "sw": "KSh milioni 2–10",
+    },
+    "choice.funding_need.over_10m": {
+        "en": "Over KSh 10 million",
+        "sw": "Zaidi ya KSh milioni 10",
+    },
+    "choice.funding_need.prefer_not": {
+        "en": "Prefer not to say",
+        "sw": "Sipendi kusema",
+    },
+    "choice.timeline.asap": {
+        "en": "As soon as practical",
+        "sw": "Haraka iwezekanavyo",
+    },
+    "choice.timeline.two_weeks": {
+        "en": "Within two weeks",
+        "sw": "Ndani ya wiki mbili",
+    },
+    "choice.timeline.month": {
+        "en": "Within one month",
+        "sw": "Ndani ya mwezi mmoja",
+    },
+    "choice.timeline.flexible": {
+        "en": "Flexible",
+        "sw": "Wakati wowote",
     },
     "wa.cancelled": {
         "en": "Okay, stopped. Reply MENU to see the options again.",

@@ -845,10 +845,145 @@ class WhatsAppTests(TestCase):
         self.say("Hi")
         self.say("1")
 
-        self.assertIn("https://mofirm.co.ke/portal/partners/register/", self.say("2"))
-        self.assertIn("https://mofirm.co.ke/portal/financial-analysis/", self.say("3"))
         self.assertIn("https://mofirm.co.ke/portal/risk-assessment/", self.say("4"))
         self.assertIn("https://mofirm.co.ke/portal/research/register/", self.say("5"))
+
+    def walk(self, steps):
+        for text, expected in steps:
+            self.assertIn(expected, self.say(text), msg=f"after replying {text!r}")
+
+    def test_supplier_and_buyer_registration_by_chat(self):
+        self.say("English")
+        self.assertIn("Supplier, buyer and service-provider registration", self.say("2"))
+        self.walk([
+            ("2", "your full name"),
+            ("Akinyi Otieno", "business or organisation name"),
+            ("skip", "needed to continue"),
+            ("Lake Agro Supplies", "Trading name"),
+            ("skip", "describe your business"),
+            ("Seeds and fertiliser stockist", "work with MoFirms"),
+            ("1 2", "email"),
+            ("skip", "website"),
+            ("lakeagro.co.ke", "Part 2 of 7: Your business"),
+            ("1", "registration number"),
+            ("skip", "year"),
+            ("1700", "between 1800"),
+            ("2016", "experience"),
+            ("3", "How big"),
+            ("2", "How many people"),
+            ("2", "Part 3 of 7: Where you work"),
+            ("kisumu", "sub-county"),
+            ("skip", "ward"),
+            ("skip", "operate or deliver"),
+            ("Kisumu, Atlantis", "couldn't match"),
+            ("Kisumu, vihiga and Siaya", "deliver or collect"),
+            ("1 3", "Part 4 of 7: What you supply"),
+            ("1 2", "Describe what you supply"),
+            ("Certified maize seed and DAP", "brands"),
+            ("skip", "area"),
+            ("skip", "delivery time"),
+            ("skip", "Minimum order"),
+            ("skip", "prices"),
+            ("skip", "Part 5 of 7: What you buy"),
+            ("1", "Describe the produce"),
+            ("Dry maize, 10 tonnes a month", "source produce"),
+            ("skip", "How much can you buy"),
+            ("2", "How often"),
+            ("skip", "quality"),
+            ("skip", "payment terms"),
+            ("skip", "Part 6 of 7: Track record"),
+            ("skip", "licences"),
+            ("skip", "partnership"),
+            ("1 2", "challenges"),
+            ("skip", "partnership goals"),
+            ("skip", "Anything else"),
+            ("skip", "Permissions"),
+            ("yes", "research surveys"),
+            ("no", "Reply YES to agree and send"),
+        ])
+        self.assertFalse(PartnerProfile.objects.exists())
+        reply = self.say("yes")
+
+        partner = PartnerProfile.objects.get()
+        self.assertIn(partner.public_reference, reply)
+        self.assertEqual(partner.applicant_type, PartnerProfile.ApplicantType.BUSINESS)
+        self.assertEqual(partner.business_name, "Lake Agro Supplies")
+        self.assertEqual(partner.roles, ["supplier", "buyer"])
+        self.assertEqual(partner.website, "https://lakeagro.co.ke")
+        self.assertEqual(partner.year_established, 2016)
+        self.assertEqual(partner.county, "Kisumu")
+        self.assertEqual(partner.operating_counties, ["Kisumu", "Vihiga", "Siaya"])
+        self.assertEqual(partner.offer_categories, ["seeds_seedlings", "fertilizer_soil"])
+        self.assertEqual(partner.produce_categories, ["cereals"])
+        self.assertEqual(partner.phone, "+254712345678")
+        self.assertEqual(partner.preferred_contact, PartnerProfile.ContactPreference.WHATSAPP)
+        self.assertIsNotNone(partner.listing_referral_consent_at)
+        self.assertIsNone(partner.research_invite_consent_at)
+        self.assertEqual(WhatsAppContact.objects.get().flow, "")
+
+    def test_service_provider_only_sees_service_questions(self):
+        self.say("English")
+        self.say("2")
+        self.walk([
+            ("1", "your full name"),
+            ("Dr Wekesa", "business or organisation name"),
+            ("skip", "Trading name"),
+            ("skip", "describe your business"),
+            ("skip", "work with MoFirms"),
+            ("3", "email"),
+        ])
+        for _ in range(8):
+            self.say("skip")
+        self.walk([
+            ("Bungoma", "sub-county"),
+            ("skip", "ward"),
+            ("skip", "operate or deliver"),
+            ("skip", "deliver or collect"),
+            ("skip", "Part 4 of 6: Your services"),
+            ("Veterinary visits for dairy farmers", "service capacity"),
+        ])
+
+    def test_financial_analysis_request_by_chat(self):
+        self.say("kiswahili")
+        self.assertIn("Uchambuzi wa kifedha", self.say("3"))
+        self.walk([
+            ("1", "Jina lako kamili"),
+            ("Jane Wanjiku", "Jina la biashara"),
+            ("skip", "Barua pepe"),
+            ("skip", "kaunti gani"),
+            ("Nakuru", "Sekta"),
+            ("dairy", "Sehemu 2 kati ya 3"),
+            ("2 3", "kipindi"),
+            ("skip", "kumbukumbu zipi"),
+            ("2 4", "uhasibu"),
+            ("skip", "Mapato ya mwaka"),
+            ("3", "Ufadhili"),
+            ("skip", "lini"),
+            ("1", "Eleza uamuzi"),
+            ("skip", "linahitajika"),
+            ("I need a business plan to approach a lender for a cooler.", "NDIO"),
+        ])
+        reply = self.say("ndio")
+
+        request = FinancialAnalysisRequest.objects.get()
+        self.assertIn(request.public_reference, reply)
+        self.assertEqual(request.applicant_type, FinancialAnalysisRequest.ApplicantType.INDIVIDUAL)
+        self.assertEqual(request.services_requested, ["business_plan", "cash_flow"])
+        self.assertEqual(request.records_available, ["sales_records", "cashbook"])
+        self.assertEqual(request.annual_revenue_band, FinancialAnalysisRequest.RevenueBand.FROM_500K_TO_2M)
+        self.assertEqual(request.timeline, FinancialAnalysisRequest.Timeline.ASAP)
+        self.assertEqual(request.county, "Nakuru")
+        self.assertEqual(request.preferred_contact, FinancialAnalysisRequest.ContactPreference.WHATSAPP)
+        self.assertEqual(request.status, FinancialAnalysisRequest.ServiceStatus.PENDING)
+
+    def test_cancelled_form_chat_saves_nothing(self):
+        self.say("English")
+        self.say("3")
+        self.say("1")
+        self.say("Jane")
+        self.assertIn("stopped", self.say("cancel"))
+        self.assertFalse(FinancialAnalysisRequest.objects.exists())
+        self.assertEqual(WhatsAppContact.objects.get().answers, {})
 
     def test_registration_by_chat_creates_reviewable_profile_and_code(self):
         self.say("Hi")

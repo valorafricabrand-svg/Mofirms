@@ -217,7 +217,7 @@ def _parse(step, text, lang):
         except ValidationError:
             return None, translate("wa.fd.invalid_email", lang)
         return text.lower(), None
-    limit = TEXT_LIMITS.get(step["field"]) or _max_length(step["field"])
+    limit = step.get("limit") or TEXT_LIMITS.get(step["field"]) or _max_length(step["field"])
     if len(text) > limit:
         return None, translate("wa.fd.too_long", lang, maximum=limit)
     return text, None
