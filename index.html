@@ -267,12 +267,43 @@
 
 <section id="projects" class="wrap"><h2>{% t 'home.projects.title' %}</h2>
   <p class="sub">{% t 'home.projects.sub' %}</p>
-  <aside class="project-context card" aria-labelledby="vofa-context-title">
-    <div class="project-context-heading"><span class="tag now">{% t 'home.projects.vofa_tag' %}</span><span class="note">{% t 'home.projects.vofa_guide_date' %}</span></div>
-    <h3 id="vofa-context-title">{% t 'home.projects.vofa_title' %}</h3>
-    <p>{% t 'home.projects.vofa_body' %}</p>
-    <p class="project-context-note"><b>{% t 'home.projects.seedling_label' %}</b> {% t 'home.projects.seedling_body' %}</p>
-  </aside>
+  <article class="client-feature card" aria-labelledby="vofa-feature-title">
+    <div class="client-feature-main">
+      <div class="project-context-heading"><span class="tag now">{% t 'home.projects.vofa_tag' %}</span><span class="note">{% t 'home.projects.vofa_meta' %}</span></div>
+      <h3 id="vofa-feature-title">{% t 'home.projects.vofa_title' %}</h3>
+      <p>{% t 'home.projects.vofa_body' %}</p>
+      <div class="client-feature-cols">
+        <div>
+          <h4>{% t 'home.projects.vofa_support_title' %}</h4>
+          <ul class="client-ticks">
+            <li>{% t 'home.projects.vofa_support1' %}</li>
+            <li>{% t 'home.projects.vofa_support2' %}</li>
+            <li>{% t 'home.projects.vofa_support3' %}</li>
+            <li>{% t 'home.projects.vofa_support4' %}</li>
+          </ul>
+        </div>
+        <div>
+          <h4>{% t 'home.projects.vofa_milestones_title' %}</h4>
+          <ul class="client-ticks">
+            <li>{% t 'home.projects.vofa_milestone1' %}</li>
+            <li>{% t 'home.projects.vofa_milestone2' %}</li>
+            <li>{% t 'home.projects.vofa_milestone3' %}</li>
+            <li>{% t 'home.projects.vofa_milestone4' %}</li>
+          </ul>
+        </div>
+      </div>
+      <div class="cta client-feature-cta">
+        <a class="btn" href="/portal/partners/register/">{% t 'home.projects.vofa_cta_association' %}</a>
+        <a class="btn ghost" href="/portal/register/">{% t 'home.projects.vofa_cta_farmer' %}</a>
+      </div>
+    </div>
+    {% for item in testimonials %}{% if 'VOFA' in item.author_name %}
+    <figure class="client-feature-quote">
+      <blockquote>&ldquo;{{ item.quote }}&rdquo;</blockquote>
+      <figcaption>{{ item.author_name }}<span>{{ item.role }}</span></figcaption>
+    </figure>
+    {% endif %}{% endfor %}
+  </article>
   <div class="cluster-controls" role="group" aria-label="{% t 'home.projects.project_controls_label' %}">
     <button class="cluster-arrow" id="projectsPrevious" type="button" aria-label="{% t 'home.projects.project_previous' %}">←</button>
     <button class="cluster-arrow" id="projectsNext" type="button" aria-label="{% t 'home.projects.project_next' %}">→</button>

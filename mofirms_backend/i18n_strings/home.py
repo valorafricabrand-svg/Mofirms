@@ -502,72 +502,84 @@ STRINGS = {
     "home.projects.title": {"en": "Projects & collaborations", "sw": "Miradi na ushirikiano"},
     "home.projects.sub": {
         "en": (
-            "Each entry states the owner, MoFirms’ role and the "
-            "stage. Proposals and models are not presented as results."
+            "Our current client work comes first. Each entry states the "
+            "owner, MoFirms’ role and the stage, and plans are never "
+            "presented as results."
         ),
         "sw": (
-            "Kila kiingilio kinaeleza mmiliki, jukumu la MoFirms na hatua "
-            "yake. Mapendekezo na mifano haziwasilishwi kama matokeo."
+            "Kazi ya wateja wetu wa sasa inaanza. Kila kiingilio kinaeleza "
+            "mmiliki, jukumu la MoFirms na hatua yake, na mipango "
+            "haiwasilishwi kamwe kama matokeo."
         ),
     },
-    "home.projects.vofa_tag": {"en": "Association milestones reported", "sw": "Mafanikio ya shirika yaliripotiwa"},
-    "home.projects.vofa_guide_date": {"en": "VOFA guide · 31 October 2026", "sw": "Mwongozo wa VOFA · 31 Oktoba 2026"},
+    "home.projects.vofa_tag": {"en": "Current client", "sw": "Mteja wa sasa"},
+    "home.projects.vofa_meta": {
+        "en": "Vihiga County · Community-based organisation",
+        "sw": "Kaunti ya Vihiga · Shirika la kijamii",
+    },
     "home.projects.vofa_title": {
-        "en": "A farmer-led association building its next steps",
-        "sw": "Shirika linaloongozwa na wakulima linalojenga hatua zake zijazo",
+        "en": "Vihiga Organic Farmers Association (VOFA)",
+        "sw": "Vihiga Organic Farmers Association (VOFA)",
     },
     "home.projects.vofa_body": {
         "en": (
-            "Vihiga Organic Farmers Association (VOFA) is a separate, "
-            "farmer-governed community-based organisation—not a "
-            "MoFirms subsidiary. Its guide reports that VOFA has adopted "
-            "its Constitution, completed CBO registration, opened a bank "
-            "account, and begun farmer registration across Vihiga’s 29 "
-            "wards. These are guide-reported milestones, not independently "
-            "verified by MoFirms."
+            "VOFA is a farmer-governed association of organic farmers in "
+            "Vihiga County. MoFirms works alongside VOFA as its agribusiness "
+            "consulting and technical coordination partner, while VOFA "
+            "remains independently owned and run by its members."
         ),
         "sw": (
-            "Vihiga Organic Farmers Association (VOFA) ni shirika tofauti "
-            "la kijamii linaloongozwa na wakulima—si tawi la MoFirms. "
-            "Mwongozo wake unaripoti kuwa VOFA imepitisha Katiba yake, "
-            "imekamilisha usajili wa CBO, imefungua akaunti ya benki, na "
-            "imeanza usajili wa wakulima katika kata zote 29 za Vihiga. "
-            "Haya ni mafanikio yaliyoripotiwa na mwongozo, si "
-            "yaliyothibitishwa kwa kujitegemea na MoFirms."
+            "VOFA ni shirika la wakulima wa kilimo hai katika Kaunti ya "
+            "Vihiga linaloongozwa na wakulima wenyewe. MoFirms inafanya kazi "
+            "na VOFA kama mshirika wake wa ushauri wa kilimo-biashara na "
+            "uratibu wa kiufundi, huku VOFA ikibaki inamilikiwa na kuendeshwa "
+            "na wanachama wake."
         ),
     },
-    "home.projects.seedling_label": {"en": "Reported seedling progress:", "sw": "Maendeleo yaliyoripotiwa ya miche:"},
-    "home.projects.seedling_body": {
-        "en": (
-            "the guide says KALRO committed oil-palm seedlings for "
-            "Emuhaya and that 500 of 1,000 discussed seedlings had been "
-            "delivered to two members. VOFA noted this delivery had not "
-            "yet been entered in its asset register."
-        ),
-        "sw": (
-            "mwongozo unasema KALRO iliahidi miche ya mchikichi wa mafuta "
-            "kwa Emuhaya na kuwa miche 500 kati ya 1,000 iliyojadiliwa "
-            "ilikuwa imewasilishwa kwa wanachama wawili. VOFA ilibainisha "
-            "kuwa uwasilishaji huu bado haujaingizwa katika sajili yake ya "
-            "mali."
-        ),
+    "home.projects.vofa_support_title": {"en": "How MoFirms supports VOFA", "sw": "Jinsi MoFirms inavyosaidia VOFA"},
+    "home.projects.vofa_support1": {
+        "en": "Agribusiness consulting and technical coordination",
+        "sw": "Ushauri wa kilimo-biashara na uratibu wa kiufundi",
     },
+    "home.projects.vofa_support2": {
+        "en": "Agroforestry and poultry integration (Phase I)",
+        "sw": "Kilimo-mseto na ufugaji wa kuku (Awamu ya I)",
+    },
+    "home.projects.vofa_support3": {
+        "en": "Farmer onboarding and digital records",
+        "sw": "Usajili wa wakulima na kumbukumbu za kidijitali",
+    },
+    "home.projects.vofa_support4": {
+        "en": "Records and season planning for members",
+        "sw": "Kumbukumbu na mipango ya msimu kwa wanachama",
+    },
+    "home.projects.vofa_milestones_title": {"en": "VOFA’s milestones", "sw": "Hatua za VOFA"},
+    "home.projects.vofa_milestone1": {"en": "Constitution adopted", "sw": "Katiba imepitishwa"},
+    "home.projects.vofa_milestone2": {"en": "Registered as a CBO", "sw": "Imesajiliwa kama CBO"},
+    "home.projects.vofa_milestone3": {
+        "en": "Association bank account opened",
+        "sw": "Akaunti ya benki ya shirika imefunguliwa",
+    },
+    "home.projects.vofa_milestone4": {
+        "en": "Farmer registration under way across Vihiga County",
+        "sw": "Usajili wa wakulima unaendelea kote Kaunti ya Vihiga",
+    },
+    "home.projects.vofa_cta_association": {"en": "Register your association", "sw": "Sajili shirika lako"},
+    "home.projects.vofa_cta_farmer": {"en": "Register as a farmer", "sw": "Jisajili kama mkulima"},
     "home.projects.clusters_title": {
-        "en": "Project clusters under consideration",
-        "sw": "Makundi ya miradi yanayozingatiwa",
+        "en": "What VOFA plans next",
+        "sw": "Mipango ijayo ya VOFA",
     },
     "home.projects.clusters_sub": {
         "en": (
-            "VOFA reports written proposals and illustrative financial "
-            "models for these ideas. None is yet an approved or funded "
-            "project. Activities under consideration are shown on each "
-            "card."
+            "VOFA has prepared proposals for these ideas and is looking for "
+            "partners and funding. They are plans, not completed results. "
+            "Talk to us if you would like to take part."
         ),
         "sw": (
-            "VOFA inaripoti mapendekezo yaliyoandikwa na mifano ya kifedha "
-            "ya maelezo kwa mawazo haya. Hakuna hata moja ambalo bado "
-            "limeidhinishwa au kufadhiliwa. Shughuli zinazozingatiwa "
-            "zinaonyeshwa kwenye kila kadi."
+            "VOFA imeandaa mapendekezo ya mawazo haya na inatafuta washirika "
+            "na ufadhili. Ni mipango, si matokeo yaliyokamilika. Zungumza "
+            "nasi ikiwa ungependa kushiriki."
         ),
     },
     "home.projects.project_controls_label": {"en": "Project controls", "sw": "Vidhibiti vya miradi"},
