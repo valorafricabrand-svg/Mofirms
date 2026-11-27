@@ -873,6 +873,57 @@ class WhatsAppTests(TestCase):
         self.assertEqual(contact.profile, profile)
         self.assertNotIn(code, contact.code_hash)
 
+    def test_registered_farmer_can_request_a_consultation(self):
+        _, registered = self.register_by_chat()
+        self.assertIn("Reply 10", registered)
+
+        self.assertIn("1 - Agribusiness advice", self.say("10"))
+        self.assertIn("one number", self.say("99"))
+        self.assertIn("Tell us briefly", self.say("1"))
+        self.assertIn("10 to", self.say("help"))
+        self.assertIn("Reply YES", self.say("I need mafuta prices and advice on selling maize"))
+        reply = self.say("yes")
+
+        lead = ConsultationLead.objects.get()
+        self.assertIn(lead.public_reference, reply)
+        self.assertEqual(lead.full_name, "Jane Wanjiku")
+        self.assertEqual(lead.phone, "+254712345678")
+        self.assertEqual(lead.preferred_contact, ConsultationLead.PreferredContact.WHATSAPP)
+        self.assertEqual(lead.category, ConsultationLead.Category.AGRIBUSINESS)
+        self.assertEqual(lead.organisation_or_county, "Vihiga")
+        self.assertEqual(lead.status, ConsultationLead.Status.NEW)
+        contact = WhatsAppContact.objects.get()
+        self.assertIsNone(contact.deletion_requested_at)
+        self.assertEqual((contact.flow, contact.answers), ("", {}))
+
+    def test_unregistered_contact_can_request_a_consultation(self):
+        self.say("English")
+        self.assertIn("10 - Request a consultation", self.say("menu"))
+        self.assertIn("your name", self.say("consult"))
+        self.say("Otieno Ltd")
+        self.say("5")
+        self.assertIn("SKIP", self.say("We want to partner on a dairy value chain project"))
+        self.assertIn("Reply YES", self.say("skip"))
+        self.say("yes")
+
+        lead = ConsultationLead.objects.get()
+        self.assertEqual(lead.category, ConsultationLead.Category.PROJECT)
+        self.assertEqual(lead.organisation_or_county, "")
+
+    def test_consultation_can_be_cancelled_and_is_rate_limited(self):
+        self.say("English")
+        self.say("10")
+        self.say("Jane")
+        self.assertIn("stopped", self.say("cancel"))
+        self.assertFalse(ConsultationLead.objects.exists())
+
+        for _ in range(3):
+            ConsultationLead.objects.create(
+                full_name="Jane", phone="+254712345678", preferred_contact="whatsapp",
+                category="other", message="Earlier request", privacy_consent_at=timezone.now(),
+            )
+        self.assertIn("several consultation requests", self.say("10"))
+
     def test_status_needs_the_code_after_session_expires(self):
         code, _ = self.register_by_chat()
         WhatsAppContact.objects.update(unlocked_until=None)

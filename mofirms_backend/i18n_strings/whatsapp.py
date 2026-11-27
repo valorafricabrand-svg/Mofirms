@@ -15,7 +15,8 @@ STRINGS = {
             "2 - Supplier, buyer and service-provider registration\n"
             "3 - Financial analysis and business planning\n"
             "4 - Risk and opportunity assessment\n"
-            "5 - Research and questionnaires\n\n"
+            "5 - Research and questionnaires\n"
+            "10 - Request a consultation\n\n"
             "*My account*\n"
             "6 - Check my registration status\n"
             "7 - See my registered details\n"
@@ -31,7 +32,8 @@ STRINGS = {
             "2 - Usajili wa msambazaji, mnunuzi na mtoa huduma\n"
             "3 - Uchambuzi wa kifedha na upangaji wa biashara\n"
             "4 - Tathmini ya hatari na fursa\n"
-            "5 - Utafiti na hojaji\n\n"
+            "5 - Utafiti na hojaji\n"
+            "10 - Omba ushauri\n\n"
             "*Akaunti yangu*\n"
             "6 - Angalia hali ya usajili wangu\n"
             "7 - Ona taarifa zangu\n"
@@ -70,6 +72,68 @@ STRINGS = {
     "wa.service.research": {
         "en": "Research and questionnaires",
         "sw": "Utafiti na hojaji",
+    },
+    "wa.consult_ask_name": {
+        "en": "Let's request a consultation. What is your name?",
+        "sw": "Tuombe ushauri. Jina lako ni nani?",
+    },
+    "wa.consult_ask_category": {
+        "en": "What do you need help with? Reply with a number:\n{options}",
+        "sw": "Unahitaji msaada kuhusu nini? Jibu kwa namba:\n{options}",
+    },
+    "wa.consult_invalid_category": {
+        "en": "Please reply with one number from the list.",
+        "sw": "Tafadhali jibu kwa namba moja kutoka kwenye orodha.",
+    },
+    "wa.consult_ask_message": {
+        "en": (
+            "Tell us briefly what you need, in one message. Please don't include ID numbers, "
+            "tax PINs, land records, bank details or passwords."
+        ),
+        "sw": (
+            "Tueleze kwa ufupi unachohitaji, kwa ujumbe mmoja. Tafadhali usiweke namba za "
+            "kitambulisho, PIN ya KRA, hati za ardhi, taarifa za benki au nenosiri."
+        ),
+    },
+    "wa.consult_invalid_message": {
+        "en": "Please describe what you need in 10 to {maximum} characters.",
+        "sw": "Tafadhali eleza unachohitaji kwa herufi 10 hadi {maximum}.",
+    },
+    "wa.consult_ask_organisation": {
+        "en": "Which organisation or county are you in? Reply SKIP to leave this out.",
+        "sw": "Uko katika shirika au kaunti gani? Jibu RUKA kuacha swali hili.",
+    },
+    "wa.consult_ask_consent": {
+        "en": (
+            "MoFirms will use these details to respond to your consultation request. "
+            "Reply YES to agree and send, or CANCEL to stop."
+        ),
+        "sw": (
+            "MoFirms itatumia taarifa hizi kujibu ombi lako la ushauri. "
+            "Jibu NDIO kukubali na kutuma, au ACHA kusimamisha."
+        ),
+    },
+    "wa.consult_received": {
+        "en": (
+            "✅ Thank you! Your consultation request has been sent. Reference: {reference}.\n"
+            "A member of the MoFirms team will reply to you here on WhatsApp within a few "
+            "working days. Reply MENU for more options."
+        ),
+        "sw": (
+            "✅ Asante! Ombi lako la ushauri limetumwa. Kumbukumbu: {reference}.\n"
+            "Mwanatimu wa MoFirms atakujibu hapa kwenye WhatsApp ndani ya siku chache za "
+            "kazi. Jibu MENU kwa chaguo zaidi."
+        ),
+    },
+    "wa.consult_limit": {
+        "en": (
+            "You have already sent several consultation requests today. The team will reply "
+            "soon. For anything urgent, call +254 140 949 415."
+        ),
+        "sw": (
+            "Tayari umetuma maombi kadhaa ya ushauri leo. Timu itakujibu hivi karibuni. "
+            "Kwa jambo la dharura, piga +254 140 949 415."
+        ),
     },
     "wa.cancelled": {
         "en": "Okay, stopped. Reply MENU to see the options again.",
@@ -141,14 +205,16 @@ STRINGS = {
             "Your MoFirms login code is: {code}\n"
             "Keep this code private. Use it to check your details here, or to sign in at "
             "mofirm.co.ke/portal/login/whatsapp/ with this phone number.\n"
-            "A MoFirms reviewer will check your registration within a few working days."
+            "A MoFirms reviewer will check your registration within a few working days.\n\n"
+            "Need advice now? Reply 10 to request a consultation."
         ),
         "sw": (
             "✅ Umesajiliwa! Kumbukumbu yako ni {reference}.\n"
             "Nambari yako ya kuingia MoFirms ni: {code}\n"
             "Usimpe mtu nambari hii. Itumie kuangalia taarifa zako hapa, au kuingia kwenye "
             "mofirm.co.ke/portal/login/whatsapp/ kwa namba hii ya simu.\n"
-            "Mkaguzi wa MoFirms atakagua usajili wako ndani ya siku chache za kazi."
+            "Mkaguzi wa MoFirms atakagua usajili wako ndani ya siku chache za kazi.\n\n"
+            "Unahitaji ushauri sasa? Jibu 10 kuomba ushauri."
         ),
     },
     "wa.new_code": {

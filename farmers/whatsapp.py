@@ -20,7 +20,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from .models import ACTIVITY_CHOICES, COUNTIES, FarmerProfile, WhatsAppContact
+from .models import ACTIVITY_CHOICES, COUNTIES, ConsultationLead, FarmerProfile, WhatsAppContact
 from .templatetags.custom_i18n import current_lang, translate
 from .views import _rate_limit_reached
 
@@ -38,6 +38,11 @@ STATUS_WORDS = {"6", "status", "hali"}
 DETAILS_WORDS = {"7", "details", "taarifa"}
 NEW_CODE_WORDS = {"8", "code", "new code", "nambari"}
 HELP_WORDS = {"9", "help", "msaada"}
+CONSULT_WORDS = {"10", "consult", "consultation", "ushauri"}
+SKIP_WORDS = {"skip", "ruka"}
+MAX_CONSULTATIONS_PER_DAY = 3
+MIN_MESSAGE_LENGTH = 10
+MAX_MESSAGE_LENGTH = ConsultationLead._meta.get_field("message").max_length
 SERVICE_LINKS = {
     "2": ("wa.service.partner", "/portal/partners/register/"),
     "3": ("wa.service.financial", "/portal/financial-analysis/"),
@@ -241,6 +246,79 @@ def _registration_step(contact, text, lang):
     return translate("wa.invalid_consent", lang)
 
 
+def consultation_options(lang):
+    return "\n".join(
+        f"{index} - {translate(f'choice.consultation_category.{value}', lang)}"
+        for index, (value, _) in enumerate(ConsultationLead.Category.choices, start=1)
+    )
+
+
+def _start_consultation(contact, lang):
+    since = timezone.now() - timedelta(days=1)
+    if ConsultationLead.objects.filter(phone="+" + contact.phone, created_at__gte=since).count() >= MAX_CONSULTATIONS_PER_DAY:
+        return translate("wa.consult_limit", lang)
+    contact.flow, contact.answers = "consult", {}
+    if contact.profile:
+        contact.answers["name"] = contact.profile.full_name
+        contact.step = "category"
+        return translate("wa.consult_ask_category", lang, options=consultation_options(lang))
+    contact.step = "name"
+    return translate("wa.consult_ask_name", lang)
+
+
+def _finish_consultation(contact, lang):
+    answers = contact.answers
+    now = timezone.now()
+    lead = ConsultationLead.objects.create(
+        full_name=answers["name"],
+        phone="+" + contact.phone,
+        preferred_contact=ConsultationLead.PreferredContact.WHATSAPP,
+        organisation_or_county=answers.get("organisation", ""),
+        category=answers["category"],
+        message=answers["message"],
+        privacy_consent_at=now,
+        last_contact_at=now,
+    )
+    contact.flow, contact.step, contact.answers = "", "", {}
+    return translate("wa.consult_received", lang, reference=lead.public_reference)
+
+
+def _consultation_step(contact, text, lang):
+    step = contact.step
+    if step == "name":
+        if not 2 <= len(text) <= 160:
+            return translate("wa.invalid_name", lang)
+        contact.answers["name"] = text
+        contact.step = "category"
+        return translate("wa.consult_ask_category", lang, options=consultation_options(lang))
+    if step == "category":
+        choices = ConsultationLead.Category.choices
+        number = re.sub(r"\D", "", text)
+        if not number or not 1 <= int(number) <= len(choices):
+            return translate("wa.consult_invalid_category", lang)
+        contact.answers["category"] = choices[int(number) - 1][0]
+        contact.step = "message"
+        return translate("wa.consult_ask_message", lang)
+    if step == "message":
+        if not MIN_MESSAGE_LENGTH <= len(text) <= MAX_MESSAGE_LENGTH:
+            return translate("wa.consult_invalid_message", lang, maximum=MAX_MESSAGE_LENGTH)
+        contact.answers["message"] = text
+        if contact.profile:
+            contact.answers["organisation"] = contact.profile.county
+            contact.step = "consent"
+            return translate("wa.consult_ask_consent", lang)
+        contact.step = "organisation"
+        return translate("wa.consult_ask_organisation", lang)
+    if step == "organisation":
+        if text.lower() not in SKIP_WORDS:
+            contact.answers["organisation"] = text[:180]
+        contact.step = "consent"
+        return translate("wa.consult_ask_consent", lang)
+    if text.lower() in YES_WORDS:
+        return _finish_consultation(contact, lang)
+    return translate("wa.invalid_consent", lang)
+
+
 def _unlock_step(contact, text, lang):
     result = verify_code(contact, re.sub(r"\D", "", text))
     if result == "locked":
@@ -272,12 +350,12 @@ def handle_message(phone, text):
     elif word in CANCEL_WORDS:
         contact.flow, contact.step, contact.answers = "", "", {}
         reply = translate("wa.cancelled", contact.language)
-    elif "delete" in word or "futa" in word:
+    elif contact.flow != "consult" and ("delete" in word or "futa" in word):
         contact.flow, contact.step, contact.answers = "", "", {}
         contact.deletion_requested_at = timezone.now()
         reply = translate("wa.delete_request", contact.language)
     elif word in LANGUAGE_WORDS or (
-        not contact.language_confirmed and contact.flow not in {"register", "unlock"}
+        not contact.language_confirmed and contact.flow not in {"register", "unlock", "consult"}
     ):
         contact.flow, contact.step, contact.answers = "language", "", {}
         reply = translate("wa.language_prompt", "en")
@@ -286,6 +364,8 @@ def handle_message(phone, text):
         reply = translate("wa.menu", contact.language)
     elif contact.flow == "register":
         reply = _registration_step(contact, text, contact.language)
+    elif contact.flow == "consult":
+        reply = _consultation_step(contact, text, contact.language)
     elif contact.flow == "unlock" and word not in NEW_CODE_WORDS:
         reply = _unlock_step(contact, text, contact.language)
     else:
@@ -327,6 +407,8 @@ def _menu_choice(contact, word):
         if not contact.profile:
             return translate("wa.not_registered", lang)
         return translate("wa.new_code", lang, code=issue_code(contact))
+    if word in CONSULT_WORDS:
+        return _start_consultation(contact, lang)
     if word in HELP_WORDS:
         contact.help_requested_at = timezone.now()
         return translate("wa.help", lang)
