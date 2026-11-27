@@ -521,6 +521,10 @@ STRINGS = {
         "en": "Vihiga Organic Farmers Association (VOFA)",
         "sw": "Vihiga Organic Farmers Association (VOFA)",
     },
+    "home.projects.vofa_logo_alt": {
+        "en": "VOFA logo: hands holding a seedling, bee, chicken and fish above farmland",
+        "sw": "Nembo ya VOFA: mikono iliyoshika mche, nyuki, kuku na samaki juu ya shamba",
+    },
     "home.projects.vofa_body": {
         "en": (
             "VOFA is a farmer-governed association of organic farmers in "

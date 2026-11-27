@@ -381,8 +381,10 @@ font-size:.82rem;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
 .client-ticks li{position:relative;padding-left:26px}
 .client-ticks li::before{content:"\2713";position:absolute;left:0;top:3px;width:18px;height:18px;border-radius:50%;background:#d6f0de;color:#14532d;font-size:.72rem;font-weight:800;display:grid;place-items:center}
 .client-feature-cta{margin-top:6px}
-.client-feature-quote{margin:0;align-self:center;padding:22px;border-radius:14px;background:var(--sand)}
+.client-feature-side{display:flex;flex-direction:column;gap:18px;min-width:0}
+.client-feature-logo{display:block;width:100%;max-width:190px;height:auto;margin:0 auto;padding:12px;border-radius:14px;background:#fff;box-shadow:0 1px 4px rgba(20,83,45,.12)}
+.client-feature-quote{margin:0;padding:22px;border-radius:14px;background:var(--sand)}
 .client-feature-quote blockquote{margin:0 0 14px;font-size:1.05rem;line-height:1.6}
 .client-feature-quote figcaption{font-weight:700}
 .client-feature-quote figcaption span{display:block;font-weight:400;color:var(--mut);font-size:.9rem}
-@media(max-width:860px){.client-feature{grid-template-columns:1fr;padding:20px}.client-feature-cols{grid-template-columns:1fr}}
+@media(max-width:860px){.client-feature{grid-template-columns:1fr;padding:20px}.client-feature-cols{grid-template-columns:1fr}.client-feature-side{display:contents}.client-feature-logo{order:-1;max-width:130px;margin:0}}

@@ -297,12 +297,15 @@
         <a class="btn ghost" href="/portal/register/">{% t 'home.projects.vofa_cta_farmer' %}</a>
       </div>
     </div>
-    {% for item in testimonials %}{% if 'VOFA' in item.author_name %}
-    <figure class="client-feature-quote">
-      <blockquote>&ldquo;{{ item.quote }}&rdquo;</blockquote>
-      <figcaption>{{ item.author_name }}<span>{{ item.role }}</span></figcaption>
-    </figure>
-    {% endif %}{% endfor %}
+    <div class="client-feature-side">
+      <img class="client-feature-logo" src="{% static 'images/vofa-logo.webp' %}" alt="{% t 'home.projects.vofa_logo_alt' %}" width="460" height="480" loading="lazy" decoding="async">
+      {% for item in testimonials %}{% if 'VOFA' in item.author_name %}
+      <figure class="client-feature-quote">
+        <blockquote>&ldquo;{{ item.quote }}&rdquo;</blockquote>
+        <figcaption>{{ item.author_name }}<span>{{ item.role }}</span></figcaption>
+      </figure>
+      {% endif %}{% endfor %}
+    </div>
   </article>
   <div class="cluster-controls" role="group" aria-label="{% t 'home.projects.project_controls_label' %}">
     <button class="cluster-arrow" id="projectsPrevious" type="button" aria-label="{% t 'home.projects.project_previous' %}">←</button>
