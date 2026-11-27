@@ -23,6 +23,7 @@ from django.views.decorators.http import require_http_methods
 from .models import ACTIVITY_CHOICES, COUNTIES, ConsultationLead, FarmerProfile, WhatsAppContact
 from .templatetags.custom_i18n import current_lang, translate
 from .views import _rate_limit_reached
+from .whatsapp_details import farm_details_step, start_farm_details
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,8 @@ STATUS_WORDS = {"6", "status", "hali"}
 DETAILS_WORDS = {"7", "details", "taarifa"}
 NEW_CODE_WORDS = {"8", "code", "new code", "nambari"}
 HELP_WORDS = {"9", "help", "msaada"}
-CONSULT_WORDS = {"10", "consult", "consultation", "ushauri"}
+FREE_TEXT_FLOWS = {"consult", "farm"}
+CONSULT_WORDS ={"10", "consult", "consultation", "ushauri"}
 SKIP_WORDS = {"skip", "ruka"}
 MAX_CONSULTATIONS_PER_DAY = 3
 MIN_MESSAGE_LENGTH = 10
@@ -232,6 +234,8 @@ def details_reply(profile, lang):
 
 def _protected_reply(contact, action, lang):
     if contact.unlocked_until and contact.unlocked_until > timezone.now():
+        if action == "farm":
+            return start_farm_details(contact, lang)
         return status_reply(contact.profile, lang) if action == "status" else details_reply(contact.profile, lang)
     contact.flow, contact.step = "unlock", action
     return translate("wa.ask_code", lang)
@@ -389,12 +393,12 @@ def handle_message(phone, text):
     elif word in CANCEL_WORDS:
         contact.flow, contact.step, contact.answers = "", "", {}
         reply = translate("wa.cancelled", contact.language)
-    elif contact.flow != "consult" and ("delete" in word or "futa" in word):
+    elif contact.flow not in FREE_TEXT_FLOWS and ("delete" in word or "futa" in word):
         contact.flow, contact.step, contact.answers = "", "", {}
         contact.deletion_requested_at = timezone.now()
         reply = translate("wa.delete_request", contact.language)
     elif word in LANGUAGE_WORDS or (
-        not contact.language_confirmed and contact.flow not in {"register", "unlock", "consult"}
+        not contact.language_confirmed and contact.flow not in {"register", "unlock", "consult", "farm"}
     ):
         contact.flow, contact.step, contact.answers = "language", "", {}
         reply = translate("wa.language_prompt", "en")
@@ -403,6 +407,8 @@ def handle_message(phone, text):
         reply = translate("wa.menu", contact.language)
     elif contact.flow == "register":
         reply = _registration_step(contact, text, contact.language)
+    elif contact.flow == "farm":
+        reply = farm_details_step(contact, text, contact.language)
     elif contact.flow == "consult":
         reply = _consultation_step(contact, text, contact.language)
     elif contact.flow == "unlock" and word not in NEW_CODE_WORDS:
@@ -421,12 +427,20 @@ def _language_choice(word, awaiting_choice):
     return None
 
 
+def _account_action(contact, action, lang):
+    """Run a code-protected action, issuing a first code to web-registered farmers."""
+    if not contact.code_hash:
+        code = issue_code(contact)
+        return translate("wa.new_code", lang, code=code) + "\n\n" + _protected_reply(contact, action, lang)
+    return _protected_reply(contact, action, lang)
+
+
 def _menu_choice(contact, word):
     lang = contact.language
     contact.flow = contact.step = ""
     if word in {"1", "register", "jisajili"}:
         if contact.profile:
-            return translate("wa.already_registered", lang, reference=contact.profile.public_reference)
+            return _account_action(contact, "farm", lang)
         contact.flow, contact.step, contact.answers = "register", "name", {}
         return translate("wa.ask_name", lang)
     if word in SERVICE_LINKS:
@@ -437,11 +451,7 @@ def _menu_choice(contact, word):
     if word in STATUS_WORDS | DETAILS_WORDS:
         if not contact.profile:
             return translate("wa.not_registered", lang)
-        action = "status" if word in STATUS_WORDS else "details"
-        if not contact.code_hash:
-            code = issue_code(contact)
-            return translate("wa.new_code", lang, code=code) + "\n\n" + _protected_reply(contact, action, lang)
-        return _protected_reply(contact, action, lang)
+        return _account_action(contact, "status" if word in STATUS_WORDS else "details", lang)
     if word in NEW_CODE_WORDS:
         if not contact.profile:
             return translate("wa.not_registered", lang)

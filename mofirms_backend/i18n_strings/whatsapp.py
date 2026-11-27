@@ -135,6 +135,198 @@ STRINGS = {
             "Kwa jambo la dharura, piga +254 140 949 415."
         ),
     },
+    "wa.fd.intro": {
+        "en": "Let's add your farm details. Answer one question at a time. Reply SKIP to leave a question as it is, or CANCEL to stop. Answers are saved as you go.",
+        "sw": "Tuongeze taarifa za shamba lako. Jibu swali moja baada ya jingine. Jibu RUKA kuacha swali kama lilivyo, au ACHA kusimamisha. Majibu yanahifadhiwa unapoendelea.",
+    },
+    "wa.fd.section": {
+        "en": "*Part {number} of {total}: {title}*",
+        "sw": "*Sehemu {number} kati ya {total}: {title}*",
+    },
+    "wa.fd.section.about": {
+        "en": "About you",
+        "sw": "Kuhusu wewe",
+    },
+    "wa.fd.section.location": {
+        "en": "Location",
+        "sw": "Mahali",
+    },
+    "wa.fd.section.farm": {
+        "en": "Your farm",
+        "sw": "Shamba lako",
+    },
+    "wa.fd.section.money": {
+        "en": "Money and records",
+        "sw": "Fedha na kumbukumbu",
+    },
+    "wa.fd.section.markets": {
+        "en": "Selling and challenges",
+        "sw": "Mauzo na changamoto",
+    },
+    "wa.fd.section.goals": {
+        "en": "Support and goals",
+        "sw": "Msaada na malengo",
+    },
+    "wa.fd.now": {
+        "en": "Now: {value}",
+        "sw": "Sasa: {value}",
+    },
+    "wa.fd.skip_hint": {
+        "en": "(Reply SKIP to leave this as it is)",
+        "sw": "(Jibu RUKA kuacha hili kama lilivyo)",
+    },
+    "wa.fd.registration_type": {
+        "en": "Are you registering as an individual or for a group? Reply with a number:",
+        "sw": "Unajisajili kama mtu binafsi au kwa niaba ya kikundi? Jibu kwa namba:",
+    },
+    "wa.fd.group_name": {
+        "en": "What is the group or association's name?",
+        "sw": "Jina la kikundi au chama ni nini?",
+    },
+    "wa.fd.group_type": {
+        "en": "What type of group is it? Reply with a number:",
+        "sw": "Ni aina gani ya kikundi? Jibu kwa namba:",
+    },
+    "wa.fd.group_registration_status": {
+        "en": "Is the group officially registered? Reply with a number:",
+        "sw": "Je, kikundi kimesajiliwa rasmi? Jibu kwa namba:",
+    },
+    "wa.fd.group_registration_number": {
+        "en": "What is the group's registration number? Only the organisation's number, not a personal ID or tax PIN.",
+        "sw": "Namba ya usajili wa kikundi ni ipi? Namba ya shirika tu, si kitambulisho cha mtu au PIN ya KRA.",
+    },
+    "wa.fd.group_member_count": {
+        "en": "How many members does the group have? Reply with a number.",
+        "sw": "Kikundi kina wanachama wangapi? Jibu kwa namba.",
+    },
+    "wa.fd.representative_role": {
+        "en": "What is your role in the group? e.g. Chairperson, Secretary",
+        "sw": "Wadhifa wako katika kikundi ni upi? mfano Mwenyekiti, Katibu",
+    },
+    "wa.fd.group_authorization": {
+        "en": "Are you authorised to submit information for this group, and have you informed its members? Reply YES or NO.",
+        "sw": "Je, umeidhinishwa kuwasilisha taarifa za kikundi hiki, na umewajulisha wanachama? Jibu NDIO au HAPANA.",
+    },
+    "wa.fd.group_not_saved": {
+        "en": "Okay. The group details were not saved; your registration stays as an individual.",
+        "sw": "Sawa. Taarifa za kikundi hazikuhifadhiwa; usajili wako unabaki kama mtu binafsi.",
+    },
+    "wa.fd.email": {
+        "en": "What is your email address? (optional)",
+        "sw": "Barua pepe yako ni ipi? (si lazima)",
+    },
+    "wa.fd.sub_county": {
+        "en": "Which sub-county are you in?",
+        "sw": "Uko katika kaunti ndogo gani?",
+    },
+    "wa.fd.ward": {
+        "en": "Which ward?",
+        "sw": "Wadi gani?",
+    },
+    "wa.fd.local_area": {
+        "en": "Which village or local area?",
+        "sw": "Kijiji au eneo gani?",
+    },
+    "wa.fd.main_products": {
+        "en": "What are your main products? e.g. maize, beans, milk",
+        "sw": "Bidhaa zako kuu ni zipi? mfano mahindi, maharagwe, maziwa",
+    },
+    "wa.fd.farm_size": {
+        "en": "About how big is your farm? Reply with a number, e.g. 2.5. Approximate only, no land documents.",
+        "sw": "Shamba lako lina ukubwa gani kwa makadirio? Jibu kwa namba, mfano 2.5. Makadirio tu, bila hati za ardhi.",
+    },
+    "wa.fd.farm_size_unit": {
+        "en": "Is that in acres or hectares? Reply with a number:",
+        "sw": "Ni ekari au hekta? Jibu kwa namba:",
+    },
+    "wa.fd.land_access": {
+        "en": "How do you access the land? Reply with a number:",
+        "sw": "Unapataje ardhi unayolima? Jibu kwa namba:",
+    },
+    "wa.fd.years_farming": {
+        "en": "How long have you been farming? Reply with a number:",
+        "sw": "Umekuwa ukilima kwa muda gani? Jibu kwa namba:",
+    },
+    "wa.fd.water_sources": {
+        "en": "Which water sources do you use? Reply with one or more numbers, e.g. 1 3",
+        "sw": "Unatumia vyanzo gani vya maji? Jibu kwa namba moja au zaidi, mfano 1 3",
+    },
+    "wa.fd.production_summary": {
+        "en": "Briefly describe your typical production and seasons. Please don't include ID, bank or tax details.",
+        "sw": "Eleza kwa ufupi uzalishaji wako wa kawaida na misimu. Tafadhali usiweke kitambulisho, benki au PIN.",
+    },
+    "wa.fd.sales_band": {
+        "en": "About how much do you sell in a year? Reply with a number:",
+        "sw": "Kwa makadirio unauza kiasi gani kwa mwaka? Jibu kwa namba:",
+    },
+    "wa.fd.operating_cost_band": {
+        "en": "About how much do you spend running the farm in a year? Reply with a number:",
+        "sw": "Kwa makadirio unatumia kiasi gani kuendesha shamba kwa mwaka? Jibu kwa namba:",
+    },
+    "wa.fd.finance_need_band": {
+        "en": "How much finance do you need, if any? Reply with a number:",
+        "sw": "Unahitaji ufadhili wa kiasi gani, kama upo? Jibu kwa namba:",
+    },
+    "wa.fd.record_keeping": {
+        "en": "How do you keep farm records? Reply with a number:",
+        "sw": "Unaweka kumbukumbu za shamba vipi? Jibu kwa namba:",
+    },
+    "wa.fd.sales_channels": {
+        "en": "Where do you currently sell? Reply with one or more numbers, e.g. 1 2",
+        "sw": "Kwa sasa unauza wapi? Jibu kwa namba moja au zaidi, mfano 1 2",
+    },
+    "wa.fd.challenges": {
+        "en": "What are your main challenges? Reply with one or more numbers, e.g. 1 7",
+        "sw": "Changamoto zako kuu ni zipi? Jibu kwa namba moja au zaidi, mfano 1 7",
+    },
+    "wa.fd.support_interests": {
+        "en": "What support would be most useful? Reply with one or more numbers, e.g. 3 5",
+        "sw": "Msaada gani ungekufaa zaidi? Jibu kwa namba moja au zaidi, mfano 3 5",
+    },
+    "wa.fd.goals": {
+        "en": "What are your goals for the next year or two?",
+        "sw": "Malengo yako kwa mwaka mmoja au miwili ijayo ni yapi?",
+    },
+    "wa.fd.additional_notes": {
+        "en": "Anything else MoFirms should know? Please don't include ID numbers, PINs, account numbers or passwords.",
+        "sw": "Kuna jambo lingine MoFirms inapaswa kujua? Tafadhali usiweke namba za kitambulisho, PIN, akaunti au nenosiri.",
+    },
+    "wa.fd.research_invite": {
+        "en": "Last one: may MoFirms contact you about research surveys? This does not enrol you or share your contact details with researchers. Reply YES or NO.",
+        "sw": "Swali la mwisho: MoFirms inaweza kuwasiliana nawe kuhusu tafiti? Hii haikusajili wala haitoi mawasiliano yako kwa watafiti. Jibu NDIO au HAPANA.",
+    },
+    "wa.fd.done": {
+        "en": "✅ Thank you! Your farm details are saved and will be reviewed with your registration. Reply 7 to see your dashboard, or MENU for more options.",
+        "sw": "✅ Asante! Taarifa za shamba lako zimehifadhiwa na zitakaguliwa pamoja na usajili wako. Jibu 7 kuona dashibodi yako, au MENU kwa chaguo zaidi.",
+    },
+    "wa.fd.invalid_choice": {
+        "en": "Please reply with one number from the list, or SKIP.",
+        "sw": "Tafadhali jibu kwa namba moja kutoka kwenye orodha, au RUKA.",
+    },
+    "wa.fd.invalid_multi": {
+        "en": "Please reply with numbers from the list, e.g. 1 3, or SKIP.",
+        "sw": "Tafadhali jibu kwa namba kutoka kwenye orodha, mfano 1 3, au RUKA.",
+    },
+    "wa.fd.invalid_number": {
+        "en": "Please reply with a number, e.g. 2.5, or SKIP.",
+        "sw": "Tafadhali jibu kwa namba, mfano 2.5, au RUKA.",
+    },
+    "wa.fd.invalid_email": {
+        "en": "That doesn't look like an email address. Try again or reply SKIP.",
+        "sw": "Hiyo haionekani kama barua pepe. Jaribu tena au jibu RUKA.",
+    },
+    "wa.fd.too_long": {
+        "en": "Please keep it under {maximum} characters.",
+        "sw": "Tafadhali usizidi herufi {maximum}.",
+    },
+    "wa.fd.required": {
+        "en": "This one is needed to continue. Please answer, or reply CANCEL to stop.",
+        "sw": "Hili linahitajika ili kuendelea. Tafadhali jibu, au jibu ACHA kusimamisha.",
+    },
+    "wa.fd.yes_or_no": {
+        "en": "Please reply YES or NO.",
+        "sw": "Tafadhali jibu NDIO au HAPANA.",
+    },
     "wa.cancelled": {
         "en": "Okay, stopped. Reply MENU to see the options again.",
         "sw": "Sawa, imesimamishwa. Jibu MENU kuona chaguo tena.",
@@ -206,6 +398,8 @@ STRINGS = {
             "Keep this code private. Use it to check your details here, or to sign in at "
             "mofirm.co.ke/portal/login/whatsapp/ with this phone number.\n"
             "A MoFirms reviewer will check your registration within a few working days.\n\n"
+            "👉 Reply 1 to add your farm details now (about 5 minutes). "
+            "This helps MoFirms find the right support for you.\n"
             "Need advice now? Reply 10 to request a consultation."
         ),
         "sw": (
@@ -214,6 +408,8 @@ STRINGS = {
             "Usimpe mtu nambari hii. Itumie kuangalia taarifa zako hapa, au kuingia kwenye "
             "mofirm.co.ke/portal/login/whatsapp/ kwa namba hii ya simu.\n"
             "Mkaguzi wa MoFirms atakagua usajili wako ndani ya siku chache za kazi.\n\n"
+            "👉 Jibu 1 kuongeza taarifa za shamba lako sasa (kama dakika 5). "
+            "Hii inasaidia MoFirms kupata msaada unaokufaa.\n"
             "Unahitaji ushauri sasa? Jibu 10 kuomba ushauri."
         ),
     },

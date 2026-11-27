@@ -873,6 +873,107 @@ class WhatsAppTests(TestCase):
         self.assertEqual(contact.profile, profile)
         self.assertNotIn(code, contact.code_hash)
 
+    def test_farm_details_collect_the_rest_of_the_web_form(self):
+        _, registered = self.register_by_chat()
+        self.assertIn("Reply 1 to add your farm details", registered)
+
+        self.assertIn("1 - Individual", self.say("1"))
+        answers = [
+            ("2", "group or association's name"),
+            ("Vihiga Dairy Group", "type of group"),
+            ("3", "officially registered"),
+            ("skip", "registration number"),
+            ("skip", "How many members"),
+            ("25", "role in the group"),
+            ("Chairperson", "authorised"),
+            ("yes", "email"),
+            ("jane@example.com", "Part 2 of 6: Location"),
+            ("Hamisi", "ward"),
+            ("skip", "village"),
+            ("skip", "Part 3 of 6: Your farm"),
+            ("maize, milk, mafuta ya alizeti", "how big"),
+            ("abc", "reply with a number"),
+            ("2.5", "acres or hectares"),
+            ("skip", "needed to continue"),
+            ("1", "access the land"),
+            ("2", "How long"),
+            ("3", "water sources"),
+            ("1 3 3", "typical production"),
+            ("skip", "Part 4 of 6"),
+            ("3", "spend"),
+            ("2", "finance"),
+            ("skip", "records"),
+            ("2", "Part 5 of 6"),
+            ("1 2", "challenges"),
+            ("8", "Part 6 of 6"),
+            ("3 5", "goals"),
+            ("Grow my dairy herd", "Anything else"),
+            ("skip", "research surveys"),
+            ("yes", "farm details are saved"),
+        ]
+        for text, expected in answers:
+            self.assertIn(expected, self.say(text), msg=f"after replying {text!r}")
+
+        profile = FarmerProfile.objects.get()
+        profile.full_clean()
+        self.assertEqual(profile.registration_type, FarmerProfile.RegistrationType.GROUP)
+        self.assertEqual(profile.group_name, "Vihiga Dairy Group")
+        self.assertEqual(profile.group_type, FarmerProfile.GroupType.COOPERATIVE)
+        self.assertEqual(profile.group_registration_status, FarmerProfile.RegistrationStatus.PREFER_NOT)
+        self.assertEqual(profile.group_member_count, 25)
+        self.assertTrue(profile.group_authorization_confirmed)
+        self.assertEqual(profile.group_review_status, FarmerProfile.EvidenceStatus.PENDING)
+        self.assertEqual(profile.email, "jane@example.com")
+        self.assertEqual(profile.sub_county, "Hamisi")
+        self.assertEqual(profile.main_products, "maize, milk, mafuta ya alizeti")
+        self.assertEqual(profile.farm_size, Decimal("2.50"))
+        self.assertEqual(profile.farm_size_unit, FarmerProfile.AreaUnit.ACRES)
+        self.assertEqual(profile.land_access, FarmerProfile.LandAccess.LEASED)
+        self.assertEqual(profile.years_farming, FarmerProfile.Experience.FOUR_TO_10)
+        self.assertEqual(profile.water_sources, ["rainfed", "borehole"])
+        self.assertEqual(profile.sales_band, FarmerProfile.FinancialBand.RANGE_100_500K)
+        self.assertEqual(profile.record_keeping, FarmerProfile.RecordKeeping.PAPER)
+        self.assertEqual(profile.sales_channels, ["farm_gate", "local_market"])
+        self.assertEqual(profile.challenges, ["finance"])
+        self.assertEqual(profile.support_interests, ["markets", "finance_readiness"])
+        self.assertEqual(profile.goals, "Grow my dairy herd")
+        self.assertIsNotNone(profile.research_invite_consent_at)
+        contact = WhatsAppContact.objects.get()
+        self.assertIsNone(contact.deletion_requested_at)
+        self.assertEqual((contact.flow, contact.answers), ("", {}))
+        self.assertIn("Vihiga Dairy Group", self.say("7"))
+
+    def test_farm_details_keep_answers_when_stopped_and_need_the_code_later(self):
+        code, _ = self.register_by_chat()
+        self.say("1")
+        self.say("1")
+        self.say("skip")
+        self.say("Luanda")
+        self.assertIn("stopped", self.say("cancel"))
+        self.assertEqual(FarmerProfile.objects.get().sub_county, "Luanda")
+
+        WhatsAppContact.objects.update(unlocked_until=None)
+        self.assertIn("6-digit", self.say("1"))
+        reply = self.say(code)
+        self.assertIn("Now: Individual", reply)
+        self.assertIn("email", self.say("skip"))
+        self.assertIn("Now: Luanda", self.say("skip"))
+
+    def test_declining_group_authorisation_keeps_an_individual_registration(self):
+        self.register_by_chat()
+        self.say("1")
+        self.say("2")
+        self.say("Mumias Growers")
+        self.say("1")
+        for _ in range(3):
+            self.say("skip")
+        self.say("skip")
+        self.assertIn("were not saved", self.say("no"))
+
+        profile = FarmerProfile.objects.get()
+        self.assertEqual(profile.registration_type, FarmerProfile.RegistrationType.INDIVIDUAL)
+        self.assertEqual(profile.group_name, "")
+
     def test_dashboard_option_shows_everything_on_the_web_dashboard(self):
         self.register_by_chat()
         profile = FarmerProfile.objects.get()
