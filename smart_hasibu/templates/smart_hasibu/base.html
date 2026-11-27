@@ -16,7 +16,7 @@
   {% include "farmers/_lang_switch.html" %}
   {% if request.user.is_authenticated %}
     <span class="sh-user">{{ request.user.first_name|default:request.user.email }}</span>
-    <a class="opt" href="{% url 'smart_hasibu:password_change' %}">{% t 'sh.nav.change_password' %}</a>
+    {% if request.user.has_usable_password %}<a class="opt" href="{% url 'smart_hasibu:password_change' %}">{% t 'sh.nav.change_password' %}</a>{% endif %}
     <form method="post" action="{% url 'smart_hasibu:logout' %}">
       {% csrf_token %}<button class="opt" type="submit">{% t 'common.sign_out' %}</button>
     </form>

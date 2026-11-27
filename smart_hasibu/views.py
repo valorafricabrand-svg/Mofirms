@@ -327,6 +327,8 @@ def dashboard(request):
                 LedgerEntry.Category.choices, lang, "choice.ledger_category"
             ),
             "category_breakdown": category_breakdown,
+            "has_open_credit": settlement_form.is_bound
+            or settlement_form.fields["entry"].queryset.exists(),
             "enterprise_breakdown": enterprise_breakdown,
             "deleted_entries": deleted_entries,
             "enterprise_form": enterprise_form,

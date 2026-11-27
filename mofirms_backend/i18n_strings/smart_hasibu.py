@@ -125,6 +125,7 @@ STRINGS = {
         "sw": "Ongeza shughuli ya biashara kabla ya kuandika muamala.",
     },
     "sh.dashboard.save_entry_button": {"en": "Save entry", "sw": "Hifadhi muamala"},
+    "sh.dashboard.my_enterprises_heading": {"en": "My enterprises", "sw": "Shughuli zangu"},
     "sh.dashboard.add_enterprise_heading": {
         "en": "Add an enterprise",
         "sw": "Ongeza shughuli ya biashara",
