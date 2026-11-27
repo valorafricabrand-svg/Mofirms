@@ -52,3 +52,13 @@
 .sh-google-btn:hover,.sh-google-btn:focus-visible{background:#f2f5f3;border-color:#1f5f3f}
 .sh-or{display:flex;align-items:center;gap:.75rem;margin:1rem 0 .25rem;color:#5d6b61;font-size:.9rem}
 .sh-or::before,.sh-or::after{content:"";flex:1;border-top:1px solid #d6ddd7}
+.sh-auth input[type=checkbox]{width:1.15rem;height:1.15rem;min-height:0;padding:0;margin:.15rem 0 0;flex:0 0 auto;accent-color:#1f5f3f}
+.sh-confirm{display:flex;justify-content:center}
+.sh-confirm-card{width:100%;max-width:440px;padding:clamp(1.5rem,5vw,2.25rem);text-align:center}
+.sh-confirm-card h1{font-size:clamp(1.4rem,4vw,1.75rem);line-height:1.2;margin:0 0 1rem}
+.sh-account-chip{display:inline-flex;align-items:center;gap:.5rem;max-width:100%;margin:0 0 1.5rem;padding:.4rem .9rem;border:1px solid #d6ddd7;border-radius:999px;font-size:.95rem;font-weight:600}
+.sh-account-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sh-confirm-card form{gap:1.25rem;text-align:left}
+.sh-consent{display:flex;align-items:flex-start;gap:.65rem;font-weight:400;font-size:.95rem;line-height:1.5;cursor:pointer}
+.sh-confirm-card .btn{width:100%}
+.sh-cancel{display:inline-block;margin-top:1rem;color:#5d6b61;font-size:.9rem}
