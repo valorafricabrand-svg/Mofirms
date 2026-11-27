@@ -783,6 +783,210 @@ STRINGS = {
         "en": "Flexible",
         "sw": "Wakati wowote",
     },
+    "wa.rf.intro": {
+        "en": "*Risk and opportunity assessment*\nTell us about the decision you're facing and MoFirms will review it and send a fee quote. Reply SKIP for optional questions, or CANCEL to stop. Nothing is sent until you agree at the end.",
+        "sw": "*Tathmini ya hatari na fursa*\nTueleze kuhusu uamuzi unaoukabili na MoFirms italikagua na kukutumia makadirio ya gharama. Jibu RUKA kwa maswali yasiyo ya lazima, au ACHA kusimamisha. Hakuna kinachotumwa hadi ukubali mwishoni.",
+    },
+    "wa.rf.section.about": {
+        "en": "About you",
+        "sw": "Kuhusu wewe",
+    },
+    "wa.rf.section.scope": {
+        "en": "What to assess",
+        "sw": "Cha kutathminiwa",
+    },
+    "wa.rf.section.consent": {
+        "en": "Send",
+        "sw": "Tuma",
+    },
+    "wa.rf.applicant_type": {
+        "en": "Is this request for: Reply with a number:",
+        "sw": "Ombi hili ni kwa: Jibu kwa namba:",
+    },
+    "wa.rf.contact_name": {
+        "en": "What is your full name?",
+        "sw": "Jina lako kamili ni nani?",
+    },
+    "wa.rf.business_name": {
+        "en": "What is the business, group or organisation name?",
+        "sw": "Jina la biashara, kikundi au shirika ni nini?",
+    },
+    "wa.rf.email": {
+        "en": "Email address?",
+        "sw": "Barua pepe?",
+    },
+    "wa.rf.county": {
+        "en": "Which county are you in? e.g. Kisumu",
+        "sw": "Uko katika kaunti gani? mfano Kisumu",
+    },
+    "wa.rf.sector": {
+        "en": "What sector? e.g. dairy, horticulture, produce trading, farm services",
+        "sw": "Sekta gani? mfano maziwa, kilimo cha bustani, biashara ya mazao, huduma za kilimo",
+    },
+    "wa.rf.enterprise_stage": {
+        "en": "Which part of the value chain are you in? Reply with a number:",
+        "sw": "Uko katika sehemu gani ya mnyororo wa thamani? Jibu kwa namba:",
+    },
+    "wa.rf.assessment_areas": {
+        "en": "What should the assessment cover? Reply with one or more numbers, e.g. 1 3",
+        "sw": "Tathmini ihusishe nini? Jibu kwa namba moja au zaidi, mfano 1 3",
+    },
+    "wa.rf.risk_priorities": {
+        "en": "Which risks or uncertainties matter most? Reply with one or more numbers, e.g. 1 3",
+        "sw": "Hatari au mashaka gani ni muhimu zaidi? Jibu kwa namba moja au zaidi, mfano 1 3",
+    },
+    "wa.rf.opportunity_priorities": {
+        "en": "What opportunities would you like to explore? Reply with one or more numbers, e.g. 1 3",
+        "sw": "Ungependa kuchunguza fursa gani? Jibu kwa namba moja au zaidi, mfano 1 3",
+    },
+    "wa.rf.time_horizon": {
+        "en": "When do you need to decide? Reply with a number:",
+        "sw": "Unahitaji kuamua lini? Jibu kwa namba:",
+    },
+    "wa.rf.request_summary": {
+        "en": "Describe the decision you're considering, the main concern or opportunity, and what the assessment should help you understand. Please don't include passwords, ID numbers, tax PINs, account numbers or other people's confidential data.",
+        "sw": "Eleza uamuzi unaofikiria, wasiwasi au fursa kuu, na tathmini ikusaidie kuelewa nini. Tafadhali usiweke nenosiri, namba za kitambulisho, PIN ya KRA, namba za akaunti au taarifa za siri za watu wengine.",
+    },
+    "wa.rf.consent": {
+        "en": "Last step: MoFirms will review this request and contact you about its scope and a possible fee quote. Reply YES to agree and send, or CANCEL to stop.",
+        "sw": "Hatua ya mwisho: MoFirms itakagua ombi hili na kuwasiliana nawe kuhusu wigo wake na makadirio ya gharama. Jibu NDIO kukubali na kutuma, au ACHA kusimamisha.",
+    },
+    "wa.rf.received": {
+        "en": "✅ Thank you! Your request has been sent. Reference: {reference}.\nMoFirms will review it and reply here on WhatsApp with next steps and a fee quote. A quote is not a payment request. Reply MENU for more options.",
+        "sw": "✅ Asante! Ombi lako limetumwa. Kumbukumbu: {reference}.\nMoFirms italikagua na kukujibu hapa kwenye WhatsApp kuhusu hatua zinazofuata na makadirio ya gharama. Makadirio si ombi la malipo. Jibu MENU kwa chaguo zaidi.",
+    },
+    "wa.rs.intro": {
+        "en": "*Research and questionnaires: researcher application*\nResearchers and organisations can apply to run surveys with MoFirms. Every application is checked by staff before any access is given. Reply SKIP for optional questions, or CANCEL to stop.\n\nYou won't set a password here: once approved, reply 5 again and we'll send you a secure link to set it on the website.",
+        "sw": "*Utafiti na hojaji: maombi ya mtafiti*\nWatafiti na mashirika wanaweza kuomba kufanya tafiti na MoFirms. Kila ombi hukaguliwa na wafanyakazi kabla ya kupewa ruhusa yoyote. Jibu RUKA kwa maswali yasiyo ya lazima, au ACHA kusimamisha.\n\nHutaweka nenosiri hapa: ukiidhinishwa, jibu 5 tena na tutakutumia kiungo salama cha kuliweka kwenye tovuti.",
+    },
+    "wa.rs.section.about": {
+        "en": "About you",
+        "sw": "Kuhusu wewe",
+    },
+    "wa.rs.section.research": {
+        "en": "Your research",
+        "sw": "Utafiti wako",
+    },
+    "wa.rs.section.consent": {
+        "en": "Send",
+        "sw": "Tuma",
+    },
+    "wa.rs.applicant_type": {
+        "en": "Which describes you? Reply with a number:",
+        "sw": "Ni lipi linakuelezea? Jibu kwa namba:",
+    },
+    "wa.rs.organisation_name": {
+        "en": "Organisation or institution name?",
+        "sw": "Jina la shirika au taasisi?",
+    },
+    "wa.rs.role_title": {
+        "en": "Your role or title?",
+        "sw": "Wadhifa au cheo chako?",
+    },
+    "wa.rs.email": {
+        "en": "Your institutional or work email? This will be your sign-in for the researcher portal.",
+        "sw": "Barua pepe yako ya taasisi au kazi? Hii itakuwa jina lako la kuingia kwenye lango la watafiti.",
+    },
+    "wa.rs.website": {
+        "en": "Organisation website?",
+        "sw": "Tovuti ya shirika?",
+    },
+    "wa.rs.country": {
+        "en": "Which country are you based in? (SKIP for Kenya)",
+        "sw": "Uko nchi gani? (RUKA kwa Kenya)",
+    },
+    "wa.rs.supervisor_name": {
+        "en": "Your supervisor's name? (needed for student applications)",
+        "sw": "Jina la msimamizi wako? (linahitajika kwa wanafunzi)",
+    },
+    "wa.rs.supervisor_email": {
+        "en": "Your supervisor's institutional email?",
+        "sw": "Barua pepe ya taasisi ya msimamizi wako?",
+    },
+    "wa.rs.research_purpose": {
+        "en": "What research will you conduct, and what decisions may it inform?",
+        "sw": "Utafanya utafiti gani, na utasaidia maamuzi gani?",
+    },
+    "wa.rs.methods_summary": {
+        "en": "Describe recruitment, data handling, ethics review, and how findings will be used.",
+        "sw": "Eleza jinsi utakavyowapata washiriki, utakavyoshughulikia data, ukaguzi wa maadili, na matumizi ya matokeo.",
+    },
+    "wa.rs.privacy_policy_url": {
+        "en": "Link to your privacy policy?",
+        "sw": "Kiungo cha sera yako ya faragha?",
+    },
+    "wa.rs.data_protection_contact": {
+        "en": "Data protection contact (name or email)?",
+        "sw": "Mhusika wa ulinzi wa data (jina au barua pepe)?",
+    },
+    "wa.rs.consent": {
+        "en": "Last step: MoFirms will review this application and contact you about vetting. Approval is manual and does not give access to customer data. Reply YES to agree and send, or CANCEL to stop.",
+        "sw": "Hatua ya mwisho: MoFirms itakagua ombi hili na kuwasiliana nawe kuhusu ukaguzi. Uidhinishaji hufanywa na mtu na hautoi ruhusa ya kuona data za wateja. Jibu NDIO kukubali na kutuma, au ACHA kusimamisha.",
+    },
+    "wa.rs.email_taken": {
+        "en": "That email already has a MoFirms account. Please use a different work email, or sign in at mofirm.co.ke/portal/research/login/.",
+        "sw": "Barua pepe hiyo tayari ina akaunti ya MoFirms. Tafadhali tumia barua pepe nyingine ya kazi, au ingia kwenye mofirm.co.ke/portal/research/login/.",
+    },
+    "wa.rs.received": {
+        "en": "✅ Thank you! Your researcher application has been sent.\nA MoFirms team member will review it and may contact you here for more information. Reply 5 any time to check its status.",
+        "sw": "✅ Asante! Ombi lako la mtafiti limetumwa.\nMwanatimu wa MoFirms atalikagua na anaweza kuwasiliana nawe hapa kwa maelezo zaidi. Jibu 5 wakati wowote kuangalia hali yake.",
+    },
+    "wa.rs.status": {
+        "en": "*Researcher application: {organisation}*\nStatus: {status}\nReply 9 to talk to the team, or MENU for more options.",
+        "sw": "*Ombi la mtafiti: {organisation}*\nHali: {status}\nJibu 9 kuzungumza na timu, au MENU kwa chaguo zaidi.",
+    },
+    "wa.rs.status.pending": {
+        "en": "Waiting for review",
+        "sw": "Linasubiri ukaguzi",
+    },
+    "wa.rs.status.in_review": {
+        "en": "Under review",
+        "sw": "Linakaguliwa",
+    },
+    "wa.rs.status.needs_information": {
+        "en": "More information needed — the team will contact you",
+        "sw": "Maelezo zaidi yanahitajika — timu itawasiliana nawe",
+    },
+    "wa.rs.status.approved": {
+        "en": "Approved",
+        "sw": "Limeidhinishwa",
+    },
+    "wa.rs.status.rejected": {
+        "en": "Not approved",
+        "sw": "Halikuidhinishwa",
+    },
+    "wa.rs.status.suspended": {
+        "en": "Access suspended",
+        "sw": "Ruhusa imesitishwa",
+    },
+    "wa.rs.approved_link": {
+        "en": "🎉 Your researcher application is approved.\nSet your password with this one-time link (it expires in a few days):\n{url}\nThen sign in with {email}. Don't share this link.",
+        "sw": "🎉 Ombi lako la mtafiti limeidhinishwa.\nWeka nenosiri lako kwa kiungo hiki cha mara moja (kitaisha baada ya siku chache):\n{url}\nKisha ingia kwa {email}. Usishiriki kiungo hiki.",
+    },
+    "wa.rs.approved_signin": {
+        "en": "Your researcher application is approved. Sign in with {email} at {url}",
+        "sw": "Ombi lako la mtafiti limeidhinishwa. Ingia kwa {email} kwenye {url}",
+    },
+    "farmers.researcher_set_password.title": {
+        "en": "Set your password",
+        "sw": "Weka nenosiri lako",
+    },
+    "farmers.researcher_set_password.intro": {
+        "en": "Choose a password for your researcher account:",
+        "sw": "Chagua nenosiri la akaunti yako ya mtafiti:",
+    },
+    "farmers.researcher_set_password.submit": {
+        "en": "Set password",
+        "sw": "Weka nenosiri",
+    },
+    "farmers.researcher_set_password.invalid_title": {
+        "en": "This link has expired",
+        "sw": "Kiungo hiki kimeisha muda",
+    },
+    "farmers.researcher_set_password.invalid_body": {
+        "en": "The link has already been used or is out of date. Send 5 to MoFirms on WhatsApp for a new one.",
+        "sw": "Kiungo kimeshatumika au kimepitwa na wakati. Tuma 5 kwa MoFirms kwenye WhatsApp upate kipya.",
+    },
     "wa.cancelled": {
         "en": "Okay, stopped. Reply MENU to see the options again.",
         "sw": "Sawa, imesimamishwa. Jibu MENU kuona chaguo tena.",

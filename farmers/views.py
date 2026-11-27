@@ -901,6 +901,44 @@ def researcher_login(request):
 
 
 @require_http_methods(["GET", "POST"])
+def researcher_set_password(request, uidb64, token):
+    """One-time link (sent on WhatsApp) for an approved researcher who applied there."""
+    from django.contrib.auth.forms import SetPasswordForm
+    from django.contrib.auth.tokens import default_token_generator
+    from django.utils.encoding import force_str
+    from django.utils.http import urlsafe_base64_decode
+
+    lang = current_lang(request)
+    if request.method == "POST" and _rate_limit_reached(request, "researcher-set-password"):
+        return render(
+            request,
+            "farmers/rate_limited.html",
+            {"retry_after": settings.PORTAL_RATE_PERIOD // 60},
+            status=429,
+        )
+    try:
+        user = get_user_model().objects.get(
+            pk=force_str(urlsafe_base64_decode(uidb64)),
+            is_active=True,
+            researcher_application__review_status=ResearcherApplication.ReviewStatus.APPROVED,
+        )
+    except (ValueError, TypeError, OverflowError, get_user_model().DoesNotExist):
+        user = None
+    if user is None or not default_token_generator.check_token(user, token):
+        return render(request, "farmers/researcher_set_password.html", {"invalid": True}, status=400)
+
+    form = SetPasswordForm(user, request.POST or None)
+    form.fields["new_password1"].label = translate("field.researcher.password1", lang)
+    form.fields["new_password2"].label = translate("field.researcher.password2", lang)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        return redirect("researcher_login")
+    return render(
+        request, "farmers/researcher_set_password.html", {"form": form, "email": user.email}
+    )
+
+
+@require_http_methods(["GET", "POST"])
 def researcher_dashboard(request):
     if not request.user.is_authenticated:
         return redirect("researcher_login")

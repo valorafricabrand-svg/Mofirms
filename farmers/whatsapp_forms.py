@@ -1,8 +1,11 @@
-"""WhatsApp chat versions of the supplier/buyer registration and financial analysis forms.
+"""WhatsApp chat versions of the partner, financial analysis, risk assessment and
+researcher application forms.
 
 Each chat asks the same questions as the web form, one at a time. Answers are held on the
 WhatsAppContact until the person agrees at the end; only then is the record created, so a
-cancelled chat leaves nothing half-submitted. Documents still go through the website.
+cancelled chat leaves nothing half-submitted. Documents still go through the website, and
+researchers never type a password into WhatsApp: once approved they get a one-time link
+to set it on the website.
 """
 
 from datetime import timedelta
@@ -11,7 +14,14 @@ from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.utils import timezone
 
-from .forms import FinancialAnalysisRequestForm, PartnerRegistrationForm
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.db import transaction
+from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+
+from .forms import FinancialAnalysisRequestForm, PartnerRegistrationForm, RiskAssessmentRequestForm
 from .models import (
     PARTNER_DELIVERY_CHOICES,
     PARTNER_OFFER_CHOICES,
@@ -19,6 +29,8 @@ from .models import (
     PRODUCE_CATEGORY_CHOICES,
     FinancialAnalysisRequest,
     PartnerProfile,
+    ResearcherApplication,
+    RiskAssessmentRequest,
 )
 from .templatetags.custom_i18n import translate
 from .whatsapp_details import NO_WORDS, SKIP_WORDS, YES_WORDS, _parse
@@ -141,9 +153,68 @@ FINANCE_STEPS = [
     _f("consent", "consent", section="consent"),
 ]
 
+RA = RiskAssessmentRequest
+_RF = RiskAssessmentRequestForm.base_fields
+
+
+def _r(key, kind, **kwargs):
+    return _step(key, kind, RA, **kwargs)
+
+
+RISK_STEPS = [
+    _r("applicant_type", "choice", choices=RA.ApplicantType.choices,
+       prefix="choice.applicant_type.general", section="about", required=True),
+    _r("contact_name", "text", required=True),
+    _r("business_name", "text", required=_is_business),
+    _r("email", "email"),
+    _r("county", "county", required=True),
+    _r("sector", "text"),
+    _r("enterprise_stage", "choice", choices=RA.EnterpriseStage.choices, prefix="choice.enterprise_stage"),
+    _r("assessment_areas", "multi", choices=_RF["assessment_areas"].choices,
+       prefix="choice.assessment_area", section="scope", required=True),
+    _r("risk_priorities", "multi", choices=_RF["risk_priorities"].choices,
+       prefix="choice.risk_priority", required=True),
+    _r("opportunity_priorities", "multi", choices=_RF["opportunity_priorities"].choices,
+       prefix="choice.opportunity_priority", required=True),
+    _r("time_horizon", "choice", choices=RA.TimeHorizon.choices, prefix="choice.time_horizon",
+       required=True),
+    _r("request_summary", "text", required=True),
+    _r("consent", "consent", section="consent"),
+]
+
+RS = ResearcherApplication
+
+
+def _is_student(answers):
+    return answers.get("applicant_type") == RS.ApplicantType.STUDENT
+
+
+def _rs(key, kind, **kwargs):
+    return _step(key, kind, RS, **kwargs)
+
+
+RESEARCH_STEPS = [
+    _rs("applicant_type", "choice", choices=RS.ApplicantType.choices,
+        prefix="choice.researcher_applicant_type", section="about", required=True),
+    _rs("organisation_name", "text", required=True),
+    _rs("role_title", "text"),
+    _rs("email", "new_email", required=True),
+    _rs("website", "url"),
+    _rs("country", "text"),
+    _rs("supervisor_name", "text", when=_is_student, required=True),
+    _rs("supervisor_email", "email", when=_is_student, required=True),
+    _rs("research_purpose", "text", section="research", required=True),
+    _rs("methods_summary", "text", required=True),
+    _rs("privacy_policy_url", "url"),
+    _rs("data_protection_contact", "text"),
+    _rs("consent", "consent", section="consent"),
+]
+
 FORMS = {
     "partner": {"steps": PARTNER_STEPS, "keys": "wa.pf", "model": PartnerProfile},
     "finance": {"steps": FINANCE_STEPS, "keys": "wa.ff", "model": FinancialAnalysisRequest},
+    "risk": {"steps": RISK_STEPS, "keys": "wa.rf", "model": RiskAssessmentRequest},
+    "research": {"steps": RESEARCH_STEPS, "keys": "wa.rs", "model": ResearcherApplication},
 }
 
 
@@ -222,6 +293,11 @@ def _parse_extra(step, text, lang):
         if not names or None in matched:
             return None, translate("wa.ff.invalid_counties", lang)
         return list(dict.fromkeys(matched)), None
+    if kind == "new_email":
+        value, error = _parse({**step, "kind": "email"}, text, lang)
+        if value and _email_taken(value):
+            return None, translate("wa.rs.email_taken", lang)
+        return value, error
     if kind == "int":
         digits = text.strip()
         if not digits.isdigit() or not step["low"] <= int(digits) <= step["high"]:
@@ -241,35 +317,118 @@ def _parse_extra(step, text, lang):
     return None
 
 
-def _create(name, contact, lang):
-    answers = dict(contact.answers)
-    now = timezone.now()
-    common = {
+def _email_taken(email):
+    users = get_user_model().objects
+    return users.filter(email__iexact=email).exists() or users.filter(username__iexact=email).exists()
+
+
+def _common(contact, now):
+    return {
         "phone": "+" + contact.phone,
         "preferred_contact": "whatsapp",
         "contact_consent_at": now,
         "last_contact_at": now,
     }
-    if name == "partner":
-        listing = answers.pop("listing_consent", False)
-        research = answers.pop("research_invite", False)
-        record = PartnerProfile(
-            **answers, **common,
-            preferred_language="Kiswahili" if lang == "sw" else "English",
-            listing_referral_consent_at=now if listing else None,
-            research_invite_consent_at=now if research else None,
+
+
+def _create_partner(answers, contact, lang, now):
+    listing = answers.pop("listing_consent", False)
+    research = answers.pop("research_invite", False)
+    record = PartnerProfile(
+        **answers, **_common(contact, now),
+        preferred_language="Kiswahili" if lang == "sw" else "English",
+        listing_referral_consent_at=now if listing else None,
+        research_invite_consent_at=now if research else None,
+    )
+    if not record.registration_status or (
+        record.applicant_type == PP.ApplicantType.INDIVIDUAL and not record.business_name
+    ):
+        record.registration_status = PP.RegistrationStatus.NOT_REGISTERED
+    return record
+
+
+def _create_finance(answers, contact, lang, now):
+    return FinancialAnalysisRequest(**answers, **_common(contact, now), request_type=FA.RequestType.GENERAL)
+
+
+def _create_risk(answers, contact, lang, now):
+    return RiskAssessmentRequest(**answers, **_common(contact, now))
+
+
+def _create_research(answers, contact, lang, now):
+    """Same as the web form, except the account has no password until staff approve it."""
+    email = answers.pop("email")
+    if _email_taken(email):
+        raise ValidationError({"email": "taken"})
+    user = get_user_model()(
+        username=email, email=email, first_name=answers["organisation_name"][:150], is_active=False
+    )
+    user.set_unusable_password()
+    user.save()
+    answers.setdefault("country", "Kenya")
+    return ResearcherApplication(user=user, phone="+" + contact.phone, consent_at=now, last_contact_at=now, **answers)
+
+
+CREATORS = {
+    "partner": _create_partner,
+    "finance": _create_finance,
+    "risk": _create_risk,
+    "research": _create_research,
+}
+
+
+def _create(name, contact, lang):
+    now = timezone.now()
+    try:
+        with transaction.atomic():
+            record = CREATORS[name](dict(contact.answers), contact, lang, now)
+            record.full_clean()
+            record.save()
+    except ValidationError as error:
+        if name == "research" and "email" in getattr(error, "message_dict", {}):
+            # Someone registered this email while the chat was open; ask for another.
+            contact.step = "email"
+            return translate("wa.rs.email_taken", lang), False
+        raise
+    if name == "research":
+        return translate("wa.rs.received", lang), True
+    return translate(f"{FORMS[name]['keys']}.received", lang, reference=record.public_reference), True
+
+
+SITE = "https://mofirm.co.ke"
+
+
+def set_password_url(user):
+    path = reverse(
+        "researcher_set_password",
+        args=[urlsafe_base64_encode(force_bytes(user.pk)), default_token_generator.make_token(user)],
+    )
+    return SITE + path
+
+
+def research_entry(contact, lang):
+    """Option 5: apply, check an application, or get the set-password link once approved."""
+    application = (
+        ResearcherApplication.objects.select_related("user")
+        .filter(phone="+" + contact.phone)
+        .order_by("-created_at")
+        .first()
+    )
+    if application is None:
+        return start_form(contact, "research", lang)
+    status = application.review_status
+    if status == RS.ReviewStatus.APPROVED and application.user.is_active:
+        login_url = SITE + reverse("researcher_login")
+        if application.user.has_usable_password():
+            return translate("wa.rs.approved_signin", lang, email=application.user.email, url=login_url)
+        return translate(
+            "wa.rs.approved_link", lang, email=application.user.email, url=set_password_url(application.user)
         )
-        if not record.registration_status or (
-            record.applicant_type == PP.ApplicantType.INDIVIDUAL and not record.business_name
-        ):
-            record.registration_status = PP.RegistrationStatus.NOT_REGISTERED
-        record.full_clean()
-        record.save()
-        return translate("wa.pf.received", lang, reference=record.public_reference)
-    record = FinancialAnalysisRequest(**answers, **common, request_type=FA.RequestType.GENERAL)
-    record.full_clean()
-    record.save()
-    return translate("wa.ff.received", lang, reference=record.public_reference)
+    return translate(
+        "wa.rs.status", lang,
+        organisation=application.organisation_name,
+        status=translate(f"wa.rs.status.{status}", lang),
+    )
 
 
 def form_step(contact, text, lang):
@@ -286,8 +445,9 @@ def form_step(contact, text, lang):
     if step["kind"] == "consent":
         if word not in YES_WORDS:
             return translate("wa.invalid_consent", lang)
-        reply = _create(name, contact, lang)
-        contact.flow, contact.step, contact.answers = "", "", {}
+        reply, created = _create(name, contact, lang)
+        if created:
+            contact.flow, contact.step, contact.answers = "", "", {}
         return reply
 
     if step["kind"] == "yes_no":

@@ -841,12 +841,111 @@ class WhatsAppTests(TestCase):
         self.assertIn("Chagua lugha", self.say("0"))
         self.assertIn("Farmer and group registration", self.say("1"))
 
-    def test_service_options_link_to_the_right_website_forms(self):
-        self.say("Hi")
-        self.say("1")
+    def test_risk_assessment_request_by_chat(self):
+        self.say("English")
+        self.assertIn("Risk and opportunity assessment", self.say("4"))
+        self.walk([
+            ("2", "your full name"),
+            ("Peter Mwangi", "business, group or organisation name"),
+            ("Nyeri Dairy Co-op", "Email"),
+            ("skip", "county"),
+            ("nyeri", "sector"),
+            ("dairy", "value chain"),
+            ("3", "Part 2 of 3: What to assess"),
+            ("skip", "needed to continue"),
+            ("1 2", "risks"),
+            ("3 4", "opportunities"),
+            ("2", "decide"),
+            ("1", "Describe the decision"),
+            ("We are deciding whether to build a milk cooling centre.", "Reply YES to agree and send"),
+        ])
+        reply = self.say("yes")
 
-        self.assertIn("https://mofirm.co.ke/portal/risk-assessment/", self.say("4"))
-        self.assertIn("https://mofirm.co.ke/portal/research/register/", self.say("5"))
+        request = RiskAssessmentRequest.objects.get()
+        request.full_clean()
+        self.assertIn(request.public_reference, reply)
+        self.assertEqual(request.business_name, "Nyeri Dairy Co-op")
+        self.assertEqual(request.enterprise_stage, RiskAssessmentRequest.EnterpriseStage.PROCESSING)
+        self.assertEqual(request.assessment_areas, ["enterprise", "market"])
+        self.assertEqual(request.risk_priorities, ["market", "financial"])
+        self.assertEqual(request.opportunity_priorities, ["value_addition"])
+        self.assertEqual(request.time_horizon, RiskAssessmentRequest.TimeHorizon.IMMEDIATE)
+        self.assertEqual(request.preferred_contact, RiskAssessmentRequest.ContactPreference.WHATSAPP)
+
+    def apply_as_researcher(self, applicant_type="2", email="amina@uon.ac.ke"):
+        self.say("English")
+        self.assertIn("won't set a password here", self.say("5"))
+        self.walk([
+            (applicant_type, "Organisation or institution"),
+            ("University of Nairobi", "role"),
+            ("skip", "work email"),
+        ])
+        self.say(email)
+        self.say("skip")
+        self.say("skip")
+
+    def test_researcher_applies_on_whatsapp_and_sets_password_after_approval(self):
+        self.apply_as_researcher()
+        self.walk([
+            ("Smallholder dairy market access study", "recruitment"),
+            ("Consent-based phone survey via MoFirms; anonymised results.", "privacy policy"),
+            ("skip", "Data protection contact"),
+            ("skip", "does not give access to customer data"),
+        ])
+        self.assertIn("application has been sent", self.say("yes"))
+
+        application = ResearcherApplication.objects.select_related("user").get()
+        application.full_clean()
+        self.assertEqual(application.phone, "+254712345678")
+        self.assertEqual(application.country, "Kenya")
+        self.assertEqual(application.user.email, "amina@uon.ac.ke")
+        self.assertFalse(application.user.is_active)
+        self.assertFalse(application.user.has_usable_password())
+        self.assertIn("Waiting for review", self.say("5"))
+
+        application.review_status = ResearcherApplication.ReviewStatus.APPROVED
+        application.save()
+        application.user.is_active = True
+        application.user.save()
+
+        reply = self.say("5")
+        self.assertIn("approved", reply)
+        link = re.search(r"https://mofirm\.co\.ke(/portal/research/set-password/\S+/)", reply).group(1)
+        self.assertContains(self.client.get(link), "amina@uon.ac.ke")
+        response = self.client.post(
+            link, {"new_password1": "Dairy-Survey-2026!", "new_password2": "Dairy-Survey-2026!"}
+        )
+        self.assertRedirects(response, reverse("researcher_login"), fetch_redirect_response=False)
+        self.assertTrue(self.client.login(username="amina@uon.ac.ke", password="Dairy-Survey-2026!"))
+        self.assertEqual(self.client.get(link).status_code, 400)
+        self.assertIn("Sign in with amina@uon.ac.ke", self.say("5"))
+
+    def test_set_password_link_needs_an_approved_researcher(self):
+        self.apply_as_researcher()
+        for text in ("Purpose", "Methods", "skip", "skip", "yes"):
+            self.say(text)
+        user = ResearcherApplication.objects.get().user
+        from farmers.whatsapp_forms import set_password_url
+
+        link = set_password_url(user).removeprefix("https://mofirm.co.ke")
+        self.assertEqual(self.client.get(link).status_code, 400)
+
+    def test_student_researcher_must_name_a_supervisor_and_email_must_be_new(self):
+        get_user_model().objects.create_user(username="taken@uni.ac.ke", email="taken@uni.ac.ke")
+        self.say("English")
+        self.say("5")
+        self.say("4")
+        self.say("Maseno University")
+        self.say("skip")
+        self.assertIn("already has a MoFirms account", self.say("taken@uni.ac.ke"))
+        self.walk([
+            ("student@maseno.ac.ke", "website"),
+            ("skip", "country"),
+            ("skip", "supervisor's name"),
+            ("skip", "needed to continue"),
+            ("Dr Otieno", "supervisor's institutional email"),
+            ("otieno@maseno.ac.ke", "What research"),
+        ])
 
     def walk(self, steps):
         for text, expected in steps:

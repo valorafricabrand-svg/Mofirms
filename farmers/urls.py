@@ -60,6 +60,11 @@ urlpatterns = [
         name="researcher_application_received",
     ),
     path("research/login/", views.researcher_login, name="researcher_login"),
+    path(
+        "research/set-password/<uidb64>/<token>/",
+        views.researcher_set_password,
+        name="researcher_set_password",
+    ),
     path("research/dashboard/", views.researcher_dashboard, name="researcher_dashboard"),
     path(
         "research/respond/<uuid:token>/",
