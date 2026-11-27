@@ -184,6 +184,7 @@ EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "").strip()
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "").strip()
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() in {"1", "true", "yes"}
+NEWSLETTER_MAX_RECIPIENTS = int(os.environ.get("NEWSLETTER_MAX_RECIPIENTS", "300"))
 if (
     not DEBUG
     and not DEMO_MODE

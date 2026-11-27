@@ -1,0 +1,9 @@
+{% autoescape off %}{{ issue.body }}
+
+--
+MoFirms (Marks Organic Farms Concepts Limited)
+https://mofirm.co.ke | info@mofirm.co.ke | +254 140 949 415
+
+You are receiving this because you subscribed to MoFirms updates on mofirm.co.ke.
+Unsubscribe: {{ unsubscribe_url }}
+{% endautoescape %}

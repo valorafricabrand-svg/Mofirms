@@ -14,6 +14,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import TestCase, override_settings
@@ -38,6 +39,7 @@ from .models import (
     ResearchQuestion,
     ResearchResponse,
     ResearchStudy,
+    NewsletterIssue,
     ResearcherApplication,
     WhatsAppContact,
 )
@@ -994,6 +996,104 @@ class WhatsAppTests(TestCase):
         self.assertRedirects(response, reverse("farmer_dashboard"))
         self.assertContains(self.client.get(reverse("farmer_dashboard")), "Jane Wanjiku")
         self.assertIsNotNone(FarmerProfile.objects.get().user)
+
+
+class NewsletterIssueTests(TestCase):
+    def setUp(self):
+        self.staff = get_user_model().objects.create_superuser(
+            username="editor", email="editor@example.com", password="Editor-pass-2026!"
+        )
+        self.client.force_login(self.staff)
+        self.changelist = reverse("admin:farmers_newsletterissue_changelist")
+        now = timezone.now()
+        self.farming = NewsletterSubscription.objects.create(
+            email="farmer@example.com", topics=["farming"], consent_at=now
+        )
+        NewsletterSubscription.objects.create(
+            email="risk-only@example.com", topics=["risk_assessment"], consent_at=now
+        )
+        NewsletterSubscription.objects.create(
+            email="left@example.com", topics=["farming"], consent_at=now,
+            status=NewsletterSubscription.Status.UNSUBSCRIBED,
+        )
+        self.issue = NewsletterIssue.objects.create(
+            topics=["farming"], notes="Maize planting starts in March in Vihiga."
+        )
+
+    def run_action(self, action):
+        return self.client.post(
+            self.changelist, {"action": action, "_selected_action": [self.issue.pk]}, follow=True
+        )
+
+    @patch("farmers.gemini.generate")
+    def test_ai_draft_fills_subject_and_body_from_notes(self, generate):
+        generate.return_value = "SUBJECT: Get ready for March planting\n\nMaize planting starts in March."
+
+        self.run_action("write_ai_draft")
+
+        self.issue.refresh_from_db()
+        self.assertEqual(self.issue.subject, "Get ready for March planting")
+        self.assertEqual(self.issue.body, "Maize planting starts in March.")
+        self.assertIn("Maize planting starts in March in Vihiga.", generate.call_args.args[0][0]["parts"][0]["text"])
+        self.assertEqual(self.issue.status, NewsletterIssue.Status.DRAFT)
+
+    def test_unchecked_ai_notes_block_approval(self):
+        NewsletterIssue.objects.filter(pk=self.issue.pk).update(
+            subject="Planting", body="Prices rose 20% [CHECK]."
+        )
+
+        self.run_action("approve_for_sending")
+
+        self.issue.refresh_from_db()
+        self.assertEqual(self.issue.status, NewsletterIssue.Status.DRAFT)
+
+    def test_only_approved_issues_are_sent_and_only_to_matching_subscribers(self):
+        NewsletterIssue.objects.filter(pk=self.issue.pk).update(subject="Planting", body="Plant in March.")
+        self.run_action("send_now")
+        self.assertEqual(len(mail.outbox), 0)
+
+        self.run_action("approve_for_sending")
+        self.run_action("send_now")
+
+        self.assertEqual([m.to for m in mail.outbox], [["farmer@example.com"]])
+        message = mail.outbox[0]
+        unsubscribe = reverse("unsubscribe_newsletter", args=[self.farming.unsubscribe_token])
+        self.assertIn(unsubscribe, message.body)
+        self.assertIn(unsubscribe, message.extra_headers["List-Unsubscribe"])
+        self.assertIn("Plant in March.", message.alternatives[0][0])
+        self.issue.refresh_from_db()
+        self.assertEqual(self.issue.status, NewsletterIssue.Status.SENT)
+        self.assertEqual(self.issue.recipient_count, 1)
+        self.assertEqual(self.issue.approved_by, self.staff)
+
+        self.run_action("send_now")
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_editing_an_approved_issue_requires_reapproval(self):
+        NewsletterIssue.objects.filter(pk=self.issue.pk).update(subject="Planting", body="Plant in March.")
+        self.run_action("approve_for_sending")
+        change_url = reverse("admin:farmers_newsletterissue_change", args=[self.issue.pk])
+        parser = RenderedFormParser(form_id="newsletterissue_form")
+        parser.feed(self.client.get(change_url).content.decode())
+        payload = parser.browser_payload()
+        payload["body"] = ["Plant in April instead."]
+
+        self.client.post(change_url, payload)
+
+        self.issue.refresh_from_db()
+        self.assertEqual(self.issue.body, "Plant in April instead.")
+        self.assertEqual(self.issue.status, NewsletterIssue.Status.DRAFT)
+
+    @override_settings(NEWSLETTER_MAX_RECIPIENTS=0)
+    def test_sending_limit_blocks_large_sends(self):
+        NewsletterIssue.objects.filter(pk=self.issue.pk).update(subject="Planting", body="Plant in March.")
+        self.run_action("approve_for_sending")
+
+        self.run_action("send_now")
+
+        self.assertEqual(len(mail.outbox), 0)
+        self.issue.refresh_from_db()
+        self.assertEqual(self.issue.status, NewsletterIssue.Status.APPROVED)
 
 
 def check_code(contact, code):

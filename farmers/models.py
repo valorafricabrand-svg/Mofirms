@@ -1724,6 +1724,53 @@ class NewsletterSubscription(models.Model):
         super().save(*args, **kwargs)
 
 
+class NewsletterIssue(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        APPROVED = "approved", "Approved, ready to send"
+        SENT = "sent", "Sent"
+
+    subject = models.CharField(max_length=150, blank=True)
+    topics = models.JSONField(default=list)
+    notes = models.TextField(
+        blank=True,
+        help_text=(
+            "Facts, figures, links or points for the AI to write from. "
+            "The AI is told to use only these and not invent anything."
+        ),
+    )
+    body = models.TextField(blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    ai_drafted_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    recipient_count = models.PositiveIntegerField(default=0)
+    failed_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "newsletter issue"
+        verbose_name_plural = "newsletter issues"
+
+    def __str__(self):
+        return self.subject or "Untitled newsletter"
+
+    def recipients(self):
+        wanted = set(self.topics)
+        return [
+            subscription
+            for subscription in NewsletterSubscription.objects.filter(
+                status=NewsletterSubscription.Status.ACTIVE
+            )
+            if wanted.intersection(subscription.topics)
+        ]
+
+
 class WhatsAppContact(models.Model):
     phone = models.CharField(
         max_length=20, unique=True, help_text="International format without +, e.g. 254712345678."

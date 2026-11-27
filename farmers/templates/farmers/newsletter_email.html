@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>{{ issue.subject }}</title></head>
+<body style="margin:0;padding:0;background:#f5f0e6;font-family:Arial,Helvetica,sans-serif;color:#1d2a22">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e6;padding:24px 12px">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden">
+        <tr><td style="background:#1f5f3b;padding:18px 24px;color:#ffffff;font-size:22px;font-weight:bold">MoFirms</td></tr>
+        <tr><td style="padding:24px;font-size:16px;line-height:1.6">
+          <h1 style="font-size:20px;margin:0 0 16px">{{ issue.subject }}</h1>
+          {{ issue.body|linebreaks }}
+        </td></tr>
+        <tr><td style="padding:16px 24px;background:#f1f5f2;font-size:13px;line-height:1.5;color:#53645a">
+          MoFirms (Marks Organic Farms Concepts Limited)<br>
+          <a href="https://mofirm.co.ke" style="color:#1f5f3b">mofirm.co.ke</a> · info@mofirm.co.ke · +254 140 949 415<br><br>
+          You are receiving this because you subscribed to MoFirms updates on mofirm.co.ke.
+          <a href="{{ unsubscribe_url }}" style="color:#1f5f3b">Unsubscribe</a>.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

@@ -760,13 +760,13 @@ STRINGS = {
     "home.newsletter.note": {
         "en": (
             "We only use your email for the topics you select. You can "
-            "unsubscribe at any time. Newsletter emails are not currently "
-            "sent automatically."
+            "unsubscribe at any time. Each issue is written with AI help "
+            "and checked by the MoFirms team before it is sent."
         ),
         "sw": (
             "Tunatumia barua pepe yako kwa mada ulizochagua pekee. "
-            "Unaweza kujitoa wakati wowote. Barua pepe za taarifa "
-            "hazitumwi kiotomatiki kwa sasa."
+            "Unaweza kujitoa wakati wowote. Kila toleo huandikwa kwa "
+            "msaada wa AI na kukaguliwa na timu ya MoFirms kabla ya kutumwa."
         ),
     },
     "home.newsletter.disabled_notice": {
@@ -824,7 +824,7 @@ STRINGS = {
             "contacting you again. Unsubscribe using the link shown after "
             "signup or in newsletter messages. You may ask us to access, "
             "correct or delete your data by emailing us. Newsletter "
-            "emails are not currently sent automatically."
+            "issues are checked by our team and sent through Brevo."
         ),
         "sw": (
             "Tunatumia maelezo ya mashauriano kukagua na kujibu maswali; "
@@ -836,8 +836,8 @@ STRINGS = {
             "kujitoa ili kuepuka kukuwasiliana tena. Jitoe kwa kutumia "
             "kiungo kinachoonyeshwa baada ya kujiandikisha au kwenye "
             "ujumbe wa taarifa. Unaweza kutuomba kufikia, kurekebisha au "
-            "kufuta data yako kwa kutuandikia barua pepe. Barua pepe za "
-            "taarifa hazitumwi kiotomatiki kwa sasa."
+            "kufuta data yako kwa kutuandikia barua pepe. Matoleo ya "
+            "jarida hukaguliwa na timu yetu na kutumwa kupitia Brevo."
         ),
     },
     "home.whatsapp_float_aria": {"en": "Chat with MoFirms on WhatsApp", "sw": "Zungumza na MoFirms kwa WhatsApp"},

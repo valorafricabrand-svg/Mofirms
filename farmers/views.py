@@ -1,9 +1,6 @@
 import hashlib
 import json
 import logging
-import time
-import urllib.error
-import urllib.request
 import uuid
 
 from django.conf import settings
@@ -18,6 +15,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 from django.contrib.admin.views.decorators import staff_member_required
 
+from . import gemini
 from .templatetags.custom_i18n import current_lang, translate
 from .forms import (
     BusinessReadinessForm,
@@ -306,64 +304,10 @@ def ask_assistant(request):
         contents.append({"role": role, "parts": [{"text": text}]})
     contents.append({"role": "user", "parts": [{"text": message}]})
 
-    body = json.dumps(
-        {
-            "contents": contents,
-            "systemInstruction": {"parts": [{"text": GEMINI_SYSTEM_PROMPT}]},
-            "generationConfig": {
-                "maxOutputTokens": 400,
-                "temperature": 0.4,
-                "thinkingConfig": {"thinkingBudget": 0},
-            },
-        }
-    ).encode("utf-8")
-    models_to_try = [settings.GEMINI_MODEL] + [
-        model for model in settings.GEMINI_FALLBACK_MODELS if model != settings.GEMINI_MODEL
-    ]
-    started = time.monotonic()
-    data = None
-    for model_index, model in enumerate(models_to_try):
-        url = (
-            "https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{model}:generateContent?key={settings.GEMINI_API_KEY}"
-        )
-        attempts = 2 if model_index == 0 else 1
-        for attempt in range(1, attempts + 1):
-            http_request = urllib.request.Request(
-                url, data=body, headers={"Content-Type": "application/json"}, method="POST"
-            )
-            try:
-                with urllib.request.urlopen(http_request, timeout=15) as response:
-                    data = json.loads(response.read().decode("utf-8"))
-                break
-            except (urllib.error.URLError, TimeoutError) as exc:
-                detail = exc.read().decode("utf-8", "ignore")[:500] if isinstance(exc, urllib.error.HTTPError) else str(exc)
-                elapsed = time.monotonic() - started
-                logger.warning(
-                    "Gemini assistant request failed on model %s attempt %d after %.1fs (%s): %s",
-                    model, attempt, elapsed, type(exc).__name__, detail,
-                )
-                is_retryable = (
-                    not isinstance(exc, urllib.error.HTTPError)
-                    or exc.code in (429, 503)
-                )
-                if attempt < attempts and is_retryable:
-                    time.sleep(attempt)
-                    continue
-                data = None
-                break
-        if data is not None:
-            break
-    if data is None:
-        return JsonResponse({"error": translate("assistant.unavailable", lang)}, status=502)
-    logger.info("Gemini assistant request succeeded after %.1fs", time.monotonic() - started)
-
     try:
-        reply = data["candidates"][0]["content"]["parts"][0]["text"]
-    except (KeyError, IndexError, TypeError):
-        logger.warning("Gemini assistant returned no usable candidate: %s", data)
+        reply = gemini.generate(contents, GEMINI_SYSTEM_PROMPT)
+    except gemini.GeminiUnavailable:
         return JsonResponse({"error": translate("assistant.unavailable", lang)}, status=502)
-
     return JsonResponse({"reply": reply})
 
 

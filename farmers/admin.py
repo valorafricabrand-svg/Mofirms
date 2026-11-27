@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -15,6 +16,7 @@ from .models import (
     FarmerProfile,
     FinancialAnalysisDocument,
     FinancialAnalysisRequest,
+    NewsletterIssue,
     BetaEnrollment,
     BetaInvite,
     MpesaPayment,
@@ -31,6 +33,7 @@ from .models import (
     Testimonial,
     WhatsAppContact,
 )
+from . import gemini, newsletter
 from .readiness_drafting import save_readiness_draft
 
 
@@ -82,6 +85,107 @@ class NewsletterSubscriptionAdmin(admin.ModelAdmin):
             updated_at=now,
         )
         self.message_user(request, f"Unsubscribed {updated} address(es).")
+
+
+class NewsletterIssueAdminForm(forms.ModelForm):
+    topics = forms.MultipleChoiceField(
+        choices=NewsletterSubscription.Topic.choices,
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Sent to active subscribers who chose at least one of these topics.",
+    )
+
+    class Meta:
+        model = NewsletterIssue
+        fields = "__all__"
+
+
+@admin.register(NewsletterIssue)
+class NewsletterIssueAdmin(admin.ModelAdmin):
+    form = NewsletterIssueAdminForm
+    list_display = ("__str__", "status", "audience", "sent_at", "recipient_count")
+    list_filter = ("status",)
+    search_fields = ("subject", "body")
+    readonly_fields = (
+        "status", "audience", "ai_drafted_at", "approved_by", "approved_at",
+        "sent_at", "recipient_count", "failed_count",
+    )
+    fieldsets = (
+        ("1. What to write about", {"fields": ("topics", "notes")}),
+        ("2. The newsletter (edit freely before approving)", {"fields": ("subject", "body")}),
+        ("3. Status", {"fields": readonly_fields}),
+    )
+    actions = ("write_ai_draft", "approve_for_sending", "send_now")
+
+    @admin.display(description="Will be sent to")
+    def audience(self, obj):
+        if obj.status == NewsletterIssue.Status.SENT:
+            return f"{obj.recipient_count} subscriber(s) (sent)"
+        return f"{len(obj.recipients())} active subscriber(s)"
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj and obj.status == NewsletterIssue.Status.SENT:
+            return ("topics", "notes", "subject", "body") + self.readonly_fields
+        return self.readonly_fields
+
+    def save_model(self, request, obj, form, change):
+        if change and obj.status == NewsletterIssue.Status.APPROVED and {
+            "topics", "subject", "body"
+        }.intersection(form.changed_data):
+            obj.status = NewsletterIssue.Status.DRAFT
+            obj.approved_by = obj.approved_at = None
+            self.message_user(
+                request, "The issue was edited after approval, so it is back to draft. Approve it again before sending.",
+                level="warning",
+            )
+        super().save_model(request, obj, form, change)
+
+    @admin.action(description="Write draft with AI (from the notes)")
+    def write_ai_draft(self, request, queryset):
+        for issue in queryset.filter(status=NewsletterIssue.Status.DRAFT):
+            try:
+                newsletter.draft_issue(issue)
+            except gemini.GeminiUnavailable:
+                self.message_user(
+                    request, f"The AI is unavailable right now, so “{issue}” was not drafted. Try again shortly.",
+                    level="error",
+                )
+                continue
+            self.message_user(
+                request, f"Drafted “{issue}”. Read it carefully, check anything marked [CHECK], then approve."
+            )
+
+    @admin.action(description="Approve for sending")
+    def approve_for_sending(self, request, queryset):
+        for issue in queryset.filter(status=NewsletterIssue.Status.DRAFT):
+            if not (issue.subject.strip() and issue.body.strip() and issue.topics):
+                self.message_user(request, f"“{issue}” needs topics, a subject and a body first.", level="error")
+                continue
+            if "[CHECK]" in issue.body:
+                self.message_user(request, f"“{issue}” still contains [CHECK] notes. Verify and remove them first.", level="error")
+                continue
+            issue.status = NewsletterIssue.Status.APPROVED
+            issue.approved_by = request.user
+            issue.approved_at = timezone.now()
+            issue.save(update_fields=["status", "approved_by", "approved_at", "updated_at"])
+            self.message_user(request, f"Approved “{issue}”. Use “Send approved issue now” to email it.")
+
+    @admin.action(description="Send approved issue now")
+    def send_now(self, request, queryset):
+        for issue in queryset.filter(status=NewsletterIssue.Status.APPROVED):
+            audience = len(issue.recipients())
+            if audience > settings.NEWSLETTER_MAX_RECIPIENTS:
+                self.message_user(
+                    request,
+                    f"“{issue}” would go to {audience} people, over the daily sending limit of "
+                    f"{settings.NEWSLETTER_MAX_RECIPIENTS}. Upgrade the Brevo plan and raise NEWSLETTER_MAX_RECIPIENTS first.",
+                    level="error",
+                )
+                continue
+            sent, failed = newsletter.send_issue(issue, request.build_absolute_uri)
+            self.message_user(
+                request, f"Sent “{issue}” to {sent} subscriber(s)" + (f"; {failed} failed (see logs)." if failed else "."),
+                level="warning" if failed else "info",
+            )
 
 
 @admin.register(ConsultationLead)

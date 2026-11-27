@@ -60,14 +60,14 @@ STRINGS = {
     },
     "farmers.newsletter_status.subscribed_body": {
         "en": (
-            "Your email and selected topics have been saved. Newsletter "
-            "emails are not currently sent automatically; we’ll only "
-            "send updates for the topics you chose."
+            "Your email and selected topics have been saved. We’ll only "
+            "send updates for the topics you chose, and every issue is "
+            "checked by the MoFirms team before it goes out."
         ),
         "sw": (
-            "Barua pepe yako na mada ulizochagua zimehifadhiwa. Barua pepe "
-            "za jarida hazitumwi kiotomatiki kwa sasa; tutatuma taarifa tu "
-            "kwa mada ulizochagua."
+            "Barua pepe yako na mada ulizochagua zimehifadhiwa. Tutatuma "
+            "taarifa kwa mada ulizochagua pekee, na kila toleo hukaguliwa "
+            "na timu ya MoFirms kabla ya kutumwa."
         ),
     },
     "farmers.newsletter_status.manage_unsubscribe_link": {
