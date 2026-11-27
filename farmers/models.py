@@ -1794,6 +1794,18 @@ class WhatsAppContact(models.Model):
     answers = models.JSONField(default=dict, blank=True)
     help_requested_at = models.DateTimeField(null=True, blank=True)
     deletion_requested_at = models.DateTimeField(null=True, blank=True)
+    last_inbound_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Last message from this person. Free-text replies are only allowed for 24 hours after it.",
+    )
+    staff_until = models.DateTimeField(
+        null=True, blank=True,
+        help_text="While set, this person's messages go to staff instead of the bot.",
+    )
+    reply_needed_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When this person first sent a message staff have not answered yet.",
+    )
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -1804,6 +1816,45 @@ class WhatsAppContact(models.Model):
 
     def __str__(self):
         return f"+{self.phone}"
+
+    @property
+    def can_send_free_text(self):
+        """WhatsApp only allows free-text messages within 24 hours of the person's last message."""
+        return bool(self.last_inbound_at and self.last_inbound_at > timezone.now() - timedelta(hours=24))
+
+
+class WhatsAppMessage(models.Model):
+    """Staff conversations only. Messages to and from the bot menu are not stored."""
+
+    class Direction(models.TextChoices):
+        INBOUND = "in", "From the person"
+        OUTBOUND = "out", "From MoFirms staff"
+
+    class Status(models.TextChoices):
+        RECEIVED = "received", "Received"
+        SENT = "sent", "Sent"
+        QUEUED = "queued", "Waiting for the person to message (24-hour rule)"
+        FAILED = "failed", "Failed"
+
+    contact = models.ForeignKey(WhatsAppContact, on_delete=models.CASCADE, related_name="messages")
+    direction = models.CharField(max_length=3, choices=Direction.choices)
+    body = models.TextField(max_length=4096)
+    status = models.CharField(max_length=10, choices=Status.choices)
+    error = models.CharField(max_length=300, blank=True)
+    sent_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="whatsapp_messages_sent",
+    )
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["created_at", "pk"]
+        verbose_name = "WhatsApp message"
+        verbose_name_plural = "WhatsApp messages"
+
+    def __str__(self):
+        return f"{self.get_direction_display()} — {self.created_at:%d %b %H:%M}"
 
 
 class Testimonial(models.Model):

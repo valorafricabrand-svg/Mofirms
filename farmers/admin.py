@@ -1,6 +1,8 @@
+from datetime import timedelta
+
 from django import forms
 from django.conf import settings
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.html import format_html
@@ -32,6 +34,7 @@ from .models import (
     ServicePlan,
     Testimonial,
     WhatsAppContact,
+    WhatsAppMessage,
 )
 from . import gemini, newsletter
 from .readiness_drafting import save_readiness_draft
@@ -1670,24 +1673,103 @@ class TestimonialAdmin(admin.ModelAdmin):
     )
 
 
+class WhatsAppMessageInline(admin.TabularInline):
+    model = WhatsAppMessage
+    verbose_name_plural = "Conversation with MoFirms staff (bot menu messages are not stored)"
+    fields = ("created_at", "direction", "body", "status", "sent_by", "error")
+    readonly_fields = fields
+    extra = 0
+    can_delete = False
+    ordering = ("created_at", "pk")
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+class WhatsAppReplyForm(forms.ModelForm):
+    reply = forms.CharField(
+        label="Send a WhatsApp reply",
+        required=False,
+        max_length=4096,
+        widget=forms.Textarea(attrs={"rows": 4, "cols": 80}),
+        help_text=(
+            "Sent from the MoFirms WhatsApp number. Within 24 hours of their last message it "
+            "goes straight away; otherwise it waits until they next write in. Don't send "
+            "passwords, ID numbers or payment details."
+        ),
+    )
+
+    class Meta:
+        model = WhatsAppContact
+        fields = ()
+
+
 @admin.register(WhatsAppContact)
 class WhatsAppContactAdmin(admin.ModelAdmin):
+    form = WhatsAppReplyForm
+    inlines = (WhatsAppMessageInline,)
     list_display = (
-        "__str__", "profile", "help_requested_at", "deletion_requested_at",
-        "has_code", "locked_until", "updated_at",
+        "__str__", "profile", "reply_needed_at", "reply_window", "help_requested_at",
+        "deletion_requested_at", "has_code", "last_inbound_at",
     )
     list_filter = (
+        ("reply_needed_at", admin.EmptyFieldListFilter),
         ("help_requested_at", admin.EmptyFieldListFilter),
         ("deletion_requested_at", admin.EmptyFieldListFilter),
     )
     search_fields = ("phone", "profile__full_name", "profile__reference")
-    fields = (
-        "phone", "profile", "language", "help_requested_at", "deletion_requested_at",
-        "has_code", "code_set_at", "failed_attempts", "locked_until", "flow", "step",
-        "created_at", "updated_at",
+    readonly_fields = (
+        "phone", "profile", "language", "reply_window", "last_inbound_at", "reply_needed_at",
+        "staff_until", "help_requested_at", "deletion_requested_at", "has_code", "code_set_at",
+        "failed_attempts", "locked_until", "flow", "step", "created_at", "updated_at",
     )
-    readonly_fields = fields
-    actions = ("mark_callback_done", "clear_lockout")
+    fieldsets = (
+        (None, {"fields": ("phone", "profile", "language", "reply_window", "last_inbound_at",
+                           "reply_needed_at", "staff_until", "reply")}),
+        ("Requests", {"fields": ("help_requested_at", "deletion_requested_at")}),
+        ("Login code and bot state", {
+            "classes": ("collapse",),
+            "fields": ("has_code", "code_set_at", "failed_attempts", "locked_until", "flow", "step",
+                       "created_at", "updated_at"),
+        }),
+    )
+    actions = ("mark_callback_done", "mark_replied", "clear_lockout")
+
+    @admin.display(description="Free-text reply allowed")
+    def reply_window(self, obj):
+        if obj.can_send_free_text:
+            left = obj.last_inbound_at + timedelta(hours=24) - timezone.now()
+            return f"Yes, for {int(left.total_seconds() // 3600)}h {int(left.total_seconds() % 3600 // 60)}m more"
+        return "No: replies wait until they next message (24-hour rule)"
+
+    def save_model(self, request, obj, form, change):
+        from .whatsapp_staff import staff_send
+
+        body = form.cleaned_data.get("reply", "").strip()
+        if not body:
+            return
+        message = staff_send(obj, body, request.user)
+        if message.status == WhatsAppMessage.Status.SENT:
+            self.message_user(request, "WhatsApp reply sent.", messages.SUCCESS)
+        elif message.status == WhatsAppMessage.Status.QUEUED:
+            note = (
+                " A template message was sent asking them to reply."
+                if settings.WHATSAPP_FOLLOWUP_TEMPLATE and not message.error
+                else ""
+            )
+            self.message_user(
+                request,
+                "More than 24 hours since their last message, so the reply is queued and will be "
+                "delivered when they next write in." + note + (f" ({message.error})" if message.error else ""),
+                messages.WARNING,
+            )
+        else:
+            self.message_user(request, f"WhatsApp could not deliver the reply: {message.error}", messages.ERROR)
+
+    @admin.action(description="Mark as replied (no reply needed)")
+    def mark_replied(self, request, queryset):
+        updated = queryset.update(reply_needed_at=None)
+        self.message_user(request, f"Cleared {updated} waiting conversation(s).")
 
     @admin.action(description="Mark callback done")
     def mark_callback_done(self, request, queryset):

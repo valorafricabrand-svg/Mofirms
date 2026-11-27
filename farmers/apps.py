@@ -6,4 +6,4 @@ class FarmersConfig(AppConfig):
     name = "farmers"
 
     def ready(self):
-        from . import signals
+        from . import notifications, signals  # noqa: F401 (registers signal handlers)

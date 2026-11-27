@@ -27,6 +27,8 @@ from .whatsapp_details import farm_details_step, start_farm_details
 from .whatsapp_forms import FORMS as CHAT_FORMS
 from .whatsapp_forms import form_step, research_entry, start_form
 from .whatsapp_books import books_step, start_books
+from .whatsapp_staff import deliver_queued, in_staff_mode, receive_for_staff
+from .notifications import alert_whatsapp
 
 logger = logging.getLogger(__name__)
 
@@ -75,19 +77,13 @@ def whatsapp_configured():
     )
 
 
-def send_text(phone, body):
+def _post_message(message):
+    """Send one Cloud API message. Returns (ok, error_detail)."""
     url = (
         f"https://graph.facebook.com/{settings.WHATSAPP_GRAPH_VERSION}/"
         f"{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
     )
-    payload = json.dumps(
-        {
-            "messaging_product": "whatsapp",
-            "to": phone,
-            "type": "text",
-            "text": {"body": body[:4096]},
-        }
-    ).encode("utf-8")
+    payload = json.dumps({"messaging_product": "whatsapp", **message}).encode("utf-8")
     request = urllib.request.Request(
         url,
         data=payload,
@@ -103,6 +99,18 @@ def send_text(phone, body):
     except (urllib.error.URLError, TimeoutError) as exc:
         detail = exc.read().decode("utf-8", "ignore")[:300] if isinstance(exc, urllib.error.HTTPError) else str(exc)
         logger.warning("WhatsApp send failed: %s", detail)
+        return False, detail
+    return True, ""
+
+
+def send_text(phone, body):
+    return _post_message({"to": phone, "type": "text", "text": {"body": body[:4096]}})
+
+
+def send_template(phone, name, language):
+    return _post_message(
+        {"to": phone, "type": "template", "template": {"name": name, "language": {"code": language}}}
+    )
 
 
 def issue_code(contact):
@@ -386,6 +394,21 @@ def handle_message(phone, text):
             contact.profile = existing
     text = (text or "").strip()
     word = text.lower()
+    contact.last_inbound_at = timezone.now()
+
+    # A staff reply that was waiting for the 24-hour window goes out now. This message
+    # is the person answering it (often a reply to the template), so it belongs to staff.
+    if deliver_queued(contact):
+        reply = receive_for_staff(contact, text, contact.language) if text else None
+        contact.save()
+        return reply
+    if in_staff_mode(contact):
+        if word in MENU_WORDS | CANCEL_WORDS:
+            contact.staff_until = None  # back to the bot; fall through to the menu
+        else:
+            reply = receive_for_staff(contact, text, contact.language)
+            contact.save()
+            return reply
 
     chosen = _language_choice(word, contact.flow == "language")
     if chosen:
@@ -397,6 +420,8 @@ def handle_message(phone, text):
         reply = translate("wa.cancelled", contact.language)
     elif contact.flow not in FREE_TEXT_FLOWS and ("delete" in word or "futa" in word):
         contact.flow, contact.step, contact.answers = "", "", {}
+        if not contact.deletion_requested_at:
+            alert_whatsapp(contact, "deletion")
         contact.deletion_requested_at = timezone.now()
         reply = translate("wa.delete_request", contact.language)
     elif word in LANGUAGE_WORDS or (
@@ -470,6 +495,8 @@ def _menu_choice(contact, word):
     if word in CONSULT_WORDS:
         return _start_consultation(contact, lang)
     if word in HELP_WORDS:
+        if not contact.help_requested_at:
+            alert_whatsapp(contact, "help")
         contact.help_requested_at = timezone.now()
         return translate("wa.help", lang)
     return translate("wa.menu", lang)
@@ -521,7 +548,8 @@ def webhook(request):
                 except Exception:
                     logger.exception("Could not handle WhatsApp message %s", message_id)
                     continue
-                send_text(phone, reply)
+                if reply:
+                    send_text(phone, reply)
     return HttpResponse("ok")
 
 

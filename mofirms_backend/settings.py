@@ -170,6 +170,18 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "webmaster@localhost")
 MOFIRMS_CONTACT_EMAIL = os.environ.get(
     "MOFIRMS_CONTACT_EMAIL", "info@mofirm.co.ke"
 )
+SITE_URL = os.environ.get("SITE_URL", "https://mofirm.co.ke").strip().rstrip("/")
+# Who gets an email when a new request, callback or WhatsApp reply arrives.
+# Defaults to the contact inbox on hosted sites; set to "" to switch alerts off.
+STAFF_NOTIFICATION_EMAILS = [
+    address.strip()
+    for address in os.environ.get(
+        "STAFF_NOTIFICATION_EMAILS", "" if DEBUG else MOFIRMS_CONTACT_EMAIL
+    ).split(",")
+    if address.strip()
+]
+STAFF_NOTIFICATIONS_ASYNC = True
+EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "15"))
 MPESA_ENABLED = os.environ.get("MPESA_ENABLED", "True").lower() in {"1", "true", "yes"}
 LOGIN_URL = "/smart-hasibu/login/"
 
@@ -234,6 +246,11 @@ WHATSAPP_PHONE_NUMBER_ID = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "").strip(
 WHATSAPP_APP_SECRET = os.environ.get("WHATSAPP_APP_SECRET", "").strip()
 WHATSAPP_VERIFY_TOKEN = os.environ.get("WHATSAPP_VERIFY_TOKEN", "").strip()
 WHATSAPP_GRAPH_VERSION = os.environ.get("WHATSAPP_GRAPH_VERSION", "v23.0").strip()
+# Optional approved Meta template used to reach someone more than 24 hours after their
+# last message, e.g. "mofirms_team_reply". Without it, staff replies wait until the
+# person next writes in.
+WHATSAPP_FOLLOWUP_TEMPLATE = os.environ.get("WHATSAPP_FOLLOWUP_TEMPLATE", "").strip()
+WHATSAPP_FOLLOWUP_TEMPLATE_LANGUAGE = os.environ.get("WHATSAPP_FOLLOWUP_TEMPLATE_LANGUAGE", "en").strip()
 ASSISTANT_RATE_LIMIT = 20
 ASSISTANT_RATE_PERIOD = 10 * 60
 MPESA_TRANSACTION_TYPE = os.environ.get(

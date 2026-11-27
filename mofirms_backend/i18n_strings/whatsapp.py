@@ -1169,6 +1169,16 @@ STRINGS = {
         "en": "Okay, kept it.",
         "sw": "Sawa, imebaki.",
     },
+    "wa.staff_ack": {
+        "en": (
+            "Thank you. Your message has been passed to the MoFirms team member helping you, "
+            "and they will reply here. Reply MENU any time to use the automatic menu instead."
+        ),
+        "sw": (
+            "Asante. Ujumbe wako umepelekwa kwa mwanatimu wa MoFirms anayekusaidia, "
+            "na atakujibu hapa. Jibu MENU wakati wowote kutumia orodha ya kiotomatiki."
+        ),
+    },
     "wa.cancelled": {
         "en": "Okay, stopped. Reply MENU to see the options again.",
         "sw": "Sawa, imesimamishwa. Jibu MENU kuona chaguo tena.",

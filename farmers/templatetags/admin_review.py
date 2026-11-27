@@ -20,6 +20,7 @@ REVIEW_QUEUES = (
     (FarmerDocument, "review_status__exact", FarmerDocument.ReviewStatus.PENDING, None),
     (PartnerProfile, "verification_status__exact", PartnerProfile.ReviewStatus.PENDING, None),
     (ConsultationLead, "status__exact", ConsultationLead.Status.NEW, None),
+    (WhatsAppContact, "reply_needed_at__isnull", False, "WhatsApp messages awaiting a staff reply"),
     (WhatsAppContact, "help_requested_at__isnull", False, "WhatsApp callback requests"),
     (WhatsAppContact, "deletion_requested_at__isnull", False, "WhatsApp data deletion requests"),
     (FinancialAnalysisRequest, "status__exact", FinancialAnalysisRequest.ServiceStatus.PENDING, None),

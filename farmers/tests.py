@@ -42,6 +42,7 @@ from .models import (
     NewsletterIssue,
     ResearcherApplication,
     WhatsAppContact,
+    WhatsAppMessage,
 )
 from .readiness_drafting import (
     build_ai_draft_context,
@@ -774,6 +775,7 @@ class WhatsAppTests(TestCase):
         cache.clear()
         patcher = patch("farmers.whatsapp.send_text")
         self.sent = patcher.start()
+        self.sent.return_value = (True, "")
         self.addCleanup(patcher.stop)
         self.message_number = 0
 
@@ -1429,6 +1431,132 @@ class WhatsAppTests(TestCase):
         self.assertIn("request to delete your data", self.say("Delete my data"))
 
         self.assertIsNotNone(WhatsAppContact.objects.get().deletion_requested_at)
+
+    def staff_reply(self, text):
+        """Post a reply through the real /staff/ change form, as a staff member would."""
+        contact = WhatsAppContact.objects.get()
+        staff = get_user_model().objects.filter(username="reply-staff").first() or (
+            get_user_model().objects.create_superuser(
+                username="reply-staff", email="reply@example.com", password="Reply-pass-2026!"
+            )
+        )
+        self.client.force_login(staff)
+        existing = list(contact.messages.order_by("created_at", "pk"))
+        data = {
+            "reply": text,
+            "messages-TOTAL_FORMS": str(len(existing)),
+            "messages-INITIAL_FORMS": str(len(existing)),
+            "messages-MIN_NUM_FORMS": "0",
+            "messages-MAX_NUM_FORMS": "1000",
+        }
+        for index, message in enumerate(existing):
+            data[f"messages-{index}-id"] = str(message.pk)
+            data[f"messages-{index}-contact"] = str(contact.pk)
+        url = reverse("admin:farmers_whatsappcontact_change", args=[contact.pk])
+        response = self.client.post(url, data, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.client.logout()
+        return response
+
+    @override_settings(STAFF_NOTIFICATION_EMAILS=["team@example.com"], STAFF_NOTIFICATIONS_ASYNC=False)
+    def test_staff_reply_within_24_hours_and_the_conversation_continues(self):
+        self.say("English")
+        self.say("9")
+        self.sent.reset_mock()
+
+        response = self.staff_reply("Hello, this is Mary from MoFirms. How many acres do you farm?")
+        self.assertContains(response, "WhatsApp reply sent")
+        self.assertEqual(
+            self.sent.call_args.args,
+            ("254712345678", "Hello, this is Mary from MoFirms. How many acres do you farm?"),
+        )
+
+        mail.outbox.clear()
+        with self.captureOnCommitCallbacks(execute=True):
+            ack = self.say("About 3 acres, mostly maize")
+        self.assertIn("passed to the MoFirms team", ack)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("waiting for a staff reply", mail.outbox[0].subject)
+        self.assertNotIn("3 acres", mail.outbox[0].body)
+        self.assertNotIn("254712345678", mail.outbox[0].body)
+
+        calls_before = self.sent.call_count
+        with self.captureOnCommitCallbacks(execute=True):
+            self.say("Delete the old plot from my records please")
+        self.assertEqual(self.sent.call_count, calls_before)  # quiet: staff already alerted
+        self.assertEqual(len(mail.outbox), 1)
+
+        contact = WhatsAppContact.objects.get()
+        self.assertIsNotNone(contact.reply_needed_at)
+        self.assertIsNone(contact.deletion_requested_at)
+        bodies = list(contact.messages.values_list("direction", "body"))
+        self.assertEqual(bodies, [
+            ("out", "Hello, this is Mary from MoFirms. How many acres do you farm?"),
+            ("in", "About 3 acres, mostly maize"),
+            ("in", "Delete the old plot from my records please"),
+        ])
+
+        self.client.force_login(get_user_model().objects.get(username="reply-staff"))
+        home = self.client.get(reverse("admin:index"))
+        self.assertContains(home, "WhatsApp messages awaiting a staff reply")
+        page = self.client.get(reverse("admin:farmers_whatsappcontact_change", args=[contact.pk]))
+        self.assertContains(page, "Send a WhatsApp reply")
+        self.assertContains(page, "About 3 acres, mostly maize")
+        self.assertContains(page, "Yes, for 23h")
+        self.client.logout()
+
+        self.staff_reply("Thanks, noted.")
+        self.assertIsNone(WhatsAppContact.objects.get().reply_needed_at)
+        self.assertIn("Our services", self.say("menu"))
+        self.assertIn("call you back", self.say("9"))
+
+    @override_settings(WHATSAPP_FOLLOWUP_TEMPLATE="mofirms_team_reply")
+    def test_staff_reply_after_24_hours_waits_for_the_person(self):
+        self.say("English")
+        WhatsAppContact.objects.update(last_inbound_at=timezone.now() - timedelta(hours=30))
+        self.sent.reset_mock()
+
+        with patch("farmers.whatsapp.send_template", return_value=(True, "")) as template:
+            response = self.staff_reply("Your quote is ready: KSh 5,000.")
+            self.staff_reply("Reply when you can.")
+        self.assertContains(response, "queued")
+        self.sent.assert_not_called()
+        template.assert_called_once_with("254712345678", "mofirms_team_reply", "en")
+        self.assertEqual(WhatsAppMessage.objects.filter(status="queued").count(), 2)
+
+        reply = self.say("hi")
+        sent_bodies = [call.args[1] for call in self.sent.call_args_list]
+        self.assertEqual(sent_bodies[:2], ["Your quote is ready: KSh 5,000.", "Reply when you can."])
+        self.assertIn("passed to the MoFirms team", reply)
+        self.assertFalse(WhatsAppMessage.objects.filter(status="queued").exists())
+        self.assertTrue(WhatsAppMessage.objects.filter(direction="in", body="hi").exists())
+
+    def test_failed_staff_reply_is_reported(self):
+        self.say("English")
+        self.sent.return_value = (False, "(#131047) Re-engagement message")
+        response = self.staff_reply("Hello")
+        self.assertContains(response, "could not deliver")
+        self.assertEqual(WhatsAppMessage.objects.get().status, "failed")
+        self.assertIsNone(WhatsAppContact.objects.get().staff_until)
+
+    @override_settings(STAFF_NOTIFICATION_EMAILS=["team@example.com"], STAFF_NOTIFICATIONS_ASYNC=False)
+    def test_new_requests_and_callbacks_email_staff_without_personal_details(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            self.register_by_chat()
+        with self.captureOnCommitCallbacks(execute=True):
+            self.say("9")
+            self.say("9")
+        subjects = [message.subject for message in mail.outbox]
+        reference = FarmerProfile.objects.get().public_reference
+        self.assertEqual(subjects, [
+            f"[MoFirms] New farmer registration {reference} (via WhatsApp)",
+            "[MoFirms] WhatsApp callback requested",
+        ])
+        self.assertEqual(mail.outbox[0].to, ["team@example.com"])
+        self.assertIn("/staff/farmers/farmerprofile/", mail.outbox[0].body)
+        for message in mail.outbox:
+            self.assertNotIn("Jane", message.body)
+            self.assertNotIn("254712345678", message.body)
 
     def test_talk_to_team_queues_a_callback_for_staff(self):
         self.say("English")
