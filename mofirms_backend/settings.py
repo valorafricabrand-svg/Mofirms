@@ -237,6 +237,9 @@ GOOGLE_OAUTH_REDIRECT_URI = os.environ.get("GOOGLE_OAUTH_REDIRECT_URI", "").stri
 # Claude (Anthropic) powers the website assistant and newsletter drafts.
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip()
 ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-5-5").strip()
+# WhatsApp free-text questions are answered by Claude in a background thread so the
+# webhook replies to Meta straight away. Tests switch this off to run synchronously.
+WHATSAPP_AI_ASYNC = True
 WHATSAPP_ACCESS_TOKEN = os.environ.get("WHATSAPP_ACCESS_TOKEN", "").strip()
 WHATSAPP_PHONE_NUMBER_ID = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "").strip()
 WHATSAPP_APP_SECRET = os.environ.get("WHATSAPP_APP_SECRET", "").strip()

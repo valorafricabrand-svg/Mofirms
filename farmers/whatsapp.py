@@ -29,6 +29,8 @@ from .whatsapp_forms import form_step, research_entry, start_form
 from .whatsapp_books import books_step, start_books
 from .whatsapp_staff import deliver_queued, in_staff_mode, receive_for_staff
 from .notifications import alert_whatsapp
+from .whatsapp_ai import PendingAIAnswer, is_question
+from .whatsapp_ai import dispatch as dispatch_ai_answer
 
 logger = logging.getLogger(__name__)
 
@@ -445,7 +447,7 @@ def handle_message(phone, text):
     elif contact.flow == "unlock" and word not in NEW_CODE_WORDS:
         reply = _unlock_step(contact, text, contact.language)
     else:
-        reply = _menu_choice(contact, word)
+        reply = _menu_choice(contact, word, text)
     contact.save()
     return reply
 
@@ -466,7 +468,7 @@ def _account_action(contact, action, lang):
     return _protected_reply(contact, action, lang)
 
 
-def _menu_choice(contact, word):
+def _menu_choice(contact, word, text=None):
     lang = contact.language
     contact.flow = contact.step = ""
     if word in {"1", "register", "jisajili"}:
@@ -499,6 +501,8 @@ def _menu_choice(contact, word):
             alert_whatsapp(contact, "help")
         contact.help_requested_at = timezone.now()
         return translate("wa.help", lang)
+    if text is not None and is_question(text):
+        return PendingAIAnswer(contact.phone, text, lang)
     return translate("wa.menu", lang)
 
 
@@ -548,7 +552,9 @@ def webhook(request):
                 except Exception:
                     logger.exception("Could not handle WhatsApp message %s", message_id)
                     continue
-                if reply:
+                if isinstance(reply, PendingAIAnswer):
+                    dispatch_ai_answer(reply)
+                elif reply:
                     send_text(phone, reply)
     return HttpResponse("ok")
 

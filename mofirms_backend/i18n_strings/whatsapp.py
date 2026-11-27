@@ -1169,6 +1169,40 @@ STRINGS = {
         "en": "Okay, kept it.",
         "sw": "Sawa, imebaki.",
     },
+    "wa.ai_footer": {
+        "en": "_MoFirms AI assistant. Reply MENU for services, or 9 to talk to the team._",
+        "sw": "_Msaidizi wa AI wa MoFirms. Jibu MENU kwa huduma, au 9 kuzungumza na timu._",
+    },
+    "wa.ai_daily_limit": {
+        "en": (
+            "You've reached today's limit for questions to the AI assistant. Reply MENU for "
+            "MoFirms services, or 9 and the team will call you back."
+        ),
+        "sw": (
+            "Umefikia kikomo cha leo cha maswali kwa msaidizi wa AI. Jibu MENU kwa huduma za "
+            "MoFirms, au 9 na timu itakupigia simu."
+        ),
+    },
+    "wa.ai_unavailable": {
+        "en": (
+            "Sorry, I can't answer questions right now. Reply MENU to see MoFirms services, "
+            "or 9 and the team will call you back."
+        ),
+        "sw": (
+            "Samahani, siwezi kujibu maswali kwa sasa. Jibu MENU kuona huduma za MoFirms, "
+            "au 9 na timu itakupigia simu."
+        ),
+    },
+    "wa.ai_refused": {
+        "en": (
+            "Sorry, I can't help with that here. Reply MENU to see MoFirms services, or 9 and "
+            "the team will call you back."
+        ),
+        "sw": (
+            "Samahani, siwezi kusaidia na hilo hapa. Jibu MENU kuona huduma za MoFirms, au 9 na "
+            "timu itakupigia simu."
+        ),
+    },
     "wa.staff_ack": {
         "en": (
             "Thank you. Your message has been passed to the MoFirms team member helping you, "

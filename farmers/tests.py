@@ -1558,6 +1558,49 @@ class WhatsAppTests(TestCase):
             self.assertNotIn("Jane", message.body)
             self.assertNotIn("254712345678", message.body)
 
+    @override_settings(ANTHROPIC_API_KEY="test-key", WHATSAPP_AI_ASYNC=False)
+    def test_free_text_questions_are_answered_by_claude(self):
+        self.say("kiswahili")
+        with patch("farmers.ai.generate", return_value="Panda mahindi baada ya mvua za kwanza.") as generate:
+            reply = self.say("Nipande mahindi lini Vihiga?")
+            self.assertIn("Panda mahindi baada ya mvua za kwanza.", reply)
+            self.assertIn("Msaidizi wa AI wa MoFirms", reply)
+            conversation, system = generate.call_args.args
+            self.assertEqual(conversation, [{"role": "user", "text": "Nipande mahindi lini Vihiga?"}])
+            self.assertIn("Reply in Kiswahili", system)
+            self.assertEqual(generate.call_args.kwargs["effort"], "low")
+
+            # A follow-up carries the earlier turn so "and beans?" makes sense.
+            self.say("Na maharagwe je?")
+            follow_up = generate.call_args.args[0]
+            self.assertEqual([turn["role"] for turn in follow_up], ["user", "assistant", "user"])
+
+            # Menu choices, numbers and codes never go to Claude.
+            calls = generate.call_count
+            self.assertIn("Huduma zetu", self.say("menu"))
+            self.assertIn("Huduma zetu", self.say("42"))
+            self.assertIn("Jina lako kamili", self.say("1"))
+            self.say("Jane Wanjiku")
+            self.assertEqual(generate.call_count, calls)
+        profile_answers = WhatsAppContact.objects.get().answers
+        self.assertEqual(profile_answers, {"name": "Jane Wanjiku"})
+
+    @override_settings(ANTHROPIC_API_KEY="test-key", WHATSAPP_AI_ASYNC=False)
+    def test_claude_on_whatsapp_has_a_daily_limit_and_fails_gracefully(self):
+        from farmers import ai, whatsapp_ai
+
+        self.say("English")
+        with patch("farmers.ai.generate", side_effect=ai.AIUnavailable("down")):
+            self.assertIn("can't answer questions right now", self.say("How do I grow tomatoes?"))
+        with patch("farmers.ai.generate", return_value="Use certified seed."):
+            for _ in range(whatsapp_ai.AI_ANSWERS_PER_DAY - 1):
+                self.say("Which tomato seed is best?")
+            self.assertIn("today's limit", self.say("One more question please"))
+
+    def test_free_text_shows_the_menu_when_claude_is_not_configured(self):
+        self.say("English")
+        self.assertIn("Our services", self.say("How do I grow tomatoes?"))
+
     def test_talk_to_team_queues_a_callback_for_staff(self):
         self.say("English")
         self.assertIn("call you back", self.say("9"))
