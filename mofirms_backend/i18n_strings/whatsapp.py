@@ -19,7 +19,7 @@ STRINGS = {
             "10 - Request a consultation\n\n"
             "*My account*\n"
             "6 - Check my registration status\n"
-            "7 - See my registered details\n"
+            "7 - My dashboard (details and documents)\n"
             "8 - Get a new login code\n"
             "9 - Talk to the MoFirms team\n"
             "0 - Change language\n\n"
@@ -36,7 +36,7 @@ STRINGS = {
             "10 - Omba ushauri\n\n"
             "*Akaunti yangu*\n"
             "6 - Angalia hali ya usajili wangu\n"
-            "7 - Ona taarifa zangu\n"
+            "7 - Dashibodi yangu (taarifa na nyaraka)\n"
             "8 - Pata nambari mpya ya kuingia\n"
             "9 - Zungumza na timu ya MoFirms\n"
             "0 - Badilisha lugha\n\n"
@@ -245,16 +245,42 @@ STRINGS = {
     },
     "wa.details": {
         "en": (
-            "Your MoFirms details:\nName: {name}\nCounty: {county}\n"
-            "Farming: {activities}\nPhone: {phone}\nReference: {reference}\n"
+            "*My registration*\n\n{notice}\n\n"
+            "*Registration details*\nReference: {reference}\nName: {name}\n{group}"
+            "County: {county}\nFarming: {activities}\nPhone: {phone}\n"
+            "Status: {status}\nSubmitted: {submitted}\n\n"
+            "*Supporting evidence*\n{documents}\n\n"
+            "*{financial_title}*\n{financial_body}\n\n"
             "To change anything, reply 9 to talk to the team."
         ),
         "sw": (
-            "Taarifa zako za MoFirms:\nJina: {name}\nKaunti: {county}\n"
-            "Kilimo: {activities}\nSimu: {phone}\nKumbukumbu: {reference}\n"
+            "*Usajili wangu*\n\n{notice}\n\n"
+            "*Maelezo ya usajili*\nKumbukumbu: {reference}\nJina: {name}\n{group}"
+            "Kaunti: {county}\nKilimo: {activities}\nSimu: {phone}\n"
+            "Hali: {status}\nIliwasilishwa: {submitted}\n\n"
+            "*Ushahidi wa kuthibitisha*\n{documents}\n\n"
+            "*{financial_title}*\n{financial_body}\n\n"
             "Kubadilisha chochote, jibu 9 kuzungumza na timu."
         ),
     },
+    "wa.follow_up_notes": {
+        "en": "Note from MoFirms: {notes}\nReply 9 and the team will call you about it.",
+        "sw": "Ujumbe kutoka MoFirms: {notes}\nJibu 9 na timu itakupigia kuhusu hili.",
+    },
+    "wa.doc_type.identity": {"en": "Identity evidence", "sw": "Ushahidi wa utambulisho"},
+    "wa.doc_type.group": {
+        "en": "Group registration or governance evidence",
+        "sw": "Ushahidi wa usajili au uongozi wa kikundi",
+    },
+    "wa.doc_type.farm": {
+        "en": "Farm activity or production evidence",
+        "sw": "Ushahidi wa shughuli au uzalishaji wa shamba",
+    },
+    "wa.doc_type.other": {"en": "Other evidence", "sw": "Ushahidi mwingine"},
+    "wa.doc_status.pending": {"en": "Pending review", "sw": "Inasubiri ukaguzi"},
+    "wa.doc_status.accepted": {"en": "Reviewed", "sw": "Imekaguliwa"},
+    "wa.doc_status.follow_up": {"en": "Follow-up required", "sw": "Ufuatiliaji unahitajika"},
+    "wa.doc_status.not_accepted": {"en": "Not accepted", "sw": "Haikukubaliwa"},
     "wa.status.pending": {"en": "Pending review", "sw": "Inasubiri ukaguzi"},
     "wa.status.in_review": {"en": "In review", "sw": "Inakaguliwa"},
     "wa.status.verified": {"en": "Verified by MoFirms", "sw": "Imethibitishwa na MoFirms"},

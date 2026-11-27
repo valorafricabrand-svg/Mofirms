@@ -873,6 +873,46 @@ class WhatsAppTests(TestCase):
         self.assertEqual(contact.profile, profile)
         self.assertNotIn(code, contact.code_hash)
 
+    def test_dashboard_option_shows_everything_on_the_web_dashboard(self):
+        self.register_by_chat()
+        profile = FarmerProfile.objects.get()
+        FarmerProfile.objects.filter(pk=profile.pk).update(
+            registration_type=FarmerProfile.RegistrationType.GROUP,
+            group_name="Vihiga Dairy Group",
+            verification_status=FarmerProfile.VerificationStatus.FOLLOW_UP,
+            verification_notes="Please send your group certificate.",
+        )
+        FarmerDocument.objects.create(
+            profile=profile,
+            document_type=FarmerDocument.DocumentType.FARM,
+            review_status=FarmerDocument.ReviewStatus.FOLLOW_UP,
+        )
+
+        dashboard = self.say("7")
+        for expected in (
+            "Follow-up needed",
+            "Please send your group certificate.",
+            "Vihiga Dairy Group",
+            profile.public_reference,
+            "Submitted:",
+            "Farm activity or production evidence — Follow-up required",
+            "Financial analysis and risk assessment",
+        ):
+            self.assertIn(expected, dashboard)
+        self.assertIn("Follow-up needed", self.say("6"))
+
+    def test_dashboard_hides_internal_notes_once_verified(self):
+        self.register_by_chat()
+        FarmerProfile.objects.update(
+            verification_status=FarmerProfile.VerificationStatus.VERIFIED,
+            verification_notes="Internal: checked ID in person.",
+        )
+
+        dashboard = self.say("7")
+        self.assertIn("Reviewed", dashboard)
+        self.assertIn("No supporting documents uploaded.", dashboard)
+        self.assertNotIn("Internal", dashboard)
+
     def test_registered_farmer_can_request_a_consultation(self):
         _, registered = self.register_by_chat()
         self.assertIn("Reply 10", registered)

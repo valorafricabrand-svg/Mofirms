@@ -166,8 +166,24 @@ def parse_activities(text):
     return [ACTIVITY_CHOICES[n - 1][0] for n in dict.fromkeys(numbers)]
 
 
+def _review_notice(profile, lang):
+    """The same review banner the web dashboard shows, as WhatsApp text."""
+    state = {
+        FarmerProfile.VerificationStatus.VERIFIED: "reviewed",
+        FarmerProfile.VerificationStatus.FOLLOW_UP: "follow_up",
+    }.get(profile.verification_status, "under_review")
+    lines = [
+        f"*{translate(f'farmers.farmer_dashboard.{state}_title', lang)}*",
+        translate(f"farmers.farmer_dashboard.{state}_body", lang),
+    ]
+    # Staff notes are only shared when they ask the farmer for something, as on the web.
+    if state == "follow_up" and profile.verification_notes.strip():
+        lines.append(translate("wa.follow_up_notes", lang, notes=profile.verification_notes.strip()))
+    return "\n".join(lines)
+
+
 def status_reply(profile, lang):
-    return translate(
+    return _review_notice(profile, lang) + "\n\n" + translate(
         "wa.status",
         lang,
         reference=profile.public_reference,
@@ -176,18 +192,41 @@ def status_reply(profile, lang):
     )
 
 
+def _documents_section(profile, lang):
+    documents = profile.documents.all()
+    if not documents:
+        return translate("farmers.farmer_dashboard.no_documents", lang)
+    return "\n".join(
+        "• {type} — {status}".format(
+            type=translate(f"wa.doc_type.{document.document_type}", lang),
+            status=translate(f"wa.doc_status.{document.review_status}", lang),
+        )
+        for document in documents
+    )
+
+
 def details_reply(profile, lang):
     activities = ", ".join(
         translate(f"choice.activity.{value}", lang) for value in profile.activities
     ) or "-"
+    group = ""
+    if profile.registration_type == FarmerProfile.RegistrationType.GROUP and profile.group_name:
+        group = f"{translate('farmers.farmer_dashboard.group_label', lang)} {profile.group_name}\n"
     return translate(
         "wa.details",
         lang,
+        notice=_review_notice(profile, lang),
         name=profile.full_name,
+        group=group,
         county=profile.county,
         activities=activities,
         phone=profile.phone or "-",
         reference=profile.public_reference,
+        status=translate(f"wa.status.{profile.verification_status}", lang),
+        submitted=timezone.localtime(profile.created_at).strftime("%d %b %Y"),
+        documents=_documents_section(profile, lang),
+        financial_title=translate("farmers.farmer_dashboard.financial_title", lang),
+        financial_body=translate("farmers.farmer_dashboard.financial_body", lang),
     )
 
 
