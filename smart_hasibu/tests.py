@@ -543,3 +543,150 @@ class SmartHasibuTests(TestCase):
 
         self.assertEqual(len(first_page.context["entries"]), 50)
         self.assertEqual(len(second_page.context["entries"]), 10)
+
+
+import base64 as _b64
+import json as _json
+import time as _time
+import urllib.parse as _urlparse
+from unittest import mock as _mock
+
+from django.test import override_settings
+
+
+def _fake_id_token(claims):
+    def part(data):
+        return _b64.urlsafe_b64encode(_json.dumps(data).encode()).decode().rstrip("=")
+    return f"{part({'alg': 'RS256'})}.{part(claims)}.signature"
+
+
+class _FakeResponse:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def read(self):
+        return _json.dumps(self.payload).encode()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+@override_settings(
+    GOOGLE_OAUTH_CLIENT_ID="client-123.apps.googleusercontent.com",
+    GOOGLE_OAUTH_CLIENT_SECRET="synthetic-secret",
+    GOOGLE_OAUTH_REDIRECT_URI="",
+)
+class GoogleSignInTests(TestCase):
+    def start(self):
+        response = self.client.get(reverse("smart_hasibu:google_start"))
+        self.assertEqual(response.status_code, 302)
+        query = _urlparse.parse_qs(_urlparse.urlparse(response["Location"]).query)
+        return query["state"][0], query["nonce"][0], query
+
+    def finish(self, email="new.farmer@example.test", verified=True, aud=None, nonce=None, state=None):
+        real_state, real_nonce, _ = self.start()
+        claims = {
+            "iss": "https://accounts.google.com",
+            "aud": aud or "client-123.apps.googleusercontent.com",
+            "exp": int(_time.time()) + 300,
+            "nonce": nonce or real_nonce,
+            "email": email,
+            "email_verified": verified,
+            "name": "Synthetic Grower",
+        }
+        token = {"id_token": _fake_id_token(claims)}
+        with _mock.patch(
+            "smart_hasibu.google_auth.urllib.request.urlopen",
+            return_value=_FakeResponse(token),
+        ) as urlopen:
+            response = self.client.get(
+                reverse("smart_hasibu:google_callback"),
+                {"state": state or real_state, "code": "auth-code"},
+            )
+        return response, urlopen
+
+    def test_login_page_shows_button_only_when_configured(self):
+        response = self.client.get(reverse("smart_hasibu:login"))
+        self.assertContains(response, reverse("smart_hasibu:google_start"))
+        with self.settings(GOOGLE_OAUTH_CLIENT_ID=""):
+            response = self.client.get(reverse("smart_hasibu:login"))
+        self.assertNotContains(response, reverse("smart_hasibu:google_start"))
+
+    def test_start_redirects_to_google_with_callback(self):
+        _, _, query = self.start()
+        self.assertEqual(query["client_id"][0], "client-123.apps.googleusercontent.com")
+        self.assertTrue(query["redirect_uri"][0].endswith("/smart-hasibu/google/callback/"))
+        self.assertIn("email", query["scope"][0])
+
+    def test_new_user_must_consent_before_account_is_created(self):
+        response, urlopen = self.finish()
+        self.assertRedirects(response, reverse("smart_hasibu:google_confirm"))
+        self.assertFalse(get_user_model().objects.filter(email="new.farmer@example.test").exists())
+        sent = _urlparse.parse_qs(urlopen.call_args.args[0].data.decode())
+        self.assertEqual(sent["code"], ["auth-code"])
+
+        page = self.client.get(reverse("smart_hasibu:google_confirm"))
+        self.assertContains(page, "new.farmer@example.test")
+        refused = self.client.post(reverse("smart_hasibu:google_confirm"), {})
+        self.assertEqual(refused.status_code, 200)
+        self.assertFalse(get_user_model().objects.filter(email="new.farmer@example.test").exists())
+
+        done = self.client.post(reverse("smart_hasibu:google_confirm"), {"consent": "on"})
+        self.assertRedirects(done, reverse("smart_hasibu:dashboard"))
+        user = get_user_model().objects.get(email="new.farmer@example.test")
+        self.assertFalse(user.has_usable_password())
+        self.assertEqual(user.first_name, "Synthetic Grower")
+        self.assertTrue(SmartHasibuAccount.objects.filter(user=user).exists())
+        self.assertEqual(self.client.get(reverse("smart_hasibu:dashboard")).status_code, 200)
+
+    def test_existing_cashbook_user_signs_straight_in(self):
+        user = get_user_model().objects.create_user(
+            username="grower@example.test", email="Grower@example.test", password="x-Synthetic-123!"
+        )
+        SmartHasibuAccount.objects.create(user=user, consent_at=timezone_now())
+        response, _ = self.finish(email="grower@example.test")
+        self.assertRedirects(response, reverse("smart_hasibu:dashboard"))
+        self.assertEqual(int(self.client.session["_auth_user_id"]), user.pk)
+
+    def test_staff_accounts_are_refused(self):
+        get_user_model().objects.create_user(
+            username="staff@example.test", email="staff@example.test", password="x", is_staff=True
+        )
+        response, _ = self.finish(email="staff@example.test")
+        self.assertRedirects(response, reverse("smart_hasibu:login"))
+        self.assertNotIn("_auth_user_id", self.client.session)
+        self.assertNotIn("sh_google_pending", self.client.session)
+
+    def test_rejects_bad_state_unverified_email_wrong_audience_and_nonce(self):
+        cases = [
+            {"state": "forged"},
+            {"verified": False},
+            {"aud": "someone-else.apps.googleusercontent.com"},
+            {"nonce": "replayed"},
+        ]
+        for case in cases:
+            with self.subTest(**case):
+                self.client.session.flush()
+                response, _ = self.finish(**case)
+                self.assertRedirects(response, reverse("smart_hasibu:login"))
+                self.assertNotIn("_auth_user_id", self.client.session)
+                self.assertNotIn("sh_google_pending", self.client.session)
+
+    def test_cancel_on_google_returns_to_login(self):
+        state, _, _ = self.start()
+        response = self.client.get(
+            reverse("smart_hasibu:google_callback"), {"state": state, "error": "access_denied"}
+        )
+        self.assertRedirects(response, reverse("smart_hasibu:login"))
+
+    def test_confirm_without_pending_google_sign_in_redirects(self):
+        response = self.client.post(reverse("smart_hasibu:google_confirm"), {"consent": "on"})
+        self.assertRedirects(response, reverse("smart_hasibu:login"))
+
+
+def timezone_now():
+    from django.utils import timezone
+    return timezone.now()

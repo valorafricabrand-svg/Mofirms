@@ -494,4 +494,38 @@ STRINGS = {
     },
     "choice.ledger_category.equipment": {"en": "Tools or equipment", "sw": "Zana au vifaa"},
     "choice.ledger_category.other_expense": {"en": "Other expense", "sw": "Gharama nyingine"},
+
+    # --- Google sign-in ---
+    "sh.google.button": {"en": "Continue with Google", "sw": "Endelea na Google"},
+    "sh.google.or": {"en": "or use your email", "sw": "au tumia barua pepe yako"},
+    "sh.google.failed": {
+        "en": "Google sign-in did not work. Please try again or sign in with your email and password.",
+        "sw": "Kuingia kwa Google hakukufaulu. Tafadhali jaribu tena au ingia kwa barua pepe na nenosiri.",
+    },
+    "sh.google.unavailable": {
+        "en": "Google sign-in is not available right now. Please sign in with your email and password.",
+        "sw": "Kuingia kwa Google hakupatikani sasa. Tafadhali ingia kwa barua pepe na nenosiri.",
+    },
+    "sh.google.staff_blocked": {
+        "en": "MoFirms staff accounts must sign in with email and password.",
+        "sw": "Akaunti za wafanyakazi wa MoFirms lazima ziingie kwa barua pepe na nenosiri.",
+    },
+    "sh.google.confirm_title": {
+        "en": "Create your SmartHasibu cashbook",
+        "sw": "Fungua kitabu chako cha SmartHasibu",
+    },
+    "sh.google.confirm_intro": {
+        "en": "You are creating a private cashbook with your Google account",
+        "sw": "Unafungua kitabu binafsi cha fedha kwa akaunti yako ya Google",
+    },
+    "sh.google.consent_required": {
+        "en": "Please tick the box to agree before continuing.",
+        "sw": "Tafadhali weka alama kwenye kisanduku kukubali kabla ya kuendelea.",
+    },
+    "sh.google.privacy_link": {
+        "en": "Read how we handle your data",
+        "sw": "Soma jinsi tunavyoshughulikia taarifa zako",
+    },
+    "sh.google.confirm_submit": {"en": "Create my cashbook", "sw": "Fungua kitabu changu"},
+    "sh.google.cancel": {"en": "Cancel", "sw": "Ghairi"},
 }

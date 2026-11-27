@@ -19,6 +19,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
 from farmers.templatetags.custom_i18n import current_lang, localize_choices, translate
+from .google_auth import google_enabled
 from .forms import (
     CreditSettlementForm,
     FarmerSignupForm,
@@ -65,7 +66,7 @@ def signup(request):
         return render(
             request,
             "smart_hasibu/signup.html",
-            {"form": FarmerSignupForm(request.POST), "rate_limited": True},
+            {"form": FarmerSignupForm(request.POST), "rate_limited": True, "google_enabled": google_enabled()},
             status=429,
         )
 
@@ -81,7 +82,11 @@ def signup(request):
         else:
             login(request, user)
             return redirect("smart_hasibu:dashboard")
-    return render(request, "smart_hasibu/signup.html", {"form": form})
+    return render(
+        request,
+        "smart_hasibu/signup.html",
+        {"form": form, "google_enabled": google_enabled()},
+    )
 
 
 @require_http_methods(["GET", "POST"])
@@ -92,7 +97,11 @@ def signin(request):
         return render(
             request,
             "smart_hasibu/login.html",
-            {"rate_limited": True, "email": request.POST.get("email", "")},
+            {
+                "rate_limited": True,
+                "email": request.POST.get("email", ""),
+                "google_enabled": google_enabled(),
+            },
             status=429,
         )
     if request.method == "POST":
@@ -109,7 +118,11 @@ def signin(request):
             login(request, user)
             return redirect("smart_hasibu:dashboard")
         messages.error(request, translate("err.signin_failed", current_lang(request)))
-    return render(request, "smart_hasibu/login.html", {"email": request.POST.get("email", "")})
+    return render(
+        request,
+        "smart_hasibu/login.html",
+        {"email": request.POST.get("email", ""), "google_enabled": google_enabled()},
+    )
 
 
 @require_POST

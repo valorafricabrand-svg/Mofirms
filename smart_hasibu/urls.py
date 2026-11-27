@@ -1,7 +1,7 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
-from . import views
+from . import google_auth, views
 
 
 app_name = "smart_hasibu"
@@ -11,6 +11,9 @@ urlpatterns = [
     path("signup/", views.signup, name="signup"),
     path("login/", views.signin, name="login"),
     path("logout/", views.signout, name="logout"),
+    path("google/", google_auth.google_start, name="google_start"),
+    path("google/callback/", google_auth.google_callback, name="google_callback"),
+    path("google/confirm/", google_auth.google_confirm, name="google_confirm"),
     path("export/", views.export_entries, name="export_entries"),
     path("entries/<int:pk>/edit/", views.entry_edit, name="entry_edit"),
     path("entries/<int:pk>/delete/", views.entry_delete, name="entry_delete"),

@@ -27,6 +27,12 @@ envVarGroups:
         sync: false
       - key: WHATSAPP_VERIFY_TOKEN
         sync: false
+  - name: mofirms-google-signin-secrets
+    envVars:
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
 
 services:
   - type: web
@@ -94,6 +100,7 @@ services:
       - fromGroup: mofirms-mpesa-secrets
       - fromGroup: mofirms-assistant-secrets
       - fromGroup: mofirms-whatsapp-secrets
+      - fromGroup: mofirms-google-signin-secrets
 
   - type: keyvalue
     name: mofirms-production-redis

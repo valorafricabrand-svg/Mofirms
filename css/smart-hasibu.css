@@ -46,3 +46,9 @@
 .sh-deleted{padding:1rem;margin:0 0 1.25rem;border:1px solid #e9d8a6;background:#fdf8ec}
 .sh-hint{margin:.25rem 0 0;color:#53645a;font-size:.9rem}
 @media(max-width:760px){.sh-heading{align-items:stretch;flex-direction:column}.sh-columns{grid-template-columns:1fr}}
+
+.sh-google{margin:1rem 0 .5rem}
+.sh-google-btn{display:flex;align-items:center;justify-content:center;gap:.65rem;width:100%;min-height:2.9rem;padding:.6rem 1rem;border:1px solid #747775;border-radius:999px;background:#fff;color:#1f1f1f;font-weight:600;text-decoration:none}
+.sh-google-btn:hover,.sh-google-btn:focus-visible{background:#f2f5f3;border-color:#1f5f3f}
+.sh-or{display:flex;align-items:center;gap:.75rem;margin:1rem 0 .25rem;color:#5d6b61;font-size:.9rem}
+.sh-or::before,.sh-or::after{content:"";flex:1;border-top:1px solid #d6ddd7}

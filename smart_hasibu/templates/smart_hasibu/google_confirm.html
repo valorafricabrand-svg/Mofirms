@@ -1,0 +1,20 @@
+{% extends "smart_hasibu/base.html" %}
+{% load custom_i18n %}
+{% block title %}Create your SmartHasibu account | MoFirms{% endblock %}
+{% block content %}
+<section class="wrap registration sh-auth">
+  <p class="eyebrow">{% t 'sh.login.eyebrow' %}</p>
+  <div class="card registration-form">
+    <h1>{% t 'sh.google.confirm_title' %}</h1>
+    <p>{% t 'sh.google.confirm_intro' %} <strong>{{ email }}</strong>.</p>
+    {% if error %}<div class="err-box" role="alert">{{ error }}</div>{% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <label class="choice"><input type="checkbox" name="consent" required> {% t 'field.consent_smarthasibu' %}</label>
+      <p class="sh-muted"><a href="/privacy/">{% t 'sh.google.privacy_link' %}</a></p>
+      <button class="btn" type="submit">{% t 'sh.google.confirm_submit' %}</button>
+    </form>
+    <p><a href="{% url 'smart_hasibu:login' %}">{% t 'sh.google.cancel' %}</a></p>
+  </div>
+</section>
+{% endblock %}

@@ -9,6 +9,7 @@
     <p>{% t 'sh.signup.subtitle' %}</p>
     {% if rate_limited %}<div class="err-box" role="alert">{% t 'sh.signup.rate_limited' %}</div>{% endif %}
     {% if form.non_field_errors %}<div class="err-box" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% include "smart_hasibu/_google_button.html" %}
     <form method="post" novalidate>
       {% csrf_token %}
       {% include "farmers/field.html" with field=form.name %}
