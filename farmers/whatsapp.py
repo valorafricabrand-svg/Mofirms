@@ -26,6 +26,7 @@ from .views import _rate_limit_reached
 from .whatsapp_details import farm_details_step, start_farm_details
 from .whatsapp_forms import FORMS as CHAT_FORMS
 from .whatsapp_forms import form_step, research_entry, start_form
+from .whatsapp_books import books_step, start_books
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,8 @@ NEW_CODE_WORDS = {"8", "code", "new code", "nambari"}
 HELP_WORDS = {"9", "help", "msaada"}
 FORM_FLOWS = {"2": "partner", "3": "finance", "4": "risk"}
 RESEARCH_WORDS = {"5", "research", "utafiti"}
-FREE_TEXT_FLOWS = {"consult", "farm", *CHAT_FORMS}
+FREE_TEXT_FLOWS = {"consult", "farm", "books", *CHAT_FORMS}
+BOOKS_WORDS = {"11", "smarthasibu", "smart hasibu", "hasibu", "books", "hesabu"}
 CONSULT_WORDS = {"10", "consult", "consultation", "ushauri"}
 SKIP_WORDS = {"skip", "ruka"}
 MAX_CONSULTATIONS_PER_DAY = 3
@@ -234,6 +236,8 @@ def _protected_reply(contact, action, lang):
     if contact.unlocked_until and contact.unlocked_until > timezone.now():
         if action == "farm":
             return start_farm_details(contact, lang)
+        if action == "books":
+            return start_books(contact, lang)
         return status_reply(contact.profile, lang) if action == "status" else details_reply(contact.profile, lang)
     contact.flow, contact.step = "unlock", action
     return translate("wa.ask_code", lang)
@@ -409,6 +413,8 @@ def handle_message(phone, text):
         reply = form_step(contact, text, contact.language)
     elif contact.flow == "farm":
         reply = farm_details_step(contact, text, contact.language)
+    elif contact.flow == "books":
+        reply = books_step(contact, text, contact.language)
     elif contact.flow == "consult":
         reply = _consultation_step(contact, text, contact.language)
     elif contact.flow == "unlock" and word not in NEW_CODE_WORDS:
@@ -451,8 +457,14 @@ def _menu_choice(contact, word):
         if not contact.profile:
             return translate("wa.not_registered", lang)
         return _account_action(contact, "status" if word in STATUS_WORDS else "details", lang)
+    if word in BOOKS_WORDS:
+        # Registered farmers get a first code here if they have none; others get one
+        # when they agree to open their SmartHasibu records.
+        if contact.code_hash or contact.profile:
+            return _account_action(contact, "books", lang)
+        return start_books(contact, lang)
     if word in NEW_CODE_WORDS:
-        if not contact.profile:
+        if not contact.profile and not contact.code_hash:
             return translate("wa.not_registered", lang)
         return translate("wa.new_code", lang, code=issue_code(contact))
     if word in CONSULT_WORDS:

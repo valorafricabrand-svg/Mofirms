@@ -16,7 +16,8 @@ STRINGS = {
             "3 - Financial analysis and business planning\n"
             "4 - Risk and opportunity assessment\n"
             "5 - Research and questionnaires\n"
-            "10 - Request a consultation\n\n"
+            "10 - Request a consultation\n"
+            "11 - SmartHasibu: record sales and costs\n\n"
             "*My account*\n"
             "6 - Check my registration status\n"
             "7 - My dashboard (details and documents)\n"
@@ -33,7 +34,8 @@ STRINGS = {
             "3 - Uchambuzi wa kifedha na upangaji wa biashara\n"
             "4 - Tathmini ya hatari na fursa\n"
             "5 - Utafiti na hojaji\n"
-            "10 - Omba ushauri\n\n"
+            "10 - Omba ushauri\n"
+            "11 - SmartHasibu: rekodi mauzo na gharama\n\n"
             "*Akaunti yangu*\n"
             "6 - Angalia hali ya usajili wangu\n"
             "7 - Dashibodi yangu (taarifa na nyaraka)\n"
@@ -986,6 +988,186 @@ STRINGS = {
     "farmers.researcher_set_password.invalid_body": {
         "en": "The link has already been used or is out of date. Send 5 to MoFirms on WhatsApp for a new one.",
         "sw": "Kiungo kimeshatumika au kimepitwa na wakati. Tuma 5 kwa MoFirms kwenye WhatsApp upate kipya.",
+    },
+    "wa.bk.home": {
+        "en": "*SmartHasibu: your farm records*\n1 - Record money in (a sale)\n2 - Record money out (a cost)\n3 - Record a credit payment\n4 - This month's summary\n5 - Last 5 entries\n6 - Undo my last entry\n7 - Add a farm business\n\nReply MENU to go back to the main menu.",
+        "sw": "*SmartHasibu: kumbukumbu za shamba lako*\n1 - Rekodi pesa zilizoingia (mauzo)\n2 - Rekodi pesa zilizotoka (gharama)\n3 - Rekodi malipo ya deni\n4 - Muhtasari wa mwezi huu\n5 - Rekodi 5 za mwisho\n6 - Futa rekodi yangu ya mwisho\n7 - Ongeza biashara ya shamba\n\nJibu MENU kurudi kwenye orodha kuu.",
+    },
+    "wa.bk.consent": {
+        "en": "*SmartHasibu* is a free, private record book for your farm sales and costs. Your records are visible only to you and authorised MoFirms support staff, and you can also see them on the website.\n\nReply YES to open your SmartHasibu records, or CANCEL to stop.",
+        "sw": "*SmartHasibu* ni daftari la bure na la siri la mauzo na gharama za shamba lako. Kumbukumbu zako zinaonekana kwako na wafanyakazi walioidhinishwa wa MoFirms pekee, na unaweza kuziona pia kwenye tovuti.\n\nJibu NDIO kufungua kumbukumbu zako za SmartHasibu, au ACHA kusimamisha.",
+    },
+    "wa.bk.consent_again": {
+        "en": "Reply YES to open your SmartHasibu records, or CANCEL to stop.",
+        "sw": "Jibu NDIO kufungua kumbukumbu zako za SmartHasibu, au ACHA kusimamisha.",
+    },
+    "wa.bk.your_code": {
+        "en": "Your MoFirms login code is: {code}\nKeep it private. You'll need it to open your records again later. Reply 8 any time for a new one.",
+        "sw": "Nambari yako ya kuingia MoFirms ni: {code}\nUsimpe mtu. Utaihitaji kufungua kumbukumbu zako baadaye. Jibu 8 wakati wowote upate mpya.",
+    },
+    "wa.bk.first_business": {
+        "en": "Let's set up your first farm business. What do you call it? e.g. Maize plot, Dairy cows, Tomato greenhouse",
+        "sw": "Tuanzishe biashara yako ya kwanza ya shamba. Unaiitaje? mfano Shamba la mahindi, Ng'ombe wa maziwa, Nyanya",
+    },
+    "wa.bk.add_business": {
+        "en": "Your farm businesses: {names}\nWhat is the new one called?",
+        "sw": "Biashara zako za shamba: {names}\nMpya inaitwa nini?",
+    },
+    "wa.bk.ask_business_type": {
+        "en": "What type of business is it? Reply with a number:\n{options}",
+        "sw": "Ni biashara ya aina gani? Jibu kwa namba:\n{options}",
+    },
+    "wa.bk.invalid_business_name": {
+        "en": "Please type a name between 2 and 100 characters.",
+        "sw": "Tafadhali andika jina la herufi 2 hadi 100.",
+    },
+    "wa.bk.business_exists": {
+        "en": "You already have a business with that name. Please choose another name.",
+        "sw": "Tayari una biashara yenye jina hilo. Tafadhali chagua jina lingine.",
+    },
+    "wa.bk.business_added": {
+        "en": "✅ Added *{name}*.",
+        "sw": "✅ Imeongezwa *{name}*.",
+    },
+    "wa.bk.business_gone": {
+        "en": "That farm business no longer exists. Nothing was saved.",
+        "sw": "Biashara hiyo haipo tena. Hakuna kilichohifadhiwa.",
+    },
+    "wa.bk.which_business": {
+        "en": "Which farm business is this for? Reply with a number:\n{options}",
+        "sw": "Hii ni ya biashara gani? Jibu kwa namba:\n{options}",
+    },
+    "wa.bk.ask_income_category": {
+        "en": "What kind of money in? Reply with a number:\n{options}",
+        "sw": "Ni pesa za aina gani zilizoingia? Jibu kwa namba:\n{options}",
+    },
+    "wa.bk.ask_expense_category": {
+        "en": "What was the money spent on? Reply with a number:\n{options}",
+        "sw": "Pesa zilitumika kwa nini? Jibu kwa namba:\n{options}",
+    },
+    "wa.bk.ask_amount": {
+        "en": "How much, in shillings? e.g. 1500",
+        "sw": "Kiasi gani, kwa shilingi? mfano 1500",
+    },
+    "wa.bk.invalid_amount": {
+        "en": "Please reply with an amount in shillings, e.g. 1500 or 2,500.",
+        "sw": "Tafadhali jibu kwa kiasi cha shilingi, mfano 1500 au 2,500.",
+    },
+    "wa.bk.ask_description": {
+        "en": "Short description? e.g. Sold 2 bags of maize to Otieno",
+        "sw": "Maelezo mafupi? mfano Niliuza magunia 2 ya mahindi kwa Otieno",
+    },
+    "wa.bk.invalid_description": {
+        "en": "Please type a short description (2 to 180 characters).",
+        "sw": "Tafadhali andika maelezo mafupi (herufi 2 hadi 180).",
+    },
+    "wa.bk.ask_date": {
+        "en": "When was it?\n1 - Today\n2 - Yesterday\nOr type a date, e.g. 15/11",
+        "sw": "Ilikuwa lini?\n1 - Leo\n2 - Jana\nAu andika tarehe, mfano 15/11",
+    },
+    "wa.bk.invalid_date": {
+        "en": "Reply 1 for today, 2 for yesterday, or a past date like 15/11.",
+        "sw": "Jibu 1 kwa leo, 2 kwa jana, au tarehe iliyopita kama 15/11.",
+    },
+    "wa.bk.ask_paid_income": {
+        "en": "Has the buyer paid?\n1 - Yes, paid in full\n2 - Not yet / partly (credit sale)",
+        "sw": "Je, mnunuzi amelipa?\n1 - Ndiyo, amelipa yote\n2 - Bado / sehemu (mauzo ya deni)",
+    },
+    "wa.bk.ask_paid_expense": {
+        "en": "Have you paid?\n1 - Yes, paid in full\n2 - Not yet / partly (bought on credit)",
+        "sw": "Je, umelipa?\n1 - Ndiyo, nimelipa yote\n2 - Bado / sehemu (nimekopa)",
+    },
+    "wa.bk.ask_customer": {
+        "en": "Who owes you? (customer name, or SKIP)",
+        "sw": "Nani anakudai? (jina la mteja, au RUKA)",
+    },
+    "wa.bk.ask_supplier": {
+        "en": "Who do you owe? (supplier name, or SKIP)",
+        "sw": "Unamdai nani? (jina la msambazaji, au RUKA)",
+    },
+    "wa.bk.saved_income": {
+        "en": "✅ Saved money in: {amount} — {description} ({business}, {day})",
+        "sw": "✅ Pesa zilizoingia zimehifadhiwa: {amount} — {description} ({business}, {day})",
+    },
+    "wa.bk.saved_expense": {
+        "en": "✅ Saved money out: {amount} — {description} ({business}, {day})",
+        "sw": "✅ Pesa zilizotoka zimehifadhiwa: {amount} — {description} ({business}, {day})",
+    },
+    "wa.bk.saved_credit": {
+        "en": "Marked as unpaid. When money comes in, reply 3 to record the payment.",
+        "sw": "Imewekwa kama deni. Malipo yakifika, jibu 3 kuyarekodi.",
+    },
+    "wa.bk.no_credit": {
+        "en": "You have no unpaid credit entries. 👍",
+        "sw": "Huna madeni ambayo hayajalipwa. 👍",
+    },
+    "wa.bk.pick_credit": {
+        "en": "Which one is being paid? Reply with a number:\n{options}",
+        "sw": "Lipi linalipwa? Jibu kwa namba:\n{options}",
+    },
+    "wa.bk.credit_line": {
+        "en": "{side}: {left} left — {description}{who}, {day}",
+        "sw": "{side}: {left} imebaki — {description}{who}, {day}",
+    },
+    "wa.bk.owed_to_you": {
+        "en": "Owed to you",
+        "sw": "Unadai",
+    },
+    "wa.bk.you_owe": {
+        "en": "You owe",
+        "sw": "Unadaiwa",
+    },
+    "wa.bk.ask_payment": {
+        "en": "How much was paid? {left} is outstanding. Reply an amount, or ALL.",
+        "sw": "Kiasi gani kimelipwa? {left} bado. Jibu kiasi, au YOTE.",
+    },
+    "wa.bk.overpayment": {
+        "en": "That is more than what's left ({left}). Please reply a smaller amount, or ALL.",
+        "sw": "Hicho ni zaidi ya kilichobaki ({left}). Tafadhali jibu kiasi kidogo, au YOTE.",
+    },
+    "wa.bk.settled_full": {
+        "en": "✅ Recorded {amount} for \"{description}\". Fully paid now.",
+        "sw": "✅ {amount} imerekodiwa kwa \"{description}\". Imelipwa yote sasa.",
+    },
+    "wa.bk.settled_part": {
+        "en": "✅ Recorded {amount} for \"{description}\". {left} still outstanding.",
+        "sw": "✅ {amount} imerekodiwa kwa \"{description}\". {left} bado haijalipwa.",
+    },
+    "wa.bk.credit_gone": {
+        "en": "That credit entry is no longer open. Nothing was saved.",
+        "sw": "Deni hilo halipo tena. Hakuna kilichohifadhiwa.",
+    },
+    "wa.bk.summary": {
+        "en": "*{month}*\nMoney in: {income}\nMoney out: {expenses}\n*Profit: {net}*\nEntries: {count}\n\nOwed to you: {owed_to_you}\nYou owe: {you_owe}",
+        "sw": "*{month}*\nPesa zilizoingia: {income}\nPesa zilizotoka: {expenses}\n*Faida: {net}*\nRekodi: {count}\n\nUnadai: {owed_to_you}\nUnadaiwa: {you_owe}",
+    },
+    "wa.bk.by_business": {
+        "en": "\nProfit by business:",
+        "sw": "\nFaida kwa biashara:",
+    },
+    "wa.bk.recent_title": {
+        "en": "*Your last 5 entries*",
+        "sw": "*Rekodi zako 5 za mwisho*",
+    },
+    "wa.bk.unpaid": {
+        "en": "[{left} unpaid]",
+        "sw": "[{left} bado]",
+    },
+    "wa.bk.no_entries": {
+        "en": "No entries yet. Reply 1 to record a sale or 2 to record a cost.",
+        "sw": "Bado hakuna rekodi. Jibu 1 kurekodi mauzo au 2 kurekodi gharama.",
+    },
+    "wa.bk.confirm_undo": {
+        "en": "Delete your last entry: {amount} — {description} ({day})? Reply YES to delete, or anything else to keep it. (You can restore it on the website within 24 hours.)",
+        "sw": "Futa rekodi yako ya mwisho: {amount} — {description} ({day})? Jibu NDIO kufuta, au chochote kingine kuibakiza. (Unaweza kuirejesha kwenye tovuti ndani ya saa 24.)",
+    },
+    "wa.bk.undone": {
+        "en": "🗑️ Deleted \"{description}\".",
+        "sw": "🗑️ \"{description}\" imefutwa.",
+    },
+    "wa.bk.kept": {
+        "en": "Okay, kept it.",
+        "sw": "Sawa, imebaki.",
     },
     "wa.cancelled": {
         "en": "Okay, stopped. Reply MENU to see the options again.",

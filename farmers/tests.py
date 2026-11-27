@@ -841,6 +841,70 @@ class WhatsAppTests(TestCase):
         self.assertIn("Chagua lugha", self.say("0"))
         self.assertIn("Farmer and group registration", self.say("1"))
 
+    def test_smart_hasibu_records_by_chat_show_on_the_website(self):
+        from smart_hasibu.models import LedgerEntry
+
+        code, _ = self.register_by_chat()
+        self.assertIn("private record book", self.say("11"))
+        self.walk([
+            ("yes", "first farm business"),
+            ("Maize plot", "type of business"),
+            ("1", "Added *Maize plot*"),
+        ])
+        self.walk([
+            ("1", "What kind of money in"),
+            ("1", "How much"),
+            ("lots", "amount in shillings"),
+            ("1,500", "Short description"),
+            ("Sold 2 bags of maize", "When was it"),
+            ("1", "Has the buyer paid"),
+            ("2", "Who owes you"),
+            ("Otieno", "Marked as unpaid"),
+            ("2", "spent on"),
+            ("1", "How much"),
+            ("2k", "Short description"),
+            ("Mafuta ya trekta na mbegu", "When was it"),
+            ("31/12/2099", "past date"),
+            ("2", "Have you paid"),
+            ("1", "Saved money out: KSh 2,000"),
+        ])
+        summary = self.say("4")
+        for expected in ("Money in: KSh 1,500", "Money out: KSh 2,000", "Profit: KSh -500", "Owed to you: KSh 1,500"):
+            self.assertIn(expected, summary)
+        self.walk([
+            ("3", "Owed to you: KSh 1,500 left — Sold 2 bags of maize (Otieno)"),
+            ("1", "1,500 is outstanding"),
+            ("2000", "more than what's left"),
+            ("500", "KSh 1,000 still outstanding"),
+            ("5", "Mafuta ya trekta"),
+            ("6", "Delete your last entry: KSh 2,000"),
+            ("yes", "Deleted"),
+        ])
+
+        contact = WhatsAppContact.objects.get()
+        self.assertIsNone(contact.deletion_requested_at)
+        user = FarmerProfile.objects.get().user
+        self.assertEqual(user.username, "wa254712345678")
+        self.assertEqual(LedgerEntry.objects.filter(enterprise__owner=user, is_deleted=False).count(), 1)
+        self.client.force_login(user)
+        dashboard = self.client.get(reverse("smart_hasibu:dashboard"))
+        self.assertContains(dashboard, "Sold 2 bags of maize")
+
+        WhatsAppContact.objects.update(unlocked_until=None)
+        self.assertIn("6-digit", self.say("11"))
+        self.assertIn("Record money in", self.say(code))
+
+    def test_smart_hasibu_without_registration_issues_a_code(self):
+        self.say("English")
+        self.assertIn("11 - SmartHasibu", self.say("menu"))
+        self.say("11")
+        reply = self.say("ndio")
+        self.assertRegex(reply, r"login code is: \d{6}")
+        self.assertIn("first farm business", reply)
+        self.say("Dairy cows")
+        self.assertIn("Record money in", self.say("2"))
+        self.assertTrue(get_user_model().objects.filter(username="wa254712345678").exists())
+
     def test_risk_assessment_request_by_chat(self):
         self.say("English")
         self.assertIn("Risk and opportunity assessment", self.say("4"))
