@@ -7,7 +7,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 
-from . import gemini
+from . import ai
 from .models import NewsletterIssue, NewsletterSubscription
 
 logger = logging.getLogger(__name__)
@@ -40,14 +40,10 @@ def draft_issue(issue):
         f"Topics: {', '.join(topic_labels(issue.topics)) or 'General MoFirms update'}\n\n"
         f"Staff notes:\n{issue.notes.strip() or '(none provided)'}"
     )
-    text = gemini.generate(
-        [{"role": "user", "parts": [{"text": prompt}]}],
-        DRAFT_PROMPT,
-        max_output_tokens=1200,
-        temperature=0.5,
-        timeout=30,
-    )
-    match = re.match(r"\s*SUBJECT:\s*(.+?)\s*\n(.*)", text, re.DOTALL | re.IGNORECASE)
+    # Medium effort: a newsletter is worth more care than a chat reply. The timeout stays
+    # under the web server's 60-second limit because this runs inside an admin request.
+    text = ai.generate([{"role": "user", "text": prompt}], DRAFT_PROMPT, effort="medium", timeout=50)
+    match = re.search(r"^\s*SUBJECT:\s*(.+?)\s*\n(.*)", text, re.DOTALL | re.IGNORECASE | re.MULTILINE)
     if match:
         issue.subject = match.group(1).strip()[:150]
         issue.body = match.group(2).strip()

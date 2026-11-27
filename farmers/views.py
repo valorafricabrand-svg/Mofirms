@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 from django.contrib.admin.views.decorators import staff_member_required
 
-from . import gemini
+from . import ai
 from .templatetags.custom_i18n import current_lang, translate
 from .forms import (
     BusinessReadinessForm,
@@ -239,7 +239,7 @@ def _rate_limit_reached(request, portal, limit=None, period=None):
     return attempts > limit
 
 
-GEMINI_SYSTEM_PROMPT = (
+ASSISTANT_SYSTEM_PROMPT = (
     "You are the MoFirms website assistant. MoFirms (Marks Organic Farms "
     "Concepts Limited) helps farmers, entrepreneurs and organisations in Kenya "
     "plan agricultural businesses, assess opportunities, and grow sustainably "
@@ -251,12 +251,14 @@ GEMINI_SYSTEM_PROMPT = (
     "(legal, medical, or account-specific questions), say so and suggest "
     "using the \"Request a consultation\" form or WhatsApp link instead. "
     "Keep answers short and practical - a few sentences unless more detail "
-    "is clearly needed. Respond in the same language the visitor writes in."
+    "is clearly needed. Respond in the same language the visitor writes in. "
+    "The chat window shows plain text only, so write plain sentences: no "
+    "Markdown, asterisks, headings or tables (a simple numbered list is fine)."
 )
 
 
 def _assistant_capacity_reached():
-    """Soft global cap so one busy period can't burn through the free Gemini quota."""
+    """Soft global cap so one busy period cannot run up a large Claude bill."""
     key = "assistant-global-rpm"
     if cache.add(key, 1, 60):
         return False
@@ -270,7 +272,7 @@ def _assistant_capacity_reached():
 @require_POST
 def ask_assistant(request):
     lang = current_lang(request)
-    if not settings.GEMINI_API_KEY:
+    if not ai.configured():
         return JsonResponse(
             {"error": translate("assistant.not_configured", lang)}, status=503
         )
@@ -293,20 +295,23 @@ def ask_assistant(request):
     if not message or len(message) > 1000:
         return JsonResponse({"error": translate("assistant.bad_request", lang)}, status=400)
 
-    contents = []
+    conversation = []
     for turn in (payload.get("history") or [])[-6:]:
         if not isinstance(turn, dict):
             continue
-        role = turn.get("role")
+        # The chat widget labels the assistant's turns "model".
+        role = {"user": "user", "model": "assistant", "assistant": "assistant"}.get(turn.get("role"))
         text = (turn.get("text") or "").strip()
-        if role not in ("user", "model") or not text or len(text) > 2000:
+        if not role or not text or len(text) > 2000:
             continue
-        contents.append({"role": role, "parts": [{"text": text}]})
-    contents.append({"role": "user", "parts": [{"text": message}]})
+        conversation.append({"role": role, "text": text})
+    conversation.append({"role": "user", "text": message})
 
     try:
-        reply = gemini.generate(contents, GEMINI_SYSTEM_PROMPT)
-    except gemini.GeminiUnavailable:
+        reply = ai.generate(conversation, ASSISTANT_SYSTEM_PROMPT, effort="low", timeout=25)
+    except ai.AIRefused:
+        return JsonResponse({"reply": translate("assistant.refused", lang)})
+    except ai.AIUnavailable:
         return JsonResponse({"error": translate("assistant.unavailable", lang)}, status=502)
     return JsonResponse({"reply": reply})
 

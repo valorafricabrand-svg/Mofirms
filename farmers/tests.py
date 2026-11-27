@@ -6,7 +6,7 @@ from datetime import timedelta
 from decimal import Decimal
 from html.parser import HTMLParser
 from io import BytesIO, StringIO
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -1616,6 +1616,77 @@ class WhatsAppTests(TestCase):
         self.assertIsNotNone(FarmerProfile.objects.get().user)
 
 
+def fake_claude_response(text="Hello from Claude.", stop_reason="end_turn"):
+    from types import SimpleNamespace
+
+    blocks = [SimpleNamespace(type="thinking", thinking=""), SimpleNamespace(type="text", text=text)]
+    return SimpleNamespace(
+        content=blocks, stop_reason=stop_reason, stop_details=None, _request_id="req_test"
+    )
+
+
+@override_settings(ANTHROPIC_API_KEY="test-key", ANTHROPIC_MODEL="claude-opus-5-5")
+class ClaudeAssistantTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        from farmers import ai
+
+        self.create = MagicMock(return_value=fake_claude_response("Plant maize after the first rains."))
+        client = MagicMock()
+        client.with_options.return_value.beta.messages.create = self.create
+        patcher = patch.object(ai, "_client", return_value=client)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def ask(self, message, history=None):
+        return self.client.post(
+            reverse("ask_assistant"),
+            json.dumps({"message": message, "history": history or []}),
+            content_type="application/json",
+        )
+
+    def test_assistant_replies_with_claude_text(self):
+        response = self.ask(
+            "When should I plant maize?",
+            history=[
+                {"role": "model", "text": "Hi! How can I help?"},
+                {"role": "user", "text": "I farm in Vihiga."},
+                {"role": "model", "text": "Great, what would you like to know?"},
+                {"role": "system", "text": "ignored"},
+            ],
+        )
+
+        self.assertEqual(response.json(), {"reply": "Plant maize after the first rains."})
+        kwargs = self.create.call_args.kwargs
+        self.assertEqual(kwargs["model"], "claude-opus-5-5")
+        self.assertEqual(kwargs["output_config"], {"effort": "low"})
+        self.assertEqual(kwargs["fallbacks"], "default")
+        self.assertNotIn("thinking", kwargs)
+        self.assertIn("plain text", kwargs["system"])
+        self.assertEqual(kwargs["messages"], [
+            {"role": "user", "content": "I farm in Vihiga."},
+            {"role": "assistant", "content": "Great, what would you like to know?"},
+            {"role": "user", "content": "When should I plant maize?"},
+        ])
+
+    def test_refusal_gets_a_polite_reply_and_errors_a_retry_message(self):
+        import anthropic
+
+        self.create.return_value = fake_claude_response("", stop_reason="refusal")
+        self.assertIn("can't help with that", self.ask("something off-topic").json()["reply"])
+
+        self.create.side_effect = anthropic.APIConnectionError(request=MagicMock())
+        response = self.ask("Hello?")
+        self.assertEqual(response.status_code, 502)
+        self.assertIn("temporarily unavailable", response.json()["error"])
+
+    @override_settings(ANTHROPIC_API_KEY="")
+    def test_assistant_is_off_without_an_api_key(self):
+        response = self.ask("Hello")
+        self.assertEqual(response.status_code, 503)
+        self.create.assert_not_called()
+
+
 class NewsletterIssueTests(TestCase):
     def setUp(self):
         self.staff = get_user_model().objects.create_superuser(
@@ -1643,7 +1714,7 @@ class NewsletterIssueTests(TestCase):
             self.changelist, {"action": action, "_selected_action": [self.issue.pk]}, follow=True
         )
 
-    @patch("farmers.gemini.generate")
+    @patch("farmers.ai.generate")
     def test_ai_draft_fills_subject_and_body_from_notes(self, generate):
         generate.return_value = "SUBJECT: Get ready for March planting\n\nMaize planting starts in March."
 
@@ -1652,7 +1723,7 @@ class NewsletterIssueTests(TestCase):
         self.issue.refresh_from_db()
         self.assertEqual(self.issue.subject, "Get ready for March planting")
         self.assertEqual(self.issue.body, "Maize planting starts in March.")
-        self.assertIn("Maize planting starts in March in Vihiga.", generate.call_args.args[0][0]["parts"][0]["text"])
+        self.assertIn("Maize planting starts in March in Vihiga.", generate.call_args.args[0][0]["text"])
         self.assertEqual(self.issue.status, NewsletterIssue.Status.DRAFT)
 
     def test_unchecked_ai_notes_block_approval(self):

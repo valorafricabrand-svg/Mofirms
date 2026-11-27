@@ -36,7 +36,7 @@ from .models import (
     WhatsAppContact,
     WhatsAppMessage,
 )
-from . import gemini, newsletter
+from . import ai, newsletter
 from .readiness_drafting import save_readiness_draft
 
 
@@ -147,7 +147,7 @@ class NewsletterIssueAdmin(admin.ModelAdmin):
         for issue in queryset.filter(status=NewsletterIssue.Status.DRAFT):
             try:
                 newsletter.draft_issue(issue)
-            except gemini.GeminiUnavailable:
+            except ai.AIUnavailable:
                 self.message_user(
                     request, f"The AI is unavailable right now, so “{issue}” was not drafted. Try again shortly.",
                     level="error",

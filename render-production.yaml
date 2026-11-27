@@ -15,7 +15,7 @@ envVarGroups:
         sync: false
   - name: mofirms-assistant-secrets
     envVars:
-      - key: GEMINI_API_KEY
+      - key: ANTHROPIC_API_KEY
         sync: false
   - name: mofirms-whatsapp-secrets
     envVars:

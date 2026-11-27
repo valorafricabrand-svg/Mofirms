@@ -47,6 +47,10 @@ STRINGS = {
         "en": "Please type a message.",
         "sw": "Tafadhali andika ujumbe.",
     },
+    "assistant.refused": {
+        "en": "Sorry, I can't help with that here. For anything else about MoFirms, ask away, or use the \"Request a consultation\" form to reach the team.",
+        "sw": "Samahani, siwezi kusaidia na hilo hapa. Kwa jambo lingine kuhusu MoFirms, uliza tu, au tumia fomu ya \"Omba ushauri\" kuwasiliana na timu.",
+    },
     "assistant.unavailable": {
         "en": "The assistant is temporarily unavailable. Please try again shortly.",
         "sw": "Msaidizi hapatikani kwa sasa. Tafadhali jaribu tena baadaye kidogo.",
